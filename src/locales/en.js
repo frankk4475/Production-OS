@@ -3,7 +3,7 @@ export const en = {
     dashboard: "Dashboard",
     scriptBreakdown: "Script Breakdown",
     calendar: "Master Calendar",
-    crewPortal: "Crew Portal",
+    crewPortal: "Crew & Access Control",
     documentsHub: "Documents Hub",
     scriptEditor: "Script Editor",
     storyOutline: "Story & Outline",

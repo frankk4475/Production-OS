@@ -46,7 +46,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs', 'users'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -59,7 +59,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs', 'users'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {
@@ -96,10 +96,6 @@ function MainApp() {
   // Tab rendering helper
   const renderContent = () => {
     switch (currentTab) {
-      case 'users':
-        return (
-          <UserManager />
-        );
       case 'storyOutline':
         return (
           <StoryPlanner key={currentProjectId} />

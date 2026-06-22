@@ -470,6 +470,18 @@ export const ProjectProvider = ({ children }) => {
       setShotList: saveShotList,
       setCompletedTasks: saveCompletedTasks,
       
+      refreshCrew: async () => {
+        try {
+          setIsLoading(true);
+          const crewData = await api.getCrew();
+          setCrew(crewData);
+        } catch (err) {
+          console.error("Failed to refresh crew:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      },
+      
       exportDatabase: handleExportDatabase,
       importDatabase: handleImportDatabase,
       resetDatabase: handleResetDatabase

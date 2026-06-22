@@ -112,9 +112,7 @@ export default function Layout({
       ];
 
   const menuItems = [...baseMenuItems];
-  if (!isCrewOrTalent() && hasWriteAccess()) {
-    menuItems.push({ id: 'users', label: language === 'th' ? 'จัดการผู้ใช้และสิทธิ์' : 'User Access Management', icon: Shield });
-  }  return (
+  return (
     <div className={`min-h-screen flex transition-colors duration-200 ${theme === 'dark' ? 'dark bg-obsidian-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
       {/* Sidebar - Desktop */}

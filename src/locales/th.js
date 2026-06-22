@@ -3,7 +3,7 @@ export const th = {
     dashboard: "แดชบอร์ด",
     scriptBreakdown: "แจกแจงบทถ่ายทำ",
     calendar: "ปฏิทินงานหลัก",
-    crewPortal: "ระบบทีมงาน",
+    crewPortal: "จัดการทีมงานและสิทธิ์",
     documentsHub: "คลังเอกสารกองถ่าย",
     scriptEditor: "เขียนบทภาพยนตร์",
     storyOutline: "โครงเรื่องและเส้นเรื่อง",

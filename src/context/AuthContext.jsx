@@ -82,6 +82,24 @@ export const AuthProvider = ({ children }) => {
     const newUser = await api.createUser(name, email, password, 'Producer'); // First user is Producer
     setUsers([newUser]);
     setIsFirstTimeSetup(false);
+
+    // Automatically add as a Crew Member in the crew roster
+    try {
+      await api.createCrewMember({
+        name: { th: name, en: name },
+        role: 'Producer',
+        role_th: 'ผู้ดำเนินงานสร้าง (Producer)',
+        email: email,
+        phone: '-',
+        booked_dates: [],
+        tasks: {
+          th: ["เตรียมอุปกรณ์ส่วนตัวสำหรับการทำงาน", "ตรวจสอบใบสั่งงานกองถ่าย (Call Sheet)"],
+          en: ["Prepare personal tools for the day", "Review daily call sheets"]
+        }
+      });
+    } catch (err) {
+      console.error("Failed to auto-create crew member on first register:", err);
+    }
     
     // Auto-login
     localStorage.setItem('prod_user', JSON.stringify(newUser));
@@ -99,6 +117,33 @@ export const AuthProvider = ({ children }) => {
     const newUser = await api.createUser(name, email, password, role);
     setUsers(prev => [...prev, newUser]);
     setIsFirstTimeSetup(false);
+
+    // Automatically add as a Crew Member in the crew roster
+    try {
+      const allCrew = await api.getCrew();
+      const crewExists = allCrew.some(c => c.email.toLowerCase() === email.toLowerCase());
+      if (!crewExists) {
+        const roleTh = role === 'Producer' ? 'ผู้ดำเนินงานสร้าง (Producer)' 
+                       : role === '1st_AD' ? 'ผู้ช่วยผู้กำกับ 1 (1st AD)' 
+                       : role === 'Crew' ? 'ทีมงานฝ่ายผลิต (Crew)' 
+                       : role === 'Talent' ? 'นักแสดง / แบบ (Talent)' : role;
+        await api.createCrewMember({
+          name: { th: name, en: name },
+          role: role,
+          role_th: roleTh,
+          email: email,
+          phone: '-',
+          booked_dates: [],
+          tasks: {
+            th: ["เตรียมอุปกรณ์ส่วนตัวสำหรับการทำงาน", "ตรวจสอบใบสั่งงานกองถ่าย (Call Sheet)"],
+            en: ["Prepare personal tools for the day", "Review daily call sheets"]
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to auto-create crew member on admin register:", err);
+    }
+
     return newUser;
   };
 
@@ -106,9 +151,25 @@ export const AuthProvider = ({ children }) => {
     if (id === user?.id) {
       throw new Error('Cannot delete your own logged-in account');
     }
+
+    const targetUser = users.find(u => u.id === id);
+
     await api.deleteUser(id);
     setUsers(prev => prev.filter(u => u.id !== id));
     
+    // Automatically delete corresponding crew member in roster
+    if (targetUser && targetUser.email) {
+      try {
+        const allCrew = await api.getCrew();
+        const matchCrew = allCrew.find(c => c.email.toLowerCase() === targetUser.email.toLowerCase());
+        if (matchCrew) {
+          await api.deleteCrewMember(matchCrew.id);
+        }
+      } catch (err) {
+        console.error("Failed to auto-delete corresponding crew member:", err);
+      }
+    }
+
     // Check if system is now empty
     const remaining = users.filter(u => u.id !== id);
     setIsFirstTimeSetup(remaining.length === 0);

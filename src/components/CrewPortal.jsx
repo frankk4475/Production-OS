@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { api } from '../services/api';
+import UserManager from './UserManager';
 import { 
   Users, 
   UserPlus, 
@@ -14,7 +15,8 @@ import {
   Sparkles,
   X,
   Loader2,
-  Trash2
+  Trash2,
+  Shield
 } from 'lucide-react';
 
 export default function CrewPortal({ lockedCrewId }) {
@@ -31,10 +33,11 @@ export default function CrewPortal({ lockedCrewId }) {
     saveEvents,
     activeCompletedTasks: completedTasks,
     saveCompletedTasks,
+    refreshCrew,
     isLoading
   } = useProject();
 
-  // Tab View Mode: 'producer' (Roster) | 'crew' (My Schedule)
+  // Tab View Mode: 'producer' (Roster) | 'crew' (My Schedule) | 'access' (UserManager)
   const [portalMode, setPortalMode] = useState(() => {
     return isCrewOrTalent() || lockedCrewId ? 'crew' : 'producer';
   });
@@ -373,6 +376,13 @@ export default function CrewPortal({ lockedCrewId }) {
     );
   }
 
+  const handlePortalModeChange = async (mode) => {
+    setPortalMode(mode);
+    if (mode === 'producer' || mode === 'access') {
+      await refreshCrew();
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* Title & Mode Switcher */}
@@ -380,10 +390,14 @@ export default function CrewPortal({ lockedCrewId }) {
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
             <Users size={24} className="text-gold-500" />
-            <span>{t('nav.crewPortal')}</span>
+            <span>{language === 'th' ? 'จัดการทีมงานและสิทธิ์' : 'Crew & Access Management'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            {portalMode === 'producer' ? 'Roster View & Shift Scheduling' : 'Individual Personal Dashboard'}
+            {portalMode === 'producer' 
+              ? (language === 'th' ? 'ตารางรายชื่อทีมงานและการจัดคิวคิวงานถ่ายทำ' : 'Roster View & Shift Scheduling') 
+              : portalMode === 'crew'
+              ? (language === 'th' ? 'กระดานแสดงข้อมูลคิวงานและงานรับผิดชอบรายบุคคล' : 'Individual Personal Dashboard')
+              : (language === 'th' ? 'การตั้งค่ารหัสบัญชีล็อกอินและระดับสิทธิ์ (Role) ระบบปฏิบัติการ' : 'User Accounts, Passwords & System Roles')}
           </p>
         </div>
 
@@ -391,24 +405,35 @@ export default function CrewPortal({ lockedCrewId }) {
         {!isCrewOrTalent() && (
           <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-obsidian-800">
             <button
-              onClick={() => setPortalMode('producer')}
+              onClick={() => handlePortalModeChange('producer')}
               className={`px-4 py-2 text-xs font-bold uppercase transition-all ${
                 portalMode === 'producer'
                   ? 'bg-gold-500/15 text-gold-500 font-extrabold'
                   : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {language === 'th' ? 'ตารางรายชื่อทั้งหมด' : 'Producer Roster'}
+              {language === 'th' ? 'รายชื่อและมอบหมายงาน' : 'Crew Roster'}
             </button>
             <button
-              onClick={() => setPortalMode('crew')}
+              onClick={() => handlePortalModeChange('crew')}
               className={`px-4 py-2 text-xs font-bold uppercase transition-all ${
                 portalMode === 'crew'
                   ? 'bg-gold-500/15 text-gold-500 font-extrabold'
                   : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {language === 'th' ? 'ตารางงานบุคคล' : 'Crew Portal'}
+              {language === 'th' ? 'ตารางงานบุคคล' : 'Crew Schedule'}
+            </button>
+            <button
+              onClick={() => handlePortalModeChange('access')}
+              className={`px-4 py-2 text-xs font-bold uppercase transition-all flex items-center gap-1.5 ${
+                portalMode === 'access'
+                  ? 'bg-gold-500/15 text-gold-500 font-extrabold'
+                  : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <Shield size={13} />
+              <span>{language === 'th' ? 'บัญชีและสิทธิ์ (Role)' : 'Access Control'}</span>
             </button>
           </div>
         )}
@@ -651,6 +676,11 @@ export default function CrewPortal({ lockedCrewId }) {
           )}
 
         </div>
+      )}
+
+      {/* ACCESS CONTROL MODE */}
+      {portalMode === 'access' && (
+        <UserManager hideHeader={true} />
       )}
 
       {/* BOOK SHIFT MODAL */}

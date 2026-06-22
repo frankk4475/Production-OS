@@ -16,7 +16,7 @@ import {
   RefreshCw 
 } from 'lucide-react';
 
-export default function UserManager() {
+export default function UserManager({ hideHeader = false }) {
   const { language } = useLanguage();
   const { theme } = useTheme();
   
@@ -110,19 +110,21 @@ export default function UserManager() {
     <div className="space-y-6 animate-fadeIn pb-20">
       
       {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
-            <Shield className="text-gold-500 animate-pulse" size={24} />
-            <span>{language === 'th' ? 'จัดการสิทธิ์และบัญชีผู้ใช้งาน' : 'User Access Management'}</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {language === 'th'
-              ? 'ระบบการควบคุมสิทธิ์ เพิ่มบัญชีทีมงาน และควบคุมระดับการแก้ไขข้อมูลในการผลิต'
-              : 'Add new crew member logins, manage authorization levels, and control write permissions.'}
-          </p>
+      {!hideHeader && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
+              <Shield className="text-gold-500 animate-pulse" size={24} />
+              <span>{language === 'th' ? 'จัดการสิทธิ์และบัญชีผู้ใช้งาน' : 'User Access Management'}</span>
+            </h1>
+            <p className="text-xs text-slate-400 mt-1">
+              {language === 'th'
+                ? 'ระบบการควบคุมสิทธิ์ เพิ่มบัญชีทีมงาน และควบคุมระดับการแก้ไขข้อมูลในการผลิต'
+                : 'Add new crew member logins, manage authorization levels, and control write permissions.'}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
