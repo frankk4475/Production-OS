@@ -34,11 +34,16 @@ export default function LoginPage() {
     setIsLoading(true);
 
     // Simulate short network delay for aesthetics
-    setTimeout(() => {
-      const result = login(email, password);
-      setIsLoading(false);
-      if (!result.success) {
-        setError(language === 'th' ? result.error : 'Invalid email or password');
+    setTimeout(async () => {
+      try {
+        const result = await login(email, password);
+        if (!result.success) {
+          setError(language === 'th' ? result.error : 'Invalid email or password');
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
     }, 600);
   };
@@ -63,9 +68,9 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        registerFirstUser(regName, regEmail, regPassword);
+        await registerFirstUser(regName, regEmail, regPassword);
       } catch (err) {
         setError(err.message);
       } finally {

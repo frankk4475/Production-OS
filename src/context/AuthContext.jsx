@@ -1,20 +1,13 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../services/api';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Load users from localStorage (database of registered users)
-  const [users, setUsers] = useState(() => {
-    try {
-      const saved = localStorage.getItem('prod_api_users');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      console.error("Error reading prod_api_users:", e);
-      return [];
-    }
-  });
+  const [users, setUsers] = useState([]);
+  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(true);
 
+  // Load currently logged-in user profile from localStorage (persisted session)
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('prod_user');
@@ -26,25 +19,24 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  const [isFirstTimeSetup, setIsFirstTimeSetup] = useState(() => {
-    try {
-      const saved = localStorage.getItem('prod_api_users');
-      const parsed = saved ? JSON.parse(saved) : [];
-      return !Array.isArray(parsed) || parsed.length === 0;
-    } catch (e) {
-      return true;
-    }
-  });
-
-  // Sync users list to localStorage
+  // Fetch users from API (Supabase or LocalStorage fallback)
   useEffect(() => {
-    localStorage.setItem('prod_api_users', JSON.stringify(users));
-    setIsFirstTimeSetup(users.length === 0);
-  }, [users]);
+    const fetchUsers = async () => {
+      try {
+        const data = await api.getUsers();
+        setUsers(data);
+        setIsFirstTimeSetup(data.length === 0);
+      } catch (e) {
+        console.error("Error reading users:", e);
+      }
+    };
+    fetchUsers();
+  }, []);
 
-  const login = (email, password) => {
+  const login = async (email, password) => {
     // 1. Search in dynamic users database
-    const matched = users.find(
+    const allUsers = await api.getUsers();
+    const matched = allUsers.find(
       u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
     
@@ -67,9 +59,15 @@ export const AuthProvider = ({ children }) => {
     const matchedDemo = demoAccounts.find(d => d.email === email && d.password === password);
     if (matchedDemo) {
       // Auto-add demo user to dynamic list so they appear in user tables
-      const userExists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+      const userExists = allUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
       if (!userExists) {
-        setUsers(prev => [...prev, matchedDemo]);
+        try {
+          const added = await api.createUser(matchedDemo.name, matchedDemo.email, matchedDemo.password, matchedDemo.role);
+          setUsers(prev => [...prev, added]);
+          setIsFirstTimeSetup(false);
+        } catch (e) {
+          console.error("Failed to auto-create demo user:", e);
+        }
       }
       localStorage.setItem('prod_user', JSON.stringify(matchedDemo));
       setUser(matchedDemo);
@@ -80,15 +78,10 @@ export const AuthProvider = ({ children }) => {
     return { success: false, error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' };
   };
 
-  const registerFirstUser = (name, email, password) => {
-    const newUser = {
-      id: `u-${Date.now()}`,
-      name,
-      email,
-      password,
-      role: 'Producer' // First user is automatically Producer (Admin role)
-    };
+  const registerFirstUser = async (name, email, password) => {
+    const newUser = await api.createUser(name, email, password, 'Producer'); // First user is Producer
     setUsers([newUser]);
+    setIsFirstTimeSetup(false);
     
     // Auto-login
     localStorage.setItem('prod_user', JSON.stringify(newUser));
@@ -96,29 +89,29 @@ export const AuthProvider = ({ children }) => {
     window.location.hash = '#/dashboard';
   };
 
-  const registerUserByAdmin = (name, email, password, role) => {
+  const registerUserByAdmin = async (name, email, password, role) => {
     // Check if email already exists
-    if (users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    const allUsers = await api.getUsers();
+    if (allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
       throw new Error('Email already registered');
     }
 
-    const newUser = {
-      id: `u-${Date.now()}`,
-      name,
-      email,
-      password,
-      role
-    };
-
+    const newUser = await api.createUser(name, email, password, role);
     setUsers(prev => [...prev, newUser]);
+    setIsFirstTimeSetup(false);
     return newUser;
   };
 
-  const deleteUserByAdmin = (id) => {
+  const deleteUserByAdmin = async (id) => {
     if (id === user?.id) {
       throw new Error('Cannot delete your own logged-in account');
     }
+    await api.deleteUser(id);
     setUsers(prev => prev.filter(u => u.id !== id));
+    
+    // Check if system is now empty
+    const remaining = users.filter(u => u.id !== id);
+    setIsFirstTimeSetup(remaining.length === 0);
   };
 
   const logout = () => {

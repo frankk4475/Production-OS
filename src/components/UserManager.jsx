@@ -53,9 +53,9 @@ export default function UserManager() {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        registerUserByAdmin(name, email, password, role);
+        await registerUserByAdmin(name, email, password, role);
         setSuccessMsg(language === 'th' ? 'สร้างบัญชีผู้ใช้งานสำเร็จ!' : 'User account created successfully!');
         
         // Reset form
@@ -71,7 +71,7 @@ export default function UserManager() {
     }, 500);
   };
 
-  const handleDeleteUser = (userId, userEmail) => {
+  const handleDeleteUser = async (userId, userEmail) => {
     if (userId === currentUser?.id) {
       alert(language === 'th' ? 'คุณไม่สามารถลบบัญชีที่กำลังล็อกอินใช้งานอยู่ได้' : 'Cannot delete your own active account!');
       return;
@@ -83,7 +83,7 @@ export default function UserManager() {
 
     if (window.confirm(confirmMsg)) {
       try {
-        deleteUserByAdmin(userId);
+        await deleteUserByAdmin(userId);
       } catch (err) {
         alert(err.message);
       }

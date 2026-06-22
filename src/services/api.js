@@ -1,9 +1,8 @@
-// API Service Layer simulating production backend operations
-// Uses localStorage as a persistent database and adds mock network latency (200ms)
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
-const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
+const delay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Helper: Get data from local storage
+// LocalStorage Helper: Get data
 const getDbData = (key, defaultValue = []) => {
   try {
     const data = localStorage.getItem(key);
@@ -14,7 +13,7 @@ const getDbData = (key, defaultValue = []) => {
   }
 };
 
-// Helper: Write data to local storage
+// LocalStorage Helper: Write data
 const setDbData = (key, data) => {
   try {
     localStorage.setItem(key, JSON.stringify(data));
@@ -31,19 +30,30 @@ const STORAGE_KEYS = {
   SHOT_LIST: 'prod_api_shot_list',
   COMPLETED_TASKS: 'prod_api_completed_tasks',
   SCRIPTS: 'prod_api_scripts',
-  STORY_OUTLINE: 'prod_api_story_outline'
+  STORY_OUTLINE: 'prod_api_story_outline',
+  USERS: 'prod_api_users'
 };
 
 export const api = {
   // ================= PROJECT API =================
   async getProjects() {
-    await delay();
-    return getDbData(STORAGE_KEYS.PROJECTS);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Supabase error fetching projects, falling back:', error);
+        return getDbData(STORAGE_KEYS.PROJECTS);
+      }
+      return data || [];
+    } else {
+      await delay();
+      return getDbData(STORAGE_KEYS.PROJECTS);
+    }
   },
 
   async createProject(projectData) {
-    await delay();
-    const projects = getDbData(STORAGE_KEYS.PROJECTS);
     const newProject = {
       id: `proj-${Date.now()}`,
       title: projectData.title || { th: '', en: '' },
@@ -59,74 +69,128 @@ export const api = {
       completion_percentage: Number(projectData.completion_percentage) || 0,
       created_at: new Date().toISOString()
     };
-    projects.push(newProject);
-    setDbData(STORAGE_KEYS.PROJECTS, projects);
-    return newProject;
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([newProject])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const projects = getDbData(STORAGE_KEYS.PROJECTS);
+      projects.push(newProject);
+      setDbData(STORAGE_KEYS.PROJECTS, projects);
+      return newProject;
+    }
   },
 
   async updateProject(updatedProject) {
-    await delay();
-    const projects = getDbData(STORAGE_KEYS.PROJECTS);
-    const index = projects.findIndex(p => p.id === updatedProject.id);
-    if (index !== -1) {
-      projects[index] = { ...projects[index], ...updatedProject };
-      setDbData(STORAGE_KEYS.PROJECTS, projects);
-      return projects[index];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('projects')
+        .update({
+          title: updatedProject.title,
+          status: updatedProject.status,
+          director: updatedProject.director,
+          producer: updatedProject.producer,
+          client: updatedProject.client,
+          current_weather: updatedProject.current_weather,
+          weather_detail: updatedProject.weather_detail,
+          start_date: updatedProject.start_date,
+          deadline: updatedProject.deadline,
+          total_budget: updatedProject.total_budget,
+          completion_percentage: Number(updatedProject.completion_percentage)
+        })
+        .eq('id', updatedProject.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const projects = getDbData(STORAGE_KEYS.PROJECTS);
+      const index = projects.findIndex(p => p.id === updatedProject.id);
+      if (index !== -1) {
+        projects[index] = { ...projects[index], ...updatedProject };
+        setDbData(STORAGE_KEYS.PROJECTS, projects);
+        return projects[index];
+      }
+      throw new Error('Project not found');
     }
-    throw new Error('Project not found');
   },
 
   async deleteProject(projectId) {
-    await delay();
-    
-    // 1. Delete project
-    const projects = getDbData(STORAGE_KEYS.PROJECTS);
-    const filteredProjects = projects.filter(p => p.id !== projectId);
-    setDbData(STORAGE_KEYS.PROJECTS, filteredProjects);
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+      if (error) throw error;
+      return true;
+    } else {
+      await delay();
+      
+      // 1. Delete project
+      const projects = getDbData(STORAGE_KEYS.PROJECTS);
+      const filteredProjects = projects.filter(p => p.id !== projectId);
+      setDbData(STORAGE_KEYS.PROJECTS, filteredProjects);
 
-    // 2. Cascade deletes for scenes
-    const scenes = getDbData(STORAGE_KEYS.SCENES);
-    const filteredScenes = scenes.filter(s => s.project_id !== projectId);
-    setDbData(STORAGE_KEYS.SCENES, filteredScenes);
+      // 2. Cascade deletes for scenes
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      const filteredScenes = scenes.filter(s => s.project_id !== projectId);
+      setDbData(STORAGE_KEYS.SCENES, filteredScenes);
 
-    // 3. Cascade deletes for events
-    const events = getDbData(STORAGE_KEYS.EVENTS);
-    const filteredEvents = events.filter(e => e.project_id !== projectId);
-    setDbData(STORAGE_KEYS.EVENTS, filteredEvents);
+      // 3. Cascade deletes for events
+      const events = getDbData(STORAGE_KEYS.EVENTS);
+      const filteredEvents = events.filter(e => e.project_id !== projectId);
+      setDbData(STORAGE_KEYS.EVENTS, filteredEvents);
 
-    // 4. Cascade deletes for shot list
-    const shotList = getDbData(STORAGE_KEYS.SHOT_LIST);
-    const filteredShotList = shotList.filter(s => s.project_id !== projectId);
-    setDbData(STORAGE_KEYS.SHOT_LIST, filteredShotList);
+      // 4. Cascade deletes for shot list
+      const shotList = getDbData(STORAGE_KEYS.SHOT_LIST);
+      const filteredShotList = shotList.filter(s => s.project_id !== projectId);
+      setDbData(STORAGE_KEYS.SHOT_LIST, filteredShotList);
 
-    // 5. Cascade deletes for tasks
-    const tasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
-    const updatedTasks = { ...tasks };
-    Object.keys(updatedTasks).forEach(k => {
-      if (k.startsWith(`${projectId}-`)) {
-        delete updatedTasks[k];
-      }
-    });
-    setDbData(STORAGE_KEYS.COMPLETED_TASKS, updatedTasks);
+      // 5. Cascade deletes for tasks
+      const tasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
+      const updatedTasks = { ...tasks };
+      Object.keys(updatedTasks).forEach(k => {
+        if (k.startsWith(`${projectId}-`)) {
+          delete updatedTasks[k];
+        }
+      });
+      setDbData(STORAGE_KEYS.COMPLETED_TASKS, updatedTasks);
 
-    // 6. Cascade deletes for story outlines
-    const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-    const updatedOutlines = { ...outlines };
-    delete updatedOutlines[projectId];
-    setDbData(STORAGE_KEYS.STORY_OUTLINE, updatedOutlines);
+      // 6. Cascade deletes for story outlines
+      const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
+      const updatedOutlines = { ...outlines };
+      delete updatedOutlines[projectId];
+      setDbData(STORAGE_KEYS.STORY_OUTLINE, updatedOutlines);
 
-    return true;
+      return true;
+    }
   },
 
   // ================= CREW API =================
   async getCrew() {
-    await delay();
-    return getDbData(STORAGE_KEYS.CREW);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('crew')
+        .select('*');
+      if (error) {
+        console.error('Supabase error fetching crew, falling back:', error);
+        return getDbData(STORAGE_KEYS.CREW);
+      }
+      return data || [];
+    } else {
+      await delay();
+      return getDbData(STORAGE_KEYS.CREW);
+    }
   },
 
   async createCrewMember(crewData) {
-    await delay();
-    const crew = getDbData(STORAGE_KEYS.CREW);
     const newMember = {
       id: `crew-${Date.now()}`,
       name: crewData.name || { th: '', en: '' },
@@ -137,55 +201,107 @@ export const api = {
       booked_dates: crewData.booked_dates || [],
       tasks: crewData.tasks || { th: [], en: [] }
     };
-    crew.push(newMember);
-    setDbData(STORAGE_KEYS.CREW, crew);
-    return newMember;
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('crew')
+        .insert([newMember])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const crew = getDbData(STORAGE_KEYS.CREW);
+      crew.push(newMember);
+      setDbData(STORAGE_KEYS.CREW, crew);
+      return newMember;
+    }
   },
 
   async updateCrewMember(updatedMember) {
-    await delay();
-    const crew = getDbData(STORAGE_KEYS.CREW);
-    const index = crew.findIndex(c => c.id === updatedMember.id);
-    if (index !== -1) {
-      crew[index] = { ...crew[index], ...updatedMember };
-      setDbData(STORAGE_KEYS.CREW, crew);
-      return crew[index];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('crew')
+        .update({
+          name: updatedMember.name,
+          role: updatedMember.role,
+          role_th: updatedMember.role_th,
+          email: updatedMember.email,
+          phone: updatedMember.phone,
+          booked_dates: updatedMember.booked_dates,
+          tasks: updatedMember.tasks
+        })
+        .eq('id', updatedMember.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const crew = getDbData(STORAGE_KEYS.CREW);
+      const index = crew.findIndex(c => c.id === updatedMember.id);
+      if (index !== -1) {
+        crew[index] = { ...crew[index], ...updatedMember };
+        setDbData(STORAGE_KEYS.CREW, crew);
+        return crew[index];
+      }
+      throw new Error('Crew member not found');
     }
-    throw new Error('Crew member not found');
   },
 
   async deleteCrewMember(crewId) {
-    await delay();
-    const crew = getDbData(STORAGE_KEYS.CREW);
-    const filteredCrew = crew.filter(c => c.id !== crewId);
-    setDbData(STORAGE_KEYS.CREW, filteredCrew);
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('crew')
+        .delete()
+        .eq('id', crewId);
+      if (error) throw error;
+      return true;
+    } else {
+      await delay();
+      const crew = getDbData(STORAGE_KEYS.CREW);
+      const filteredCrew = crew.filter(c => c.id !== crewId);
+      setDbData(STORAGE_KEYS.CREW, filteredCrew);
 
-    // Remove crew assignment from events
-    const events = getDbData(STORAGE_KEYS.EVENTS);
-    const updatedEvents = events.map(e => {
-      if (e.crew_assigned && e.crew_assigned.includes(crewId)) {
-        return {
-          ...e,
-          crew_assigned: e.crew_assigned.filter(id => id !== crewId)
-        };
-      }
-      return e;
-    });
-    setDbData(STORAGE_KEYS.EVENTS, updatedEvents);
+      // Remove crew assignment from events
+      const events = getDbData(STORAGE_KEYS.EVENTS);
+      const updatedEvents = events.map(e => {
+        if (e.crew_assigned && e.crew_assigned.includes(crewId)) {
+          return {
+            ...e,
+            crew_assigned: e.crew_assigned.filter(id => id !== crewId)
+          };
+        }
+        return e;
+      });
+      setDbData(STORAGE_KEYS.EVENTS, updatedEvents);
 
-    return true;
+      return true;
+    }
   },
 
   // ================= SCENE BREAKDOWN API =================
   async getScenes(projectId) {
-    await delay();
-    const scenes = getDbData(STORAGE_KEYS.SCENES);
-    return scenes.filter(s => s.project_id === projectId);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scenes')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('scene_number', { ascending: true });
+      if (error) {
+        console.error('Supabase error fetching scenes, falling back:', error);
+        return getDbData(STORAGE_KEYS.SCENES).filter(s => s.project_id === projectId);
+      }
+      return data || [];
+    } else {
+      await delay();
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      return scenes.filter(s => s.project_id === projectId);
+    }
   },
 
   async createScene(sceneData) {
-    await delay();
-    const scenes = getDbData(STORAGE_KEYS.SCENES);
     const newScene = {
       id: `scene-${Date.now()}`,
       project_id: sceneData.project_id,
@@ -199,174 +315,419 @@ export const api = {
       props: sceneData.props || { th: '', en: '' },
       wardrobe: sceneData.wardrobe || { th: '', en: '' },
       tech_notes: sceneData.tech_notes || { th: '', en: '' },
-      status: sceneData.status || 'pending' // pending, shooting, completed
+      status: sceneData.status || 'pending'
     };
-    scenes.push(newScene);
-    setDbData(STORAGE_KEYS.SCENES, scenes);
-    return newScene;
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scenes')
+        .insert([newScene])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      scenes.push(newScene);
+      setDbData(STORAGE_KEYS.SCENES, scenes);
+      return newScene;
+    }
   },
 
   async updateScene(updatedScene) {
-    await delay();
-    const scenes = getDbData(STORAGE_KEYS.SCENES);
-    const index = scenes.findIndex(s => s.id === updatedScene.id);
-    if (index !== -1) {
-      scenes[index] = { ...scenes[index], ...updatedScene };
-      setDbData(STORAGE_KEYS.SCENES, scenes);
-      return scenes[index];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scenes')
+        .update({
+          scene_number: updatedScene.scene_number,
+          setting: updatedScene.setting,
+          int_ext: updatedScene.int_ext,
+          day_night: updatedScene.day_night,
+          description: updatedScene.description,
+          cast: updatedScene.cast,
+          location: updatedScene.location,
+          props: updatedScene.props,
+          wardrobe: updatedScene.wardrobe,
+          tech_notes: updatedScene.tech_notes,
+          status: updatedScene.status
+        })
+        .eq('id', updatedScene.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      const index = scenes.findIndex(s => s.id === updatedScene.id);
+      if (index !== -1) {
+        scenes[index] = { ...scenes[index], ...updatedScene };
+        setDbData(STORAGE_KEYS.SCENES, scenes);
+        return scenes[index];
+      }
+      throw new Error('Scene not found');
     }
-    throw new Error('Scene not found');
   },
 
   async deleteScene(sceneId) {
-    await delay();
-    const scenes = getDbData(STORAGE_KEYS.SCENES);
-    const filteredScenes = scenes.filter(s => s.id !== sceneId);
-    setDbData(STORAGE_KEYS.SCENES, filteredScenes);
-    return true;
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('scenes')
+        .delete()
+        .eq('id', sceneId);
+      if (error) throw error;
+      return true;
+    } else {
+      await delay();
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      const filteredScenes = scenes.filter(s => s.id !== sceneId);
+      setDbData(STORAGE_KEYS.SCENES, filteredScenes);
+      return true;
+    }
   },
 
   // ================= EVENTS / CALENDAR API =================
   async getEvents(projectId) {
-    await delay();
-    const events = getDbData(STORAGE_KEYS.EVENTS);
-    return events.filter(e => e.project_id === projectId);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('project_id', projectId);
+      if (error) {
+        console.error('Supabase error fetching events, falling back:', error);
+        return getDbData(STORAGE_KEYS.EVENTS).filter(e => e.project_id === projectId);
+      }
+      return data || [];
+    } else {
+      await delay();
+      const events = getDbData(STORAGE_KEYS.EVENTS);
+      return events.filter(e => e.project_id === projectId);
+    }
   },
 
   async saveEvents(projectId, projectEvents) {
-    await delay();
-    const globalEvents = getDbData(STORAGE_KEYS.EVENTS);
-    const remaining = globalEvents.filter(e => e.project_id !== projectId);
-    const updatedNew = projectEvents.map(e => ({ 
-      ...e, 
-      project_id: projectId,
-      id: e.id || `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }));
-    setDbData(STORAGE_KEYS.EVENTS, [...remaining, ...updatedNew]);
-    return updatedNew;
+    if (isSupabaseConfigured) {
+      // Delete old events for this project
+      const { error: delError } = await supabase
+        .from('events')
+        .delete()
+        .eq('project_id', projectId);
+      if (delError) throw delError;
+
+      const updatedNew = projectEvents.map(e => ({ 
+        id: e.id && !e.id.startsWith('temp-') ? e.id : `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        project_id: projectId,
+        title: e.title || { th: '', en: '' },
+        date: e.date,
+        time: e.time || '',
+        location: e.location || { th: '', en: '' },
+        scene_number: e.scene_number || '',
+        crew_assigned: e.crew_assigned || [],
+        notes: e.notes || { th: '', en: '' }
+      }));
+
+      if (updatedNew.length > 0) {
+        const { error: insError } = await supabase
+          .from('events')
+          .insert(updatedNew);
+        if (insError) throw insError;
+      }
+      return updatedNew;
+    } else {
+      await delay();
+      const globalEvents = getDbData(STORAGE_KEYS.EVENTS);
+      const remaining = globalEvents.filter(e => e.project_id !== projectId);
+      const updatedNew = projectEvents.map(e => ({ 
+        ...e, 
+        project_id: projectId,
+        id: e.id && !e.id.startsWith('temp-') ? e.id : `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      }));
+      setDbData(STORAGE_KEYS.EVENTS, [...remaining, ...updatedNew]);
+      return updatedNew;
+    }
   },
 
   // ================= SHOT LIST API =================
   async getShotList(projectId) {
-    await delay();
-    const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
-    return shots.filter(s => s.project_id === projectId);
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('shot_list')
+        .select('*')
+        .eq('project_id', projectId);
+      if (error) {
+        console.error('Supabase error fetching shotlist, falling back:', error);
+        return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
+      }
+      return data || [];
+    } else {
+      await delay();
+      const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
+      return shots.filter(s => s.project_id === projectId);
+    }
   },
 
   async saveShotList(projectId, projectShots) {
-    await delay();
-    const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
-    const remaining = globalShots.filter(s => s.project_id !== projectId);
-    const updatedNew = projectShots.map(s => ({ 
-      ...s, 
-      project_id: projectId
-    }));
-    setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
-    return updatedNew;
+    if (isSupabaseConfigured) {
+      const { error: delError } = await supabase
+        .from('shot_list')
+        .delete()
+        .eq('project_id', projectId);
+      if (delError) throw delError;
+
+      const updatedNew = projectShots.map(s => ({
+        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        project_id: projectId,
+        scene_id: s.scene_id || null,
+        shot_number: s.shot_number || '',
+        size: s.size || '',
+        angle: s.angle || '',
+        movement: s.movement || '',
+        equipment: s.equipment || '',
+        description: s.description || { th: '', en: '' },
+        cast_assigned: s.cast_assigned || []
+      }));
+
+      if (updatedNew.length > 0) {
+        const { error: insError } = await supabase
+          .from('shot_list')
+          .insert(updatedNew);
+        if (insError) throw insError;
+      }
+      return updatedNew;
+    } else {
+      await delay();
+      const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
+      const remaining = globalShots.filter(s => s.project_id !== projectId);
+      const updatedNew = projectShots.map(s => ({ 
+        ...s, 
+        project_id: projectId,
+        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      }));
+      setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
+      return updatedNew;
+    }
   },
 
   // ================= COMPLETED TASKS API =================
   async getCompletedTasks(projectId) {
-    await delay();
-    const allTasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
-    const projectTasks = {};
-    Object.keys(allTasks).forEach(k => {
-      if (k.startsWith(`${projectId}-`)) {
-        const cleanKey = k.substring(projectId.length + 1);
-        projectTasks[cleanKey] = allTasks[k];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('completed_tasks')
+        .select('*')
+        .eq('project_id', projectId);
+      if (error) {
+        console.error('Supabase error fetching tasks, falling back:', error);
+        return getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
       }
-    });
-    return projectTasks;
+      const projectTasks = {};
+      if (data) {
+        data.forEach(row => {
+          projectTasks[row.task_key] = row.value;
+        });
+      }
+      return projectTasks;
+    } else {
+      await delay();
+      const allTasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
+      const projectTasks = {};
+      Object.keys(allTasks).forEach(k => {
+        if (k.startsWith(`${projectId}-`)) {
+          const cleanKey = k.substring(projectId.length + 1);
+          projectTasks[cleanKey] = allTasks[k];
+        }
+      });
+      return projectTasks;
+    }
   },
 
   async saveCompletedTasks(projectId, projectTasks) {
-    await delay();
-    const allTasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
-    
-    // Clean old keys for this project
-    Object.keys(allTasks).forEach(k => {
-      if (k.startsWith(`${projectId}-`)) {
-        delete allTasks[k];
+    if (isSupabaseConfigured) {
+      const { error: delError } = await supabase
+        .from('completed_tasks')
+        .delete()
+        .eq('project_id', projectId);
+      if (delError) throw delError;
+
+      const rows = Object.keys(projectTasks).map(k => ({
+        project_id: projectId,
+        task_key: k,
+        value: !!projectTasks[k]
+      }));
+
+      if (rows.length > 0) {
+        const { error: insError } = await supabase
+          .from('completed_tasks')
+          .insert(rows);
+        if (insError) throw insError;
       }
-    });
+      return projectTasks;
+    } else {
+      await delay();
+      const allTasks = getDbData(STORAGE_KEYS.COMPLETED_TASKS, {});
+      
+      // Clean old keys for this project
+      Object.keys(allTasks).forEach(k => {
+        if (k.startsWith(`${projectId}-`)) {
+          delete allTasks[k];
+        }
+      });
 
-    // Add new ones
-    Object.keys(projectTasks).forEach(k => {
-      allTasks[`${projectId}-${k}`] = projectTasks[k];
-    });
+      // Add new ones
+      Object.keys(projectTasks).forEach(k => {
+        allTasks[`${projectId}-${k}`] = projectTasks[k];
+      });
 
-    setDbData(STORAGE_KEYS.COMPLETED_TASKS, allTasks);
-    return projectTasks;
+      setDbData(STORAGE_KEYS.COMPLETED_TASKS, allTasks);
+      return projectTasks;
+    }
   },
 
   // ================= CONFLICT CHECKER API =================
-  // Checks if a crew member has any bookings or event assignments on a specific date across ALL projects
   async checkCrewConflict(crewId, dateStr, excludeProjectId = null) {
-    await delay();
-    
-    // 1. Check if dates are in the crew member's profile
-    const crew = getDbData(STORAGE_KEYS.CREW);
-    const member = crew.find(c => c.id === crewId);
-    if (member && member.booked_dates && member.booked_dates.includes(dateStr)) {
-      return {
-        hasConflict: true,
-        reason: 'profile_booking',
-        messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})`,
-        messageEn: `This date is blocked in their personal profile (${dateStr})`
-      };
+    if (isSupabaseConfigured) {
+      // 1. Check profile booked_dates
+      const { data: crewMember, error: crewError } = await supabase
+        .from('crew')
+        .select('booked_dates')
+        .eq('id', crewId)
+        .single();
+      
+      if (!crewError && crewMember && crewMember.booked_dates && crewMember.booked_dates.includes(dateStr)) {
+        return {
+          hasConflict: true,
+          reason: 'profile_booking',
+          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})`,
+          messageEn: `This date is blocked in their personal profile (${dateStr})`
+        };
+      }
+
+      // 2. Check collision in events
+      const { data: events, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('date', dateStr);
+
+      if (!eventsError && events) {
+        const conflictingEvent = events.find(e => {
+          if (!e.crew_assigned || !e.crew_assigned.includes(crewId)) return false;
+          if (excludeProjectId && e.project_id === excludeProjectId) return false;
+          return true;
+        });
+
+        if (conflictingEvent) {
+          const { data: project } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', conflictingEvent.project_id)
+            .single();
+
+          const projectTitle = project ? project.title : { th: 'โปรเจกต์อื่น', en: 'Another Project' };
+          const eventTitle = conflictingEvent.title || { th: 'งานนัดหมาย', en: 'Booking' };
+
+          return {
+            hasConflict: true,
+            reason: 'event_collision',
+            project_id: conflictingEvent.project_id,
+            project_title: projectTitle,
+            event_title: eventTitle,
+            scene_number: conflictingEvent.scene_number || null,
+            messageTh: `ชนคิวกับโปรเจกต์ "${projectTitle.th}" ในกิจกรรม "${eventTitle.th}" วันที่ ${dateStr}`,
+            messageEn: `Double-booked with project "${projectTitle.en}" on event "${eventTitle.en}" on ${dateStr}`
+          };
+        }
+      }
+      return { hasConflict: false };
+    } else {
+      await delay();
+      
+      const crew = getDbData(STORAGE_KEYS.CREW);
+      const member = crew.find(c => c.id === crewId);
+      if (member && member.booked_dates && member.booked_dates.includes(dateStr)) {
+        return {
+          hasConflict: true,
+          reason: 'profile_booking',
+          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})`,
+          messageEn: `This date is blocked in their personal profile (${dateStr})`
+        };
+      }
+
+      const events = getDbData(STORAGE_KEYS.EVENTS);
+      const conflictingEvent = events.find(e => {
+        if (e.date !== dateStr) return false;
+        if (!e.crew_assigned || !e.crew_assigned.includes(crewId)) return false;
+        if (excludeProjectId && e.project_id === excludeProjectId) return false;
+        return true;
+      });
+
+      if (conflictingEvent) {
+        const projects = getDbData(STORAGE_KEYS.PROJECTS);
+        const project = projects.find(p => p.id === conflictingEvent.project_id);
+        const projectTitle = project ? project.title : { th: 'โปรเจกต์อื่น', en: 'Another Project' };
+        const eventTitle = conflictingEvent.title || { th: 'งานนัดหมาย', en: 'Booking' };
+
+        return {
+          hasConflict: true,
+          reason: 'event_collision',
+          project_id: conflictingEvent.project_id,
+          project_title: projectTitle,
+          event_title: eventTitle,
+          scene_number: conflictingEvent.scene_number || null,
+          messageTh: `ชนคิวกับโปรเจกต์ "${projectTitle.th}" ในกิจกรรม "${eventTitle.th}" วันที่ ${dateStr}`,
+          messageEn: `Double-booked with project "${projectTitle.en}" on event "${eventTitle.en}" on ${dateStr}`
+        };
+      }
+
+      return { hasConflict: false };
     }
-
-    // 2. Query all active events across all projects in the database
-    const events = getDbData(STORAGE_KEYS.EVENTS);
-    const conflictingEvent = events.find(e => {
-      // Must be the same date
-      if (e.date !== dateStr) return false;
-      // Must have the crew member assigned
-      if (!e.crew_assigned || !e.crew_assigned.includes(crewId)) return false;
-      // Optional: Exclude current project if editing
-      if (excludeProjectId && e.project_id === excludeProjectId) return false;
-      return true;
-    });
-
-    if (conflictingEvent) {
-      // Find project details to provide a rich description
-      const projects = getDbData(STORAGE_KEYS.PROJECTS);
-      const project = projects.find(p => p.id === conflictingEvent.project_id);
-      const projectTitle = project ? project.title : { th: 'โปรเจกต์อื่น', en: 'Another Project' };
-      const eventTitle = conflictingEvent.title || { th: 'งานนัดหมาย', en: 'Booking' };
-
-      return {
-        hasConflict: true,
-        reason: 'event_collision',
-        project_id: conflictingEvent.project_id,
-        project_title: projectTitle,
-        event_title: eventTitle,
-        scene_number: conflictingEvent.scene_number || null,
-        messageTh: `ชนคิวกับโปรเจกต์ "${projectTitle.th}" ในกิจกรรม "${eventTitle.th}" วันที่ ${dateStr}`,
-        messageEn: `Double-booked with project "${projectTitle.en}" on event "${eventTitle.en}" on ${dateStr}`
-      };
-    }
-
-    return { hasConflict: false };
   },
 
   // ================= SCREENPLAY EDITOR API =================
   async getScript(projectId) {
-    await delay();
-    const scripts = getDbData(STORAGE_KEYS.SCRIPTS, {});
-    return scripts[projectId] || [];
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scripts')
+        .select('blocks')
+        .eq('project_id', projectId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') { // PGRST116 is code for no rows returned, which is normal for new projects
+          console.error('Supabase error fetching script, falling back:', error);
+        }
+        const localScripts = getDbData(STORAGE_KEYS.SCRIPTS, {});
+        return localScripts[projectId] || [];
+      }
+      return data ? data.blocks : [];
+    } else {
+      await delay();
+      const scripts = getDbData(STORAGE_KEYS.SCRIPTS, {});
+      return scripts[projectId] || [];
+    }
   },
 
   async saveScript(projectId, blocks) {
-    await delay();
-    const scripts = getDbData(STORAGE_KEYS.SCRIPTS, {});
-    scripts[projectId] = blocks;
-    setDbData(STORAGE_KEYS.SCRIPTS, scripts);
-    
-    // Auto-sync script to script breakdown scenes
-    await this.syncScriptToBreakdown(projectId, blocks);
-    
-    return blocks;
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scripts')
+        .upsert({ project_id: projectId, blocks })
+        .select()
+        .single();
+      if (error) throw error;
+      
+      // Auto-sync script to script breakdown scenes
+      await this.syncScriptToBreakdown(projectId, blocks);
+      return blocks;
+    } else {
+      await delay();
+      const scripts = getDbData(STORAGE_KEYS.SCRIPTS, {});
+      scripts[projectId] = blocks;
+      setDbData(STORAGE_KEYS.SCRIPTS, scripts);
+      
+      // Auto-sync script to script breakdown scenes
+      await this.syncScriptToBreakdown(projectId, blocks);
+      return blocks;
+    }
   },
 
   async syncScriptToBreakdown(projectId, blocks) {
@@ -397,14 +758,11 @@ export const api = {
 
     blocks.forEach((block) => {
       if (block.type === 'heading') {
-        // Save previous scene
         if (currentScene) {
           parsedScenes.push(currentScene);
         }
-        
         sceneIndex += 1;
         const { int_ext, setting, day_night } = parseHeading(block.text);
-        
         currentScene = {
           scene_number: String(sceneIndex),
           setting: setting || 'UNNAMED SCENE',
@@ -429,61 +787,163 @@ export const api = {
       parsedScenes.push(currentScene);
     }
 
-    // 2. Fetch existing scenes
-    const allScenes = getDbData(STORAGE_KEYS.SCENES);
-    const otherProjectScenes = allScenes.filter(s => s.project_id !== projectId);
-    const existingProjectScenes = allScenes.filter(s => s.project_id === projectId);
+    if (isSupabaseConfigured) {
+      // Fetch existing scenes
+      const { data: existingProjectScenes } = await supabase
+        .from('scenes')
+        .select('*')
+        .eq('project_id', projectId);
 
-    // 3. Merge parsed scenes with existing breakdown metadata
-    const finalProjectScenes = parsedScenes.map((parsed) => {
-      const match = existingProjectScenes.find(s => s.scene_number === parsed.scene_number);
-      
-      const descText = parsed.description_blocks.join(' ');
-      const castText = Array.from(parsed.character_blocks).join(', ');
+      const finalProjectScenes = parsedScenes.map((parsed) => {
+        const match = existingProjectScenes?.find(s => s.scene_number === parsed.scene_number);
+        const descText = parsed.description_blocks.join(' ');
+        const castText = Array.from(parsed.character_blocks).join(', ');
 
-      if (match) {
-        return {
-          ...match,
-          setting: parsed.setting,
-          int_ext: parsed.int_ext,
-          day_night: parsed.day_night,
-          description: {
-            th: descText || match.description.th || '',
-            en: descText || match.description.en || ''
-          },
-          cast: {
-            th: castText || match.cast.th || '',
-            en: castText || match.cast.en || ''
-          }
-        };
-      } else {
-        return {
-          id: `scene-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          project_id: projectId,
-          scene_number: parsed.scene_number,
-          setting: parsed.setting,
-          int_ext: parsed.int_ext,
-          day_night: parsed.day_night,
-          description: { th: descText, en: descText },
-          cast: { th: castText, en: castText },
-          location: { th: '', en: '' },
-          props: { th: '', en: '' },
-          wardrobe: { th: '', en: '' },
-          tech_notes: { th: '', en: '' },
-          status: 'pending'
-        };
+        if (match) {
+          return {
+            id: match.id,
+            project_id: projectId,
+            scene_number: parsed.scene_number,
+            setting: parsed.setting,
+            int_ext: parsed.int_ext,
+            day_night: parsed.day_night,
+            description: {
+              th: descText || match.description?.th || '',
+              en: descText || match.description?.en || ''
+            },
+            cast: {
+              th: castText || match.cast?.th || '',
+              en: castText || match.cast?.en || ''
+            },
+            location: match.location || { th: '', en: '' },
+            props: match.props || { th: '', en: '' },
+            wardrobe: match.wardrobe || { th: '', en: '' },
+            tech_notes: match.tech_notes || { th: '', en: '' },
+            status: match.status || 'pending'
+          };
+        } else {
+          return {
+            id: `scene-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            project_id: projectId,
+            scene_number: parsed.scene_number,
+            setting: parsed.setting,
+            int_ext: parsed.int_ext,
+            day_night: parsed.day_night,
+            description: { th: descText, en: descText },
+            cast: { th: castText, en: castText },
+            location: { th: '', en: '' },
+            props: { th: '', en: '' },
+            wardrobe: { th: '', en: '' },
+            tech_notes: { th: '', en: '' },
+            status: 'pending'
+          };
+        }
+      });
+
+      // Upsert scenes to Supabase
+      if (finalProjectScenes.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('scenes')
+          .upsert(finalProjectScenes);
+        if (upsertError) console.error('Failed to sync scenes to Supabase:', upsertError);
       }
-    });
+    } else {
+      const allScenes = getDbData(STORAGE_KEYS.SCENES);
+      const otherProjectScenes = allScenes.filter(s => s.project_id !== projectId);
+      const existingProjectScenes = allScenes.filter(s => s.project_id === projectId);
 
-    // 4. Save merged scenes
-    setDbData(STORAGE_KEYS.SCENES, [...otherProjectScenes, ...finalProjectScenes]);
+      const finalProjectScenes = parsedScenes.map((parsed) => {
+        const match = existingProjectScenes.find(s => s.scene_number === parsed.scene_number);
+        const descText = parsed.description_blocks.join(' ');
+        const castText = Array.from(parsed.character_blocks).join(', ');
+
+        if (match) {
+          return {
+            ...match,
+            setting: parsed.setting,
+            int_ext: parsed.int_ext,
+            day_night: parsed.day_night,
+            description: {
+              th: descText || match.description.th || '',
+              en: descText || match.description.en || ''
+            },
+            cast: {
+              th: castText || match.cast.th || '',
+              en: castText || match.cast.en || ''
+            }
+          };
+        } else {
+          return {
+            id: `scene-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            project_id: projectId,
+            scene_number: parsed.scene_number,
+            setting: parsed.setting,
+            int_ext: parsed.int_ext,
+            day_night: parsed.day_night,
+            description: { th: descText, en: descText },
+            cast: { th: castText, en: castText },
+            location: { th: '', en: '' },
+            props: { th: '', en: '' },
+            wardrobe: { th: '', en: '' },
+            tech_notes: { th: '', en: '' },
+            status: 'pending'
+          };
+        }
+      });
+
+      setDbData(STORAGE_KEYS.SCENES, [...otherProjectScenes, ...finalProjectScenes]);
+    }
   },
 
   // ================= STORY PLANNER / OUTLINE API =================
   async getStoryOutline(projectId) {
-    await delay();
-    const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-    return outlines[projectId] || {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('story_outlines')
+        .select('*')
+        .eq('project_id', projectId)
+        .single();
+      
+      if (error) {
+        if (error.code !== 'PGRST116') {
+          console.error('Supabase error fetching outline, falling back:', error);
+        }
+        const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
+        return outlines[projectId] || this.getDefaultStoryOutline();
+      }
+      return data || this.getDefaultStoryOutline();
+    } else {
+      await delay();
+      const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
+      return outlines[projectId] || this.getDefaultStoryOutline();
+    }
+  },
+
+  async saveStoryOutline(projectId, outlineData) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('story_outlines')
+        .upsert({
+          project_id: projectId,
+          plotlines: outlineData.plotlines,
+          characters: outlineData.characters,
+          beats: outlineData.beats
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return outlineData;
+    } else {
+      await delay();
+      const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
+      outlines[projectId] = outlineData;
+      setDbData(STORAGE_KEYS.STORY_OUTLINE, outlines);
+      return outlineData;
+    }
+  },
+
+  getDefaultStoryOutline() {
+    return {
       plotlines: [
         { 
           id: 'p1', 
@@ -545,11 +1005,65 @@ export const api = {
     };
   },
 
-  async saveStoryOutline(projectId, outlineData) {
-    await delay();
-    const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-    outlines[projectId] = outlineData;
-    setDbData(STORAGE_KEYS.STORY_OUTLINE, outlines);
-    return outlineData;
+  // ================= SYSTEM USERS API =================
+  async getUsers() {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Supabase error fetching users, falling back:', error);
+        return getDbData(STORAGE_KEYS.USERS, []);
+      }
+      return data || [];
+    } else {
+      await delay();
+      return getDbData(STORAGE_KEYS.USERS, []);
+    }
+  },
+
+  async createUser(name, email, password, role) {
+    const newUser = {
+      id: `u-${Date.now()}`,
+      name,
+      email,
+      password,
+      role,
+      created_at: new Date().toISOString()
+    };
+
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('users')
+        .insert([newUser])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const users = getDbData(STORAGE_KEYS.USERS, []);
+      users.push(newUser);
+      setDbData(STORAGE_KEYS.USERS, users);
+      return newUser;
+    }
+  },
+
+  async deleteUser(userId) {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+      if (error) throw error;
+      return true;
+    } else {
+      await delay();
+      const users = getDbData(STORAGE_KEYS.USERS, []);
+      const filtered = users.filter(u => u.id !== userId);
+      setDbData(STORAGE_KEYS.USERS, filtered);
+      return true;
+    }
   }
 };
