@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS public.scenes (
     int_ext TEXT NOT NULL DEFAULT 'INT',
     day_night TEXT NOT NULL DEFAULT 'DAY',
     description JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
-    cast JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
+    "cast" JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
     location JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
     props JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
     wardrobe JSONB NOT NULL DEFAULT '{"th": "", "en": ""}'::jsonb,
