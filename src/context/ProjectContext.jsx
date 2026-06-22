@@ -339,16 +339,8 @@ export const ProjectProvider = ({ children }) => {
   const handleImportDatabase = async (importedData) => {
     try {
       setIsLoading(true);
-      if (importedData.projects) localStorage.setItem('prod_api_projects', JSON.stringify(importedData.projects));
-      if (importedData.crew) localStorage.setItem('prod_api_crew', JSON.stringify(importedData.crew));
-      if (importedData.scenes) localStorage.setItem('prod_api_scenes', JSON.stringify(importedData.scenes));
-      if (importedData.events) localStorage.setItem('prod_api_events', JSON.stringify(importedData.events));
-      if (importedData.shotList) localStorage.setItem('prod_api_shot_list', JSON.stringify(importedData.shotList));
-      if (importedData.completedTasks) localStorage.setItem('prod_api_completed_tasks', JSON.stringify(importedData.completedTasks));
-      if (importedData.scripts) localStorage.setItem('prod_api_scripts', JSON.stringify(importedData.scripts));
-      if (importedData.storyOutline) localStorage.setItem('prod_api_story_outline', JSON.stringify(importedData.storyOutline));
-
-      // Reload window to trigger initial load from localStorage
+      await api.importAllData(importedData);
+      // Reload window to trigger initial load from DB
       window.location.reload();
     } catch (err) {
       alert('Failed to parse database file: ' + err.message);
@@ -357,18 +349,17 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
-  const handleResetDatabase = () => {
+  const handleResetDatabase = async () => {
     if (window.confirm('Are you sure you want to reset all data? This will erase all custom projects and entries.')) {
-      localStorage.removeItem('prod_api_projects');
-      localStorage.removeItem('prod_api_crew');
-      localStorage.removeItem('prod_api_scenes');
-      localStorage.removeItem('prod_api_events');
-      localStorage.removeItem('prod_api_shot_list');
-      localStorage.removeItem('prod_api_completed_tasks');
-      localStorage.removeItem('prod_api_scripts');
-      localStorage.removeItem('prod_api_story_outline');
-      localStorage.removeItem('prod_current_project_id');
-      window.location.reload();
+      try {
+        setIsLoading(true);
+        await api.resetAllData();
+        window.location.reload();
+      } catch (err) {
+        alert("Failed to reset database: " + err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 

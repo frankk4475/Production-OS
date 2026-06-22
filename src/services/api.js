@@ -1065,5 +1065,153 @@ export const api = {
       setDbData(STORAGE_KEYS.USERS, filtered);
       return true;
     }
+  },
+
+  async importAllData(importedData) {
+    if (isSupabaseConfigured) {
+      // 1. Delete all current data in the correct foreign key order
+      await supabase.from('completed_tasks').delete().neq('project_id', '');
+      await supabase.from('scripts').delete().neq('project_id', '');
+      await supabase.from('story_outlines').delete().neq('project_id', '');
+      await supabase.from('shot_list').delete().neq('project_id', '');
+      await supabase.from('events').delete().neq('project_id', '');
+      await supabase.from('scenes').delete().neq('project_id', '');
+      await supabase.from('projects').delete().neq('id', '');
+      await supabase.from('crew').delete().neq('id', '');
+
+      // 2. Insert Projects
+      if (importedData.projects && importedData.projects.length > 0) {
+        const { error } = await supabase.from('projects').insert(importedData.projects);
+        if (error) throw error;
+      }
+
+      // 3. Insert Crew
+      if (importedData.crew && importedData.crew.length > 0) {
+        const { error } = await supabase.from('crew').insert(importedData.crew);
+        if (error) throw error;
+      }
+
+      // 4. Insert Scenes
+      if (importedData.scenes && importedData.scenes.length > 0) {
+        const { error } = await supabase.from('scenes').insert(importedData.scenes);
+        if (error) throw error;
+      }
+
+      // 5. Insert Events
+      if (importedData.events && importedData.events.length > 0) {
+        const { error } = await supabase.from('events').insert(importedData.events);
+        if (error) throw error;
+      }
+
+      // 6. Insert Shot List
+      if (importedData.shotList && importedData.shotList.length > 0) {
+        const mappedShots = importedData.shotList.map(s => ({
+          id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          project_id: s.project_id,
+          scene_id: s.scene_id || null,
+          shot_number: s.shot_number || '',
+          size: s.size || '',
+          angle: s.angle || '',
+          movement: s.movement || '',
+          equipment: s.equipment || '',
+          description: s.description || { th: '', en: '' },
+          cast_assigned: s.cast_assigned || []
+        }));
+        const { error } = await supabase.from('shot_list').insert(mappedShots);
+        if (error) throw error;
+      }
+
+      // 7. Insert Completed Tasks
+      if (importedData.completedTasks) {
+        const taskRows = [];
+        Object.keys(importedData.completedTasks).forEach(fullKey => {
+          const matchProj = importedData.projects?.find(p => fullKey.startsWith(`${p.id}-`));
+          if (matchProj) {
+            const projectId = matchProj.id;
+            const taskKey = fullKey.substring(projectId.length + 1);
+            taskRows.push({
+              project_id: projectId,
+              task_key: taskKey,
+              value: !!importedData.completedTasks[fullKey]
+            });
+          }
+        });
+        if (taskRows.length > 0) {
+          const { error } = await supabase.from('completed_tasks').insert(taskRows);
+          if (error) throw error;
+        }
+      }
+
+      // 8. Insert Scripts
+      if (importedData.scripts) {
+        const scriptRows = [];
+        Object.keys(importedData.scripts).forEach(projId => {
+          scriptRows.push({
+            project_id: projId,
+            blocks: importedData.scripts[projId]
+          });
+        });
+        if (scriptRows.length > 0) {
+          const { error } = await supabase.from('scripts').insert(scriptRows);
+          if (error) throw error;
+        }
+      }
+
+      // 9. Insert Story Outlines
+      if (importedData.storyOutline) {
+        const outlineRows = [];
+        Object.keys(importedData.storyOutline).forEach(projId => {
+          const outline = importedData.storyOutline[projId];
+          outlineRows.push({
+            project_id: projId,
+            plotlines: outline.plotlines || [],
+            characters: outline.characters || [],
+            beats: outline.beats || []
+          });
+        });
+        if (outlineRows.length > 0) {
+          const { error } = await supabase.from('story_outlines').insert(outlineRows);
+          if (error) throw error;
+        }
+      }
+      return true;
+    } else {
+      await delay();
+      if (importedData.projects) localStorage.setItem('prod_api_projects', JSON.stringify(importedData.projects));
+      if (importedData.crew) localStorage.setItem('prod_api_crew', JSON.stringify(importedData.crew));
+      if (importedData.scenes) localStorage.setItem('prod_api_scenes', JSON.stringify(importedData.scenes));
+      if (importedData.events) localStorage.setItem('prod_api_events', JSON.stringify(importedData.events));
+      if (importedData.shotList) localStorage.setItem('prod_api_shot_list', JSON.stringify(importedData.shotList));
+      if (importedData.completedTasks) localStorage.setItem('prod_api_completed_tasks', JSON.stringify(importedData.completedTasks));
+      if (importedData.scripts) localStorage.setItem('prod_api_scripts', JSON.stringify(importedData.scripts));
+      if (importedData.storyOutline) localStorage.setItem('prod_api_story_outline', JSON.stringify(importedData.storyOutline));
+      return true;
+    }
+  },
+
+  async resetAllData() {
+    if (isSupabaseConfigured) {
+      await supabase.from('completed_tasks').delete().neq('project_id', '');
+      await supabase.from('scripts').delete().neq('project_id', '');
+      await supabase.from('story_outlines').delete().neq('project_id', '');
+      await supabase.from('shot_list').delete().neq('project_id', '');
+      await supabase.from('events').delete().neq('project_id', '');
+      await supabase.from('scenes').delete().neq('project_id', '');
+      await supabase.from('projects').delete().neq('id', '');
+      await supabase.from('crew').delete().neq('id', '');
+      return true;
+    } else {
+      await delay();
+      localStorage.removeItem('prod_api_projects');
+      localStorage.removeItem('prod_api_crew');
+      localStorage.removeItem('prod_api_scenes');
+      localStorage.removeItem('prod_api_events');
+      localStorage.removeItem('prod_api_shot_list');
+      localStorage.removeItem('prod_api_completed_tasks');
+      localStorage.removeItem('prod_api_scripts');
+      localStorage.removeItem('prod_api_story_outline');
+      localStorage.removeItem('prod_current_project_id');
+      return true;
+    }
   }
 };
