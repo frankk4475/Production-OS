@@ -32,6 +32,9 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   // Selected Scene State (shared across all tabs)
   const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (scenes[0]?.scene_number || '1'));
   
+  // Print Orientation State
+  const [printOrientation, setPrintOrientation] = useState('portrait'); // 'portrait' | 'landscape'
+
   // Inline edit state for editing storyboard/shot details
   const [editingShot, setEditingShot] = useState(null);
 
@@ -87,7 +90,9 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
       }
     };
 
-    setShotList(prev => [...prev, newShot]);
+    const newShots = [...shotList, newShot];
+    setShotList(newShots);
+    
     setNewShotNum('');
     setNewShotDescTh('');
     setNewShotDescEn('');
@@ -96,7 +101,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   // Delete shot from list
   const handleDeleteShot = (shotId) => {
     if (window.confirm(language === 'th' ? 'ต้องการลบช็อตนี้ใช่หรือไม่?' : 'Are you sure you want to delete this shot?')) {
-      setShotList(prev => prev.filter(s => s.id !== shotId));
+      const newShots = shotList.filter(s => s.id !== shotId);
+      setShotList(newShots);
     }
   };
 
@@ -120,7 +126,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         image_url: ''
       }
     };
-    setShotList(prev => [...prev, newShot]);
+    const newShots = [...shotList, newShot];
+    setShotList(newShots);
   };
 
   // Handle file uploads for storyboards, convert to base64
@@ -131,7 +138,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target.result;
-      setShotList(prev => prev.map(s => {
+      const newShots = shotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
@@ -142,7 +149,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
           };
         }
         return s;
-      }));
+      });
+      setShotList(newShots);
     };
     reader.readAsDataURL(file);
   };
@@ -150,7 +158,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   // Remove image from storyboard
   const handleRemoveImage = (shotId) => {
     if (window.confirm(language === 'th' ? 'ต้องการลบรูปภาพสตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Are you sure you want to remove this storyboard image?')) {
-      setShotList(prev => prev.map(s => {
+      const newShots = shotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
@@ -161,7 +169,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
           };
         }
         return s;
-      }));
+      });
+      setShotList(newShots);
     }
   };
 
@@ -173,7 +182,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   // Save the inline edited details
   const saveEditedShot = () => {
     if (!editingShot) return;
-    setShotList(prev => prev.map(s => {
+    const newShots = shotList.map(s => {
       if (s.id === editingShot.id) {
         const num = editingShot.shotNum || editingShot.shot_number;
         const sz = editingShot.type || editingShot.size;
@@ -186,7 +195,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         };
       }
       return s;
-    }));
+    });
+    setShotList(newShots);
     setEditingShot(null);
   };
 
@@ -212,6 +222,18 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   return (
     <div className="space-y-6 animate-fadeIn">
       
+      {/* Dynamic Printing Style Hook (No Print) */}
+      <style>
+        {`
+          @media print {
+            @page {
+              size: ${printOrientation};
+              margin: 15mm;
+            }
+          }
+        `}
+      </style>
+
       {/* Title Hub & Documents Sub Navigation (No Print) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
         <div>
@@ -269,6 +291,21 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
               </button>
             </div>
           )}
+
+          {/* Print orientation switcher */}
+          <div className="flex items-center gap-2 border border-slate-200 dark:border-obsidian-800 rounded-lg p-1.5 bg-white dark:bg-obsidian-950 no-print">
+            <span className="text-[10px] font-bold text-slate-400 uppercase pl-1.5">{language === 'th' ? 'เลย์เอาต์พิมพ์:' : 'Print Layout:'}</span>
+            <select
+              value={printOrientation}
+              onChange={(e) => setPrintOrientation(e.target.value)}
+              className={`px-2 py-1 rounded text-xs font-semibold focus:outline-none ${
+                theme === 'dark' ? 'bg-obsidian-900 border-obsidian-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-705'
+              }`}
+            >
+              <option value="portrait">{language === 'th' ? 'แนวตั้ง (Portrait)' : 'Portrait'}</option>
+              <option value="landscape">{language === 'th' ? 'แนวนอน (Landscape)' : 'Landscape'}</option>
+            </select>
+          </div>
 
           <button
             onClick={handlePrint}
