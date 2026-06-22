@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --scrollbar-thumb: #cca43b;
+    --scrollbar-track: #1e1e1e;
+  }
+
+  body {
+    @apply font-sans bg-slate-50 text-slate-900 transition-colors duration-200 antialiased;
+  }
+
+  body.dark {
+    @apply bg-obsidian-950 text-slate-100;
+  }
+
+  /* Glassmorphism utility classes */
+  .glass-panel {
+    @apply bg-white/75 border border-slate-200/50 backdrop-blur-md shadow-sm;
+  }
+
+  .dark .glass-panel {
+    @apply bg-obsidian-900/60 border border-obsidian-800/40 backdrop-blur-md shadow-md;
+  }
+
+  .glass-card {
+    @apply bg-white/60 border border-slate-200/40 backdrop-blur-sm shadow-sm hover:border-slate-300/60 transition-all duration-300;
+  }
+
+  .dark .glass-card {
+    @apply bg-obsidian-800/45 border border-obsidian-800/20 backdrop-blur-sm shadow-md hover:border-gold-500/20 hover:shadow-gold-500/5 transition-all duration-300;
+  }
+
+  /* Custom Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 rounded-full;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-obsidian-800 rounded-full hover:bg-gold-500/50 transition-colors;
+  }
+
+  /* Print Styles for Call Sheet PDF & Production Documents */
+  @media print {
+    /* Hide layout sidebars, headers, mobile navigations, modal panels, buttons, and settings forms */
+    aside,
+    header,
+    nav,
+    form,
+    button,
+    select,
+    input,
+    textarea,
+    .no-print {
+      display: none !important;
+      height: 0 !important;
+      width: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      opacity: 0 !important;
+    }
+
+    /* Reset global canvas background and force high-contrast print colors */
+    html, body {
+      background: #ffffff !important;
+      color: #000000 !important;
+      font-size: 11pt !important;
+      font-family: 'Inter', 'Noto Sans Thai', serif !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: auto !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Configure A4 portrait page sizing and sheet margins */
+    @page {
+      size: A4 portrait;
+      margin: 15mm;
+    }
+
+    /* Expand main layout wrapper to consume full print width */
+    main,
+    .flex-1,
+    .main-content,
+    .print-container {
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      float: none !important;
+      position: relative !important;
+      background: #ffffff !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Force glass-panel and card designs to drop screen shadows and render as flat boxes */
+    .glass-panel, 
+    .glass-card,
+    .print-container {
+      background: #ffffff !important;
+      color: #000000 !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      padding: 1.5rem !important;
+      border-radius: 6px !important;
+      margin-bottom: 2rem !important;
+    }
+
+    /* Standardize table styling and cell spacing */
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin-top: 1rem !important;
+      margin-bottom: 1rem !important;
+    }
+
+    th, td {
+      border: 1px solid #94a3b8 !important;
+      padding: 8px 12px !important;
+      font-size: 9.5pt !important;
+      color: #000000 !important;
+      text-align: left !important;
+    }
+
+    th {
+      background-color: #f1f5f9 !important;
+      font-weight: bold !important;
+    }
+
+    /* Reset custom text headings to black color */
+    h1, h2, h3, h4, h5, h6, p, span, div, td, th {
+      color: #000000 !important;
+    }
+
+    .text-gold-500, .text-amber-500, .text-slate-400, .text-slate-300 {
+      color: #000000 !important;
+    }
+
+    /* Avoid splitting row contents or image cards across page breaks */
+    tr, 
+    img, 
+    .print-card,
+    .grid > div {
+      page-break-inside: avoid !important;
+    }
+
+    /* Prevent headings from being orphaned at the bottom of pages */
+    h1, h2, h3 {
+      page-break-after: avoid !important;
+    }
+
+    /* Layout specific tweaks for storyboard grid */
+    .grid {
+      display: block !important;
+    }
+    
+    .grid > div {
+      width: 100% !important;
+      margin-bottom: 15px !important;
+      border: 1px solid #cbd5e1 !important;
+      page-break-inside: avoid !important;
+    }
+  }
+}
