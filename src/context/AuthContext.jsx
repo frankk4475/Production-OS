@@ -7,7 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
     try {
       const saved = localStorage.getItem('prod_api_users');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       console.error("Error reading prod_api_users:", e);
       return [];
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('prod_api_users');
       const parsed = saved ? JSON.parse(saved) : [];
-      return parsed.length === 0;
+      return !Array.isArray(parsed) || parsed.length === 0;
     } catch (e) {
       return true;
     }

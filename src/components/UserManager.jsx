@@ -269,52 +269,55 @@ export default function UserManager() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => {
-                  const isCurrent = u.id === currentUser?.id;
-                  return (
-                    <tr 
-                      key={u.id} 
-                      className={`border-b border-slate-800/20 hover:bg-slate-900/10 dark:hover:bg-obsidian-900/40 transition-colors ${
-                        isCurrent ? 'bg-gold-500/5 dark:bg-gold-500/5 text-gold-500 font-medium' : ''
-                      }`}
-                    >
-                      <td className="py-3.5 px-2 flex items-center gap-1.5">
-                        <span>{u.name}</span>
-                        {isCurrent && (
-                          <span className="text-[8px] font-bold font-mono px-1.5 py-0.5 rounded bg-gold-500/15 text-gold-500 uppercase shrink-0">
-                            {language === 'th' ? 'คุณ' : 'You'}
+                {(() => {
+                  const safeUsers = Array.isArray(users) ? users : [];
+                  return safeUsers.map((u) => {
+                    const isCurrent = u.id === currentUser?.id;
+                    return (
+                      <tr 
+                        key={u.id} 
+                        className={`border-b border-slate-800/20 hover:bg-slate-900/10 dark:hover:bg-obsidian-900/40 transition-colors ${
+                          isCurrent ? 'bg-gold-500/5 dark:bg-gold-500/5 text-gold-500 font-medium' : ''
+                        }`}
+                      >
+                        <td className="py-3.5 px-2 flex items-center gap-1.5">
+                          <span>{u.name}</span>
+                          {isCurrent && (
+                            <span className="text-[8px] font-bold font-mono px-1.5 py-0.5 rounded bg-gold-500/15 text-gold-500 uppercase shrink-0">
+                              {language === 'th' ? 'คุณ' : 'You'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-2 text-slate-400 font-mono select-all">
+                          {u.email}
+                        </td>
+                        <td className="py-3.5 px-2">
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                            u.role === 'Producer' 
+                              ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                              : u.role === '1st_AD'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                          }`}>
+                            {getRoleLabel(u.role)}
                           </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-2 text-slate-400 font-mono select-all">
-                        {u.email}
-                      </td>
-                      <td className="py-3.5 px-2">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                          u.role === 'Producer' 
-                            ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
-                            : u.role === '1st_AD'
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                        }`}>
-                          {getRoleLabel(u.role)}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-2 text-right">
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.email)}
-                          disabled={isCurrent}
-                          className="p-1 rounded bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-20 transition-all cursor-pointer inline-flex"
-                          title={isCurrent ? "Cannot delete yourself" : "Delete account"}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td className="py-3.5 px-2 text-right">
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.email)}
+                            disabled={isCurrent}
+                            className="p-1 rounded bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-20 transition-all cursor-pointer inline-flex"
+                            title={isCurrent ? "Cannot delete yourself" : "Delete account"}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
 
-                {users.length === 0 && (
+                {(!Array.isArray(users) || users.length === 0) && (
                   <tr>
                     <td colSpan={4} className="py-12 text-center text-slate-500 italic">
                       {language === 'th' ? 'ไม่มีรายชื่อผู้ใช้งานลงทะเบียนในขณะนี้' : 'No registered users found.'}
