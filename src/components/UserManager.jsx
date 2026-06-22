@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useProject } from '../context/ProjectContext';
 import { 
   UserPlus, 
   Users,
@@ -26,6 +27,8 @@ export default function UserManager({ hideHeader = false }) {
     registerUserByAdmin, 
     deleteUserByAdmin 
   } = useAuth();
+
+  const { refreshCrew } = useProject();
 
   // New user form states
   const [name, setName] = useState('');
@@ -56,6 +59,7 @@ export default function UserManager({ hideHeader = false }) {
     setTimeout(async () => {
       try {
         await registerUserByAdmin(name, email, password, role);
+        if (refreshCrew) await refreshCrew();
         setSuccessMsg(language === 'th' ? 'สร้างบัญชีผู้ใช้งานสำเร็จ!' : 'User account created successfully!');
         
         // Reset form
@@ -84,6 +88,7 @@ export default function UserManager({ hideHeader = false }) {
     if (window.confirm(confirmMsg)) {
       try {
         await deleteUserByAdmin(userId);
+        if (refreshCrew) await refreshCrew();
       } catch (err) {
         alert(err.message);
       }

@@ -13,7 +13,10 @@ import {
   Camera, 
   Wrench,
   Clapperboard,
-  Bookmark
+  Bookmark,
+  Edit,
+  Trash2,
+  Upload
 } from 'lucide-react';
 
 export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, shotList, setShotList, lockedTab }) {
@@ -26,10 +29,13 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
     return lockedTab || 'callsheet';
   });
 
-  // Call Sheet State
+  // Selected Scene State (shared across all tabs)
   const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (scenes[0]?.scene_number || '1'));
   
-  // Dynamic Shot List State
+  // Inline edit state for editing storyboard/shot details
+  const [editingShot, setEditingShot] = useState(null);
+
+  // Dynamic Shot Form State
   const [newShotNum, setNewShotNum] = useState('');
   const [newShotFraming, setNewShotFraming] = useState('MCU');
   const [newShotLens, setNewShotLens] = useState('50mm');
@@ -39,6 +45,14 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
 
   // Selected Scene resolver
   const activeScene = scenes.find(s => s.scene_number === selectedSceneNum) || scenes[0];
+
+  // Filter shots for active scene (supporting both database schema 'scene_id' and 'scene_number')
+  const activeSceneShots = shotList.filter(s => 
+    s.scene_id === selectedSceneNum || 
+    s.scene_number === selectedSceneNum || 
+    s.sceneNum === selectedSceneNum ||
+    (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
+  );
 
   // Resolve crew for departments
   const dp = crew.find(c => c.role.includes('Director of Photography'));
@@ -50,20 +64,26 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
     window.print();
   };
 
-  // Add new shot to list
+  // Add new shot to list linked to selected scene
   const handleAddShot = (e) => {
     e.preventDefault();
     if (!newShotNum || !newShotDescEn) return;
 
     const newShot = {
+      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      scene_id: selectedSceneNum,
+      scene_number: selectedSceneNum,
       shotNum: newShotNum,
+      shot_number: newShotNum,
       type: newShotFraming,
+      size: newShotFraming,
       lens: newShotLens,
       movement: newShotMove,
       equipment: newShotMove === 'Static' ? 'Tripod' : 'Dolly / Gimbal',
       description: {
         th: newShotDescTh || newShotDescEn,
-        en: newShotDescEn || newShotDescTh
+        en: newShotDescEn || newShotDescTh,
+        image_url: ''
       }
     };
 
@@ -71,6 +91,103 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
     setNewShotNum('');
     setNewShotDescTh('');
     setNewShotDescEn('');
+  };
+
+  // Delete shot from list
+  const handleDeleteShot = (shotId) => {
+    if (window.confirm(language === 'th' ? 'ต้องการลบช็อตนี้ใช่หรือไม่?' : 'Are you sure you want to delete this shot?')) {
+      setShotList(prev => prev.filter(s => s.id !== shotId));
+    }
+  };
+
+  // Add a quick storyboard panel
+  const handleAddStoryboardFrame = () => {
+    const defaultShotNum = `${selectedSceneNum}.${activeSceneShots.length + 1}`;
+    const newShot = {
+      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      scene_id: selectedSceneNum,
+      scene_number: selectedSceneNum,
+      shotNum: defaultShotNum,
+      shot_number: defaultShotNum,
+      type: 'MCU',
+      size: 'MCU',
+      lens: '50mm',
+      movement: 'Static',
+      equipment: 'Tripod',
+      description: {
+        th: 'คำอธิบายแอ็คชั่นใหม่',
+        en: 'New action description',
+        image_url: ''
+      }
+    };
+    setShotList(prev => [...prev, newShot]);
+  };
+
+  // Handle file uploads for storyboards, convert to base64
+  const handleImageUpload = (shotId, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target.result;
+      setShotList(prev => prev.map(s => {
+        if (s.id === shotId) {
+          return {
+            ...s,
+            description: {
+              ...s.description,
+              image_url: base64Data
+            }
+          };
+        }
+        return s;
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove image from storyboard
+  const handleRemoveImage = (shotId) => {
+    if (window.confirm(language === 'th' ? 'ต้องการลบรูปภาพสตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Are you sure you want to remove this storyboard image?')) {
+      setShotList(prev => prev.map(s => {
+        if (s.id === shotId) {
+          return {
+            ...s,
+            description: {
+              ...s.description,
+              image_url: ''
+            }
+          };
+        }
+        return s;
+      }));
+    }
+  };
+
+  // Start editing shot details
+  const startEditing = (shot) => {
+    setEditingShot({ ...shot });
+  };
+
+  // Save the inline edited details
+  const saveEditedShot = () => {
+    if (!editingShot) return;
+    setShotList(prev => prev.map(s => {
+      if (s.id === editingShot.id) {
+        const num = editingShot.shotNum || editingShot.shot_number;
+        const sz = editingShot.type || editingShot.size;
+        return {
+          ...editingShot,
+          shotNum: num,
+          shot_number: num,
+          type: sz,
+          size: sz
+        };
+      }
+      return s;
+    }));
+    setEditingShot(null);
   };
 
   const weatherWarnings = {
@@ -163,6 +280,39 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         </div>
       </div>
 
+      {/* GLOBAL SCENE SELECTOR BAR (Available in all tabs) */}
+      {scenes.length > 0 && (
+        <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 no-print border border-slate-200 dark:border-obsidian-800">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <span className="text-xs font-bold text-slate-400 uppercase shrink-0">
+              {language === 'th' ? 'เลือกฉากถ่ายทำ:' : 'Select Scene:'}
+            </span>
+            <select
+              value={selectedSceneNum}
+              onChange={(e) => setSelectedSceneNum(e.target.value)}
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+              }`}
+            >
+              {scenes.map(s => (
+                <option key={s.id} value={s.scene_number}>
+                  Scene {s.scene_number} - {s.setting} ({s.int_ext} / {s.day_night})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-gold-500 animate-pulse" />
+            <span>
+              {language === 'th' 
+                ? `สถานะ: ${activeScene?.status?.toUpperCase() || 'PENDING'}` 
+                : `Status: ${activeScene?.status?.toUpperCase() || 'PENDING'}`}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* CALL SHEET VIEW */}
       {activeSubTab === 'callsheet' && (
         scenes.length === 0 ? (
@@ -179,27 +329,9 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
           </div>
         ) : (
           <div className="space-y-6 animate-fadeIn">
-            {/* Scene selector and Print options (No Print) */}
-            <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 no-print">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <span className="text-xs font-bold text-slate-400 uppercase shrink-0">Select Scene:</span>
-                <select
-                  value={selectedSceneNum}
-                  onChange={(e) => setSelectedSceneNum(e.target.value)}
-                  className={`px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  {scenes.map(s => (
-                    <option key={s.id} value={s.scene_number}>Scene {s.scene_number} - {s.setting}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             {/* CALL SHEET TEMPLATE BODY (Ready for PDF Print) */}
             <div className={`p-8 md:p-12 rounded-xl border glass-panel shadow-md space-y-8 print-container ${
-              theme === 'dark' ? 'border-obsidian-800' : 'border-slate-200 bg-white'
+              theme === 'dark' ? 'border-obsidian-800 bg-obsidian-950/20' : 'border-slate-200 bg-white'
             }`}>
               
               {/* Header metadata */}
@@ -244,7 +376,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                 <CloudSun size={16} className="shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold">{t('docs.weatherForecast')}: {weather}</p>
-                  <p className="mt-1 leading-relaxed">{weatherWarnings[weather][language]}</p>
+                  <p className="mt-1 leading-relaxed">{weatherWarnings[weather]?.[language] || 'Clear weather forecast.'}</p>
                 </div>
               </div>
 
@@ -269,7 +401,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
 
               {/* Shoot Scene Specific details */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1">
+                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   Scene Specific Breakdown Info
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
@@ -286,7 +418,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
 
               {/* Department Tech Requirements */}
               <div className="space-y-4">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1">
+                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   {t('docs.techRequirements')}
                 </h3>
 
@@ -299,7 +431,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Camera size={12} />
                       <span>CAMERA & GRIP (DP: {dp?.name?.[language] || dp?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700">
+                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
                       {activeScene?.tech_notes?.[language] || 'TBD'}
                     </p>
                   </div>
@@ -312,8 +444,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Clapperboard size={12} />
                       <span>ART & PROPS (Designer: {art?.name?.[language] || art?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700">
-                      Required props: <span className="font-semibold text-white dark:text-white text-slate-900">{activeScene?.props?.[language] || 'TBD'}</span>. Wardrobe notes: {activeScene?.wardrobe?.[language] || 'TBD'}.
+                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
+                      Required props: <span className="font-semibold text-slate-900 dark:text-white">{activeScene?.props?.[language] || 'TBD'}</span>. Wardrobe notes: {activeScene?.wardrobe?.[language] || 'TBD'}.
                     </p>
                   </div>
 
@@ -325,12 +457,88 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Wrench size={12} />
                       <span>LIGHTING & ELECTRIC (Gaffer: {gaffer?.name?.[language] || gaffer?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700">
+                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
                       Refer to camera setup guidelines. Ensure 220V distro feeds are routed exterior to coffee shop if shooting outdoors.
                     </p>
                   </div>
                 </div>
               </div>
+
+              {/* Shot List Table inside Callsheet */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
+                  {t('docs.cameraShotList')}
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className={`border-b text-xs font-bold uppercase tracking-wider ${
+                        theme === 'dark' ? 'bg-obsidian-900/50 border-obsidian-800/40 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
+                      }`}>
+                        <th className="py-2 px-3 w-16">{t('docs.shotNum')}</th>
+                        <th className="py-2 px-3 w-20">{t('docs.framing')}</th>
+                        <th className="py-2 px-3 w-20">{t('docs.lens')}</th>
+                        <th className="py-2 px-3 w-24">{t('docs.movement')}</th>
+                        <th className="py-2 px-3 w-28">{t('docs.equipment')}</th>
+                        <th className="py-2 px-3">Description</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40 text-xs">
+                      {activeSceneShots.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="py-4 text-center text-slate-400 italic">
+                            {language === 'th' ? 'ไม่มีรายการช็อตสำหรับฉากนี้' : 'No shots defined for this scene.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        activeSceneShots.map((shot, idx) => (
+                          <tr key={shot.id || idx} className="hover:bg-slate-100/20 dark:hover:bg-obsidian-850/10">
+                            <td className="py-2.5 px-3 font-mono font-bold text-gold-500">{shot.shotNum || shot.shot_number}</td>
+                            <td className="py-2.5 px-3 font-semibold">{shot.type || shot.size}</td>
+                            <td className="py-2.5 px-3 font-mono">{shot.lens}</td>
+                            <td className="py-2.5 px-3">{shot.movement}</td>
+                            <td className="py-2.5 px-3 text-slate-400">{shot.equipment}</td>
+                            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-medium">
+                              {shot.description?.[language] || shot.description?.en || ''}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Storyboard Visual References in Call Sheet (Incredible premium feature!) */}
+              {activeSceneShots.some(s => s.description?.image_url) && (
+                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-obsidian-800 page-break-before">
+                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider">
+                    {language === 'th' ? 'ภาพสตอรี่บอร์ดอ้างอิงกองถ่าย' : 'Visual Storyboard References'}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {activeSceneShots.filter(s => s.description?.image_url).map((shot, idx) => (
+                      <div 
+                        key={shot.id || idx} 
+                        className={`rounded-lg border p-2 space-y-2 overflow-hidden ${
+                          theme === 'dark' ? 'border-obsidian-800 bg-obsidian-950/30' : 'border-slate-200 bg-slate-50'
+                        }`}
+                      >
+                        <div className="h-24 overflow-hidden rounded bg-slate-900 flex items-center justify-center">
+                          <img 
+                            src={shot.description.image_url} 
+                            alt={`Shot ${shot.shotNum || shot.shot_number}`}
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <div className="text-[10px] space-y-0.5 font-mono">
+                          <p className="font-bold text-gold-500">SHOT {shot.shotNum || shot.shot_number}</p>
+                          <p className="text-slate-400 font-semibold">{shot.type || shot.size} | {shot.lens}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
             </div>
           </div>
@@ -342,10 +550,14 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         <div className="space-y-6">
           {/* Add Shot Form (No Print) */}
           {hasWriteAccess() && (
-            <div className="glass-panel p-5 rounded-xl space-y-4 no-print">
+            <div className="glass-panel p-5 rounded-xl space-y-4 no-print border border-slate-200 dark:border-obsidian-800">
               <h2 className="text-sm font-bold font-serif flex items-center gap-1.5">
                 <Plus size={16} className="text-gold-500" />
-                <span>Add Camera Shot</span>
+                <span>
+                  {language === 'th' 
+                    ? `เพิ่มช็อตกล้องสำหรับฉากที่ ${selectedSceneNum}` 
+                    : `Add Camera Shot for Scene ${selectedSceneNum}`}
+                </span>
               </h2>
 
               <form onSubmit={handleAddShot} className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -354,11 +566,11 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 1D"
+                    placeholder="e.g. 1A"
                     value={newShotNum}
                     onChange={(e) => setNewShotNum(e.target.value)}
                     className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                     }`}
                   />
                 </div>
@@ -369,7 +581,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                     value={newShotFraming}
                     onChange={(e) => setNewShotFraming(e.target.value)}
                     className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                     }`}
                   >
                     <option value="ECU">ECU (Extreme Close Up)</option>
@@ -384,11 +596,11 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lens</label>
                   <input
                     type="text"
-                    placeholder="e.g. 85mm prime"
+                    placeholder="e.g. 50mm prime"
                     value={newShotLens}
                     onChange={(e) => setNewShotLens(e.target.value)}
                     className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                     }`}
                   />
                 </div>
@@ -397,11 +609,11 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Movement</label>
                   <input
                     type="text"
-                    placeholder="e.g. Dolly Push"
+                    placeholder="e.g. Static / Dolly Push"
                     value={newShotMove}
                     onChange={(e) => setNewShotMove(e.target.value)}
                     className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                     }`}
                   />
                 </div>
@@ -414,7 +626,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                     onChange={(e) => setNewShotDescTh(e.target.value)}
                     placeholder="กล้องจับภาพที่หน้าตา..."
                     className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                     }`}
                   />
                 </div>
@@ -429,13 +641,13 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       onChange={(e) => setNewShotDescEn(e.target.value)}
                       placeholder="Camera tracks characters reaction..."
                       className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
                       }`}
                     />
                   </div>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:from-gold-500 shadow-sm shrink-0"
+                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:from-gold-500 shadow-sm shrink-0 h-9"
                   >
                     Add Shot
                   </button>
@@ -445,7 +657,15 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
           )}
 
           {/* Shot List Table */}
-          <div className="glass-panel rounded-xl overflow-hidden shadow-sm print-container">
+          <div className="glass-panel rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-obsidian-800 print-container">
+            <div className="p-4 border-b border-inherit bg-slate-50/50 dark:bg-obsidian-900/30 flex justify-between items-center">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                {language === 'th' ? `รายการช็อตของฉากที่ ${selectedSceneNum}` : `Shot List for Scene ${selectedSceneNum}`}
+              </h3>
+              <p className="text-[10px] text-slate-400 font-mono">
+                {activeSceneShots.length} Shots
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -453,26 +673,53 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                     theme === 'dark' ? 'bg-obsidian-900/50 border-obsidian-800/40 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
                   }`}>
                     <th className="py-3.5 px-4 w-20">{t('docs.shotNum')}</th>
-                    <th className="py-3.5 px-4">{t('docs.framing')}</th>
-                    <th className="py-3.5 px-4">{t('docs.lens')}</th>
-                    <th className="py-3.5 px-4">{t('docs.movement')}</th>
-                    <th className="py-3.5 px-4">{t('docs.equipment')}</th>
+                    <th className="py-3.5 px-4 w-28">{t('docs.framing')}</th>
+                    <th className="py-3.5 px-4 w-28">{t('docs.lens')}</th>
+                    <th className="py-3.5 px-4 w-32">{t('docs.movement')}</th>
+                    <th className="py-3.5 px-4 w-36">{t('docs.equipment')}</th>
                     <th className="py-3.5 px-4">Description</th>
+                    {hasWriteAccess() && <th className="py-3.5 px-4 w-24 text-right no-print">Actions</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40 text-xs">
-                  {shotList.map((shot, idx) => (
-                    <tr key={idx} className="hover:bg-slate-100/20 dark:hover:bg-obsidian-850/10">
-                      <td className="py-3.5 px-4 font-mono font-bold text-gold-500">{shot.shotNum}</td>
-                      <td className="py-3.5 px-4 font-semibold">{shot.type}</td>
-                      <td className="py-3.5 px-4 font-mono">{shot.lens}</td>
-                      <td className="py-3.5 px-4">{shot.movement}</td>
-                      <td className="py-3.5 px-4 text-slate-400">{shot.equipment}</td>
-                      <td className="py-3.5 px-4 text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
-                        {shot.description[language]}
+                  {activeSceneShots.length === 0 ? (
+                    <tr>
+                      <td colSpan={hasWriteAccess() ? 7 : 6} className="py-8 text-center text-slate-400 italic">
+                        {language === 'th' ? 'ยังไม่มีช็อตในฉากนี้ กดเพิ่มช็อตด้านบน' : 'No shots defined for this scene. Add a shot above.'}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    activeSceneShots.map((shot, idx) => (
+                      <tr key={shot.id || idx} className="hover:bg-slate-100/20 dark:hover:bg-obsidian-850/10">
+                        <td className="py-3.5 px-4 font-mono font-bold text-gold-500">{shot.shotNum || shot.shot_number}</td>
+                        <td className="py-3.5 px-4 font-semibold">{shot.type || shot.size}</td>
+                        <td className="py-3.5 px-4 font-mono">{shot.lens}</td>
+                        <td className="py-3.5 px-4">{shot.movement}</td>
+                        <td className="py-3.5 px-4 text-slate-400">{shot.equipment}</td>
+                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
+                          {shot.description?.[language] || shot.description?.en || ''}
+                        </td>
+                        {hasWriteAccess() && (
+                          <td className="py-3.5 px-4 text-right space-x-1.5 no-print">
+                            <button
+                              onClick={() => startEditing(shot)}
+                              className="p-1 hover:text-gold-500 transition-colors inline-block"
+                              title="Edit Shot"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteShot(shot.id)}
+                              className="p-1 hover:text-red-500 transition-colors inline-block"
+                              title="Delete Shot"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -495,44 +742,304 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 print-container animate-fadeIn">
-            {[1, 2, 3].map((slot) => (
-              <div 
-                key={slot} 
-                className={`rounded-xl border overflow-hidden glass-panel flex flex-col group ${
-                  theme === 'dark' ? 'border-obsidian-800 bg-obsidian-900/40' : 'border-slate-200'
-                }`}
-              >
-                {/* Simulated Storyboard Sketch using CSS Graphics */}
-                <div className="h-48 relative bg-slate-950 flex items-center justify-center overflow-hidden border-b border-inherit">
-                  {/* Visual grid sketch placeholder */}
-                  <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:14px_24px]" />
-                  
-                  {/* Simulated frame drawings */}
-                  <div className="relative text-center space-y-2 z-10 p-4">
-                    <div className="w-20 h-10 border border-slate-600 rounded mx-auto flex items-center justify-center text-[10px] text-slate-500 font-mono">
-                      {slot === 1 ? '50mm' : slot === 2 ? '24mm' : '85mm'}
-                    </div>
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Sketch Frame {slot}</p>
-                    <p className="text-[9px] text-slate-500 italic">Scene {selectedSceneNum} Storyboard</p>
-                  </div>
-                </div>
+          <div className="space-y-6 animate-fadeIn">
+            {/* Storyboard toolbar */}
+            <div className="flex justify-between items-center no-print">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">
+                {language === 'th' ? `สตอรี่บอร์ดของฉากที่ ${selectedSceneNum}` : `Storyboard Cards for Scene ${selectedSceneNum}`}
+              </h3>
+              {hasWriteAccess() && (
+                <button
+                  onClick={handleAddStoryboardFrame}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gold-500/10 text-gold-500 hover:bg-gold-500/20 border border-gold-500/20 transition-all"
+                >
+                  <Plus size={14} />
+                  <span>{language === 'th' ? 'เพิ่มการ์ดสตอรี่บอร์ด' : 'Add Storyboard Panel'}</span>
+                </button>
+              )}
+            </div>
 
-                {/* Storyboard caption info */}
-                <div className="p-4 flex-1 space-y-2">
-                  <span className="text-[10px] font-bold text-gold-500 font-mono">SHOT {selectedSceneNum}.{slot}</span>
-                  <p className="text-xs font-semibold">
-                    {slot === 1 
-                      ? language === 'th' ? "ช็อตกว้างแสดงสภาพแวดล้อมร้านกาแฟ" : "Wide shot establishing coffee shop atmosphere"
-                      : slot === 2 
-                        ? language === 'th' ? "โคลสอัพตัวละครสองคนกระซิบกระซาบกัน" : "Medium close-up of characters whispering"
-                        : language === 'th' ? "มาโครถ่ายที่ซองเอกสารสำคัญบนโต๊ะ" : "Macro shot on secret manila envelope"}
-                  </p>
+            {activeSceneShots.length === 0 ? (
+              <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
+                <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
+                  <Camera size={32} />
                 </div>
+                <h3 className="text-sm font-bold font-serif">
+                  {language === 'th' ? 'ยังไม่มีช็อตสำหรับทำสตอรี่บอร์ดในฉากนี้' : 'No Storyboard panels defined for this scene'}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
+                  {language === 'th'
+                    ? 'สตอรี่บอร์ดจะเชื่อมโยงกับ Shot List โดยตรง คุณสามารถสร้างช็อตแรกได้ที่นี่เลย'
+                    : 'Storyboard cards link directly to your Shot List. Start creating shots right here!'}
+                </p>
+                {hasWriteAccess() && (
+                  <button
+                    onClick={handleAddStoryboardFrame}
+                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white shadow"
+                  >
+                    + {language === 'th' ? 'เพิ่มช็อตแรกในฉากนี้' : 'Create First Scene Shot'}
+                  </button>
+                )}
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 print-container">
+                {activeSceneShots.map((shot, idx) => {
+                  const shotImage = shot.description?.image_url;
+                  
+                  return (
+                    <div 
+                      key={shot.id || idx} 
+                      className={`rounded-xl border overflow-hidden glass-panel flex flex-col group transition-all duration-300 hover:shadow-lg ${
+                        theme === 'dark' ? 'border-obsidian-800 bg-obsidian-900/40' : 'border-slate-200 bg-white'
+                      }`}
+                    >
+                      {/* Storyboard Frame Drawing / Reference image */}
+                      <div className="h-48 relative bg-slate-950 flex items-center justify-center overflow-hidden border-b border-inherit">
+                        {shotImage ? (
+                          <img 
+                            src={shotImage} 
+                            alt={`Shot ${shot.shotNum || shot.shot_number} drawing`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                          />
+                        ) : (
+                          <>
+                            {/* Sleek Camera grid/viewfinder sketch fallback */}
+                            <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:16px_16px]" />
+                            <div className="absolute w-8 h-8 border-l border-t border-slate-700 top-6 left-6" />
+                            <div className="absolute w-8 h-8 border-r border-t border-slate-700 top-6 right-6" />
+                            <div className="absolute w-8 h-8 border-l border-b border-slate-700 bottom-6 left-6" />
+                            <div className="absolute w-8 h-8 border-r border-b border-slate-700 bottom-6 right-6" />
+                            
+                            <div className="relative text-center space-y-2 z-10 p-4">
+                              <Camera size={24} className="mx-auto text-slate-600 animate-pulse" />
+                              <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                                {shot.type || shot.size || 'MCU'}
+                              </p>
+                              <p className="text-[9px] text-slate-600 italic">
+                                {language === 'th' ? 'ไม่มีรูปภาพ (กดอัพโหลดเพื่อใส่รูปภาพร่าง)' : 'No sketch (Upload frame sketch)'}
+                              </p>
+                            </div>
+                          </>
+                        )}
+
+                        {/* Floating quick actions overlay for write access (No Print) */}
+                        {hasWriteAccess() && (
+                          <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 no-print z-20">
+                            
+                            {/* File Upload Label */}
+                            <label className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 text-[11px] font-bold">
+                              <Upload size={14} />
+                              <span>{shotImage ? (language === 'th' ? 'เปลี่ยนรูป' : 'Change') : (language === 'th' ? 'อัพโหลด' : 'Upload')}</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handleImageUpload(shot.id, e)} 
+                                className="hidden" 
+                              />
+                            </label>
+
+                            {/* Remove Image Button */}
+                            {shotImage && (
+                              <button
+                                onClick={() => handleRemoveImage(shot.id)}
+                                className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition-all hover:scale-105"
+                                title="Remove Image"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+
+                            {/* Quick edit parameters */}
+                            <button
+                              onClick={() => startEditing(shot)}
+                              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all hover:scale-105 flex items-center gap-1.5 text-[11px] font-bold"
+                            >
+                              <Edit size={14} />
+                              <span>{language === 'th' ? 'แก้ไข' : 'Edit'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Storyboard caption info */}
+                      <div className="p-4 flex-1 space-y-2 flex flex-col justify-between">
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-gold-500 font-mono tracking-wider">
+                              SHOT {shot.shotNum || shot.shot_number}
+                            </span>
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                              theme === 'dark' ? 'bg-obsidian-950 text-slate-400' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {shot.type || shot.size} | {shot.lens}
+                            </span>
+                          </div>
+                          
+                          <p className="text-xs font-semibold leading-relaxed text-slate-800 dark:text-slate-200">
+                            {shot.description?.[language] || shot.description?.en || ''}
+                          </p>
+                        </div>
+                        
+                        <div className="pt-2 border-t border-slate-200/50 dark:border-obsidian-800/40 text-[9px] font-mono text-slate-400 flex justify-between items-center">
+                          <span>CAM: {shot.movement}</span>
+                          <span>EQ: {shot.equipment}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )
+      )}
+
+      {/* STORYBOARD / SHOT INLINE EDIT MODAL overlay */}
+      {editingShot && (
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn no-print">
+          <div className={`w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative ${
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            
+            {/* Header */}
+            <h3 className="text-base font-bold font-serif mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-obsidian-800/60">
+              <Edit size={18} className="text-gold-500" />
+              <span>{language === 'th' ? 'แก้ไขคุณสมบัติช็อตและสตอรี่บอร์ด' : 'Edit Shot & Storyboard Card'}</span>
+            </h3>
+
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingShot.shotNum || editingShot.shot_number || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingShot(prev => ({ ...prev, shotNum: val, shot_number: val }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Framing / Size</label>
+                  <select
+                    value={editingShot.type || editingShot.size || 'MCU'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditingShot(prev => ({ ...prev, type: val, size: val }));
+                    }}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  >
+                    <option value="ECU">ECU (Extreme Close Up)</option>
+                    <option value="CU">CU (Close Up)</option>
+                    <option value="MCU">MCU (Medium Close Up)</option>
+                    <option value="MS">MS (Medium Shot)</option>
+                    <option value="WS">WS (Wide Shot)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lens</label>
+                  <input
+                    type="text"
+                    value={editingShot.lens || ''}
+                    onChange={(e) => setEditingShot(prev => ({ ...prev, lens: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Movement</label>
+                  <input
+                    type="text"
+                    value={editingShot.movement || ''}
+                    onChange={(e) => setEditingShot(prev => ({ ...prev, movement: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camera Equipment</label>
+                  <input
+                    type="text"
+                    value={editingShot.equipment || ''}
+                    onChange={(e) => setEditingShot(prev => ({ ...prev, equipment: e.target.value }))}
+                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">คำอธิบายภาพช็อต (TH)</label>
+                <textarea
+                  rows={2}
+                  value={editingShot.description?.th || ''}
+                  onChange={(e) => setEditingShot(prev => ({
+                    ...prev,
+                    description: { ...prev.description, th: e.target.value }
+                  }))}
+                  placeholder="กล้องถ่ายภาพเคลื่อนไหวช้า..."
+                  className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot Action Description (EN) *</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={editingShot.description?.en || ''}
+                  onChange={(e) => setEditingShot(prev => ({
+                    ...prev,
+                    description: { ...prev.description, en: e.target.value }
+                  }))}
+                  placeholder="Camera slowly pans to reveal..."
+                  className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2.5 mt-6 pt-3 border-t border-slate-200/60 dark:border-obsidian-800/60">
+              <button
+                onClick={() => setEditingShot(null)}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                  theme === 'dark' ? 'bg-obsidian-800 hover:bg-obsidian-750 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
+              >
+                {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+              </button>
+              <button
+                onClick={saveEditedShot}
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:opacity-90 shadow-sm"
+              >
+                {language === 'th' ? 'บันทึกการแก้ไข' : 'Save Changes'}
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>
