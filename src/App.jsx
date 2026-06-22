@@ -12,6 +12,7 @@ import DocumentsHub from './components/DocumentsHub';
 import LoginPage from './components/LoginPage';
 import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
+import UserManager from './components/UserManager';
 
 function MainApp() {
   const { user, login, isCrewOrTalent } = useAuth();
@@ -45,7 +46,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs', 'users'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -58,7 +59,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs', 'users'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {
@@ -95,6 +96,10 @@ function MainApp() {
   // Tab rendering helper
   const renderContent = () => {
     switch (currentTab) {
+      case 'users':
+        return (
+          <UserManager />
+        );
       case 'storyOutline':
         return (
           <StoryPlanner key={currentProjectId} />
@@ -189,7 +194,7 @@ function MainApp() {
   };
 
   if (!user) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage />;
   }
 
   return (

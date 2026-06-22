@@ -20,7 +20,8 @@ import {
   X,
   Layers,
   PenTool,
-  BookOpen
+  BookOpen,
+  Shield
 } from 'lucide-react';
 
 export default function Layout({ 
@@ -95,7 +96,7 @@ export default function Layout({
     }
   };
 
-  const menuItems = isCrewOrTalent()
+  const baseMenuItems = isCrewOrTalent()
     ? [
         { id: 'personal', label: language === 'th' ? 'พื้นที่งานส่วนตัว' : 'Personal Workspace', icon: Users },
         { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงานของฉัน' : 'My Call Sheets', icon: FileText }
@@ -108,7 +109,12 @@ export default function Layout({
         { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
         { id: 'crew', label: t('nav.crewPortal'), icon: Users },
         { id: 'docs', label: t('nav.documentsHub'), icon: FolderKanban },
-      ];  return (
+      ];
+
+  const menuItems = [...baseMenuItems];
+  if (!isCrewOrTalent() && hasWriteAccess()) {
+    menuItems.push({ id: 'users', label: language === 'th' ? 'จัดการผู้ใช้และสิทธิ์' : 'User Access Management', icon: Shield });
+  }  return (
     <div className={`min-h-screen flex transition-colors duration-200 ${theme === 'dark' ? 'dark bg-obsidian-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
       {/* Sidebar - Desktop */}
