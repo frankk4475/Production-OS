@@ -195,6 +195,28 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  const updateScenes = async (scenesList) => {
+    try {
+      setIsLoading(true);
+      const updated = await api.updateScenes(scenesList);
+      setScenes(prev => {
+        const remaining = prev.filter(s => !updated.some(u => u.id === s.id));
+        return [...remaining, ...updated].sort((a, b) => {
+          const orderA = a.tech_notes?.scheduling?.order !== undefined ? a.tech_notes.scheduling.order : parseFloat(a.scene_number) || 0;
+          const orderB = b.tech_notes?.scheduling?.order !== undefined ? b.tech_notes.scheduling.order : parseFloat(b.scene_number) || 0;
+          return orderA - orderB;
+        });
+      });
+      return updated;
+    } catch (err) {
+      console.error("Failed to update scenes:", err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteScene = async (sceneId) => {
     try {
       setIsLoading(true);
@@ -430,6 +452,7 @@ export const ProjectProvider = ({ children }) => {
       // Scene actions
       addScene,
       updateScene,
+      updateScenes,
       deleteScene,
 
       // Crew actions
@@ -440,18 +463,13 @@ export const ProjectProvider = ({ children }) => {
       // State setters adapted as async saves
       setScenes: async (newScenesOrFn) => {
         const computed = typeof newScenesOrFn === 'function' ? newScenesOrFn(scenes) : newScenesOrFn;
-        // In this case, we update individual scenes or save them. Since Fns are used in components,
-        // we can implement a bulk save or individual actions. To prevent breakages, let's allow bulk scene saving:
         try {
           setIsLoading(true);
-          // Save scenes to global list
-          const globalScenes = localStorage.getItem('prod_api_scenes') ? JSON.parse(localStorage.getItem('prod_api_scenes')) : [];
-          const remaining = globalScenes.filter(s => s.project_id !== currentProjectId);
           const updatedNew = computed.map(s => ({ ...s, project_id: currentProjectId }));
-          localStorage.setItem('prod_api_scenes', JSON.stringify([...remaining, ...updatedNew]));
+          await api.updateScenes(updatedNew);
           setScenes(updatedNew);
         } catch (err) {
-          console.error(err);
+          console.error("Failed to set scenes:", err);
         } finally {
           setIsLoading(false);
         }

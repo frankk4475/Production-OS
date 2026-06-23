@@ -66,8 +66,36 @@ export default function UserManager({ hideHeader = false }) {
         setRole('Production_Manager');
       } else if (pos.includes('WRITER') || pos.includes('SCREENPLAY') || pos.includes('SCRIPT') || posTh.includes('เขียนบท') || posTh.includes('บท')) {
         setRole('Screenwriter');
-      } else if (pos.includes('TALENT') || pos.includes('ACTOR') || pos.includes('MODEL')) {
+      } else if (pos.includes('SUPERVISOR') || pos.includes('CONTINUITY') || posTh.includes('บันทึกการถ่ายทำ') || posTh.includes('รายงาน')) {
+        setRole('Script_Supervisor');
+      } else if (pos.includes('PHOTOGRAPHY') || pos === 'DP' || pos === 'DOP' || posTh.includes('ผู้กำกับภาพ')) {
+        setRole('DP');
+      } else if (pos.includes('FOCUS') || pos.includes('1ST AC') || posTh.includes('ผู้ช่วยกล้อง 1') || posTh.includes('โฟกัส')) {
+        setRole('Focus_Puller');
+      } else if (pos.includes('CAMERA ASSISTANT') || pos.includes('2ND AC') || posTh.includes('ผู้ช่วยกล้อง 2')) {
+        setRole('Camera_Assistant');
+      } else if (pos.includes('KEY GRIP') || pos.includes('GRIP') || posTh.includes('ช่างคุมอุปกรณ์กล้อง')) {
+        setRole('Key_Grip');
+      } else if (pos.includes('GAFFER') || posTh.includes('หัวหน้าช่างไฟ')) {
+        setRole('Gaffer');
+      } else if (pos.includes('ELECTRIC') || pos.includes('BEST BOY') || posTh.includes('ช่างไฟ')) {
+        setRole('Electric');
+      } else if (pos.includes('DESIGNER') || pos.includes('ART') || posTh.includes('ผู้กำกับศิลป์')) {
+        setRole('Production_Designer');
+      } else if (pos.includes('PROP') || posTh.includes('อุปกรณ์ประกอบฉาก')) {
+        setRole('Prop_Master');
+      } else if (pos.includes('SOUND MIXER') || pos.includes('RECORDIST') || posTh.includes('ช่างบันทึกเสียง')) {
+        setRole('Sound_Mixer');
+      } else if (pos.includes('BOOM') || posTh.includes('บูม')) {
+        setRole('Boom_Operator');
+      } else if (pos.includes('MAKEUP') || posTh.includes('แต่งหน้า')) {
+        setRole('Makeup_Artist');
+      } else if (pos.includes('COSTUME') || pos.includes('WARDROBE') || posTh.includes('เครื่องแต่งกาย')) {
+        setRole('Costume_Designer');
+      } else if (pos.includes('TALENT') || pos.includes('ACTOR') || pos.includes('MODEL') || posTh.includes('นักแสดง')) {
         setRole('Talent');
+      } else if (pos.includes('ASSISTANT') || pos.includes('PA') || posTh.includes('ผู้ช่วยทั่วไป')) {
+        setRole('Production_Assistant');
       } else {
         setRole('Crew');
       }
@@ -143,7 +171,6 @@ export default function UserManager({ hideHeader = false }) {
     }
   };
 
-  // Helper to translate roles nicely
   const getRoleLabel = (roleName) => {
     switch (roleName) {
       case 'Producer':
@@ -323,8 +350,22 @@ export default function UserManager({ hideHeader = false }) {
                 <option value="Director">{language === 'th' ? 'ผู้กำกับ (Director) • สิทธิ์เขียน/แก้ไข' : 'Director (Write/Edit Access)'}</option>
                 <option value="Production_Manager">{language === 'th' ? 'ผู้จัดการกองถ่าย (Production Manager) • สิทธิ์เขียน/แก้ไข' : 'Production Manager (Write/Edit Access)'}</option>
                 <option value="Screenwriter">{language === 'th' ? 'นักเขียนบท (Screenwriter) • สิทธิ์เขียน/แก้ไข' : 'Screenwriter (Write/Edit Access)'}</option>
-                <option value="Crew">{language === 'th' ? 'ทีมงาน (Crew) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Crew Member (Personal schedule / Read-only)'}</option>
-                <option value="Talent">{language === 'th' ? 'นักแสดง (Talent) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Talent / Actor (Personal schedule / Read-only)'}</option>
+                <option value="Script_Supervisor">{language === 'th' ? 'ผู้บันทึกการถ่ายทำ (Script Supervisor) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Script Supervisor (Personal schedule / Read-only)'}</option>
+                <option value="DP">{language === 'th' ? 'ผู้กำกับภาพ (Director of Photography) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Director of Photography (Personal schedule / Read-only)'}</option>
+                <option value="Focus_Puller">{language === 'th' ? 'ผู้ช่วยกล้อง 1 (Focus Puller) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Focus Puller (Personal schedule / Read-only)'}</option>
+                <option value="Camera_Assistant">{language === 'th' ? 'ผู้ช่วยกล้อง 2 (Camera Assistant) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Camera Assistant (Personal schedule / Read-only)'}</option>
+                <option value="Key_Grip">{language === 'th' ? 'หัวหน้าช่างคุมอุปกรณ์กล้อง (Key Grip) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Key Grip (Personal schedule / Read-only)'}</option>
+                <option value="Gaffer">{language === 'th' ? 'หัวหน้าช่างไฟ (Gaffer) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Gaffer (Personal schedule / Read-only)'}</option>
+                <option value="Electric">{language === 'th' ? 'ช่างไฟ (Best Boy Electric) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Best Boy Electric (Personal schedule / Read-only)'}</option>
+                <option value="Production_Designer">{language === 'th' ? 'ผู้กำกับศิลป์ (Production Designer) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Production Designer (Personal schedule / Read-only)'}</option>
+                <option value="Prop_Master">{language === 'th' ? 'ผู้ดูแลอุปกรณ์ประกอบฉาก (Prop Master) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Prop Master (Personal schedule / Read-only)'}</option>
+                <option value="Sound_Mixer">{language === 'th' ? 'ช่างบันทึกเสียง (Sound Mixer) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Sound Mixer (Personal schedule / Read-only)'}</option>
+                <option value="Boom_Operator">{language === 'th' ? 'คนถือไมค์บูม (Boom Operator) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Boom Operator (Personal schedule / Read-only)'}</option>
+                <option value="Makeup_Artist">{language === 'th' ? 'ช่างแต่งหน้าหลัก (Key Makeup Artist) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Key Makeup Artist (Personal schedule / Read-only)'}</option>
+                <option value="Costume_Designer">{language === 'th' ? 'ช่างออกแบบเครื่องแต่งกาย (Costume Designer) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Costume Designer (Personal schedule / Read-only)'}</option>
+                <option value="Talent">{language === 'th' ? 'นักแสดง (Actor/Talent) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Talent / Actor (Personal schedule / Read-only)'}</option>
+                <option value="Production_Assistant">{language === 'th' ? 'ผู้ช่วยทั่วไปในกองถ่าย (Production Assistant) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Production Assistant (Personal schedule / Read-only)'}</option>
+                <option value="Crew">{language === 'th' ? 'ทีมงานฝ่ายผลิต (Crew) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Crew Member (Personal schedule / Read-only)'}</option>
               </select>
             </div>
 

@@ -26,22 +26,28 @@ import {
 
 const getRoleLabel = (roleName, language) => {
   switch (roleName) {
-    case 'Producer':
-      return language === 'th' ? 'ผู้ดำเนินงานสร้าง' : 'Producer';
-    case '1st_AD':
-      return language === 'th' ? 'ผู้ช่วยผู้กำกับ 1' : '1st AD';
-    case 'Director':
-      return language === 'th' ? 'ผู้กำกับ' : 'Director';
-    case 'Production_Manager':
-      return language === 'th' ? 'ผู้จัดการกองถ่าย' : 'Production Manager';
-    case 'Screenwriter':
-      return language === 'th' ? 'นักเขียนบท' : 'Screenwriter';
-    case 'Crew':
-      return language === 'th' ? 'ทีมงานฝ่ายผลิต' : 'Crew';
-    case 'Talent':
-      return language === 'th' ? 'นักแสดง/แบบ' : 'Talent';
-    default:
-      return roleName;
+    case 'Producer': return language === 'th' ? 'ผู้ดำเนินงานสร้าง' : 'Producer';
+    case '1st_AD': return language === 'th' ? 'ผู้ช่วยผู้กำกับ 1' : '1st AD';
+    case 'Director': return language === 'th' ? 'ผู้กำกับ' : 'Director';
+    case 'Production_Manager': return language === 'th' ? 'ผู้จัดการกองถ่าย' : 'Production Manager';
+    case 'Screenwriter': return language === 'th' ? 'นักเขียนบท' : 'Screenwriter';
+    case 'Script_Supervisor': return language === 'th' ? 'ผู้บันทึกการถ่ายทำ' : 'Script Supervisor';
+    case 'DP': return language === 'th' ? 'ผู้กำกับภาพ' : 'Director of Photography';
+    case 'Focus_Puller': return language === 'th' ? 'ผู้ช่วยกล้อง 1' : 'Focus Puller';
+    case 'Camera_Assistant': return language === 'th' ? 'ผู้ช่วยกล้อง 2' : 'Camera Assistant';
+    case 'Key_Grip': return language === 'th' ? 'หัวหน้าช่างคุมอุปกรณ์กล้อง' : 'Key Grip';
+    case 'Gaffer': return language === 'th' ? 'หัวหน้าช่างไฟ' : 'Gaffer';
+    case 'Electric': return language === 'th' ? 'ช่างไฟ' : 'Best Boy Electric';
+    case 'Production_Designer': return language === 'th' ? 'ผู้กำกับศิลป์' : 'Production Designer';
+    case 'Prop_Master': return language === 'th' ? 'ผู้ดูแลอุปกรณ์ประกอบฉาก' : 'Prop Master';
+    case 'Sound_Mixer': return language === 'th' ? 'ช่างบันทึกเสียง' : 'Sound Mixer';
+    case 'Boom_Operator': return language === 'th' ? 'คนถือไมค์บูม' : 'Boom Operator';
+    case 'Makeup_Artist': return language === 'th' ? 'ช่างแต่งหน้าหลัก' : 'Key Makeup Artist';
+    case 'Costume_Designer': return language === 'th' ? 'ช่างออกแบบเครื่องแต่งกาย' : 'Costume Designer';
+    case 'Talent': return language === 'th' ? 'นักแสดง' : 'Talent';
+    case 'Production_Assistant': return language === 'th' ? 'ผู้ช่วยทั่วไปในกองถ่าย' : 'Production Assistant';
+    case 'Crew': return language === 'th' ? 'ทีมงานฝ่ายผลิต' : 'Crew';
+    default: return roleName;
   }
 };
 
@@ -127,6 +133,7 @@ export default function Layout({
         { id: 'storyOutline', label: t('nav.storyOutline'), icon: BookOpen },
         { id: 'script', label: t('nav.scriptEditor'), icon: PenTool },
         { id: 'breakdown', label: t('nav.scriptBreakdown'), icon: Layers },
+        { id: 'shootingSchedule', label: language === 'th' ? 'ตารางถ่ายทำ (Stripboard)' : 'Shooting Schedule', icon: Film },
         { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
         { id: 'crew', label: t('nav.crewPortal'), icon: Users },
         { id: 'docs', label: t('nav.documentsHub'), icon: FolderKanban },

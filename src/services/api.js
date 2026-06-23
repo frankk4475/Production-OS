@@ -370,6 +370,38 @@ export const api = {
     }
   },
 
+  async updateScenes(scenesList) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('scenes')
+        .upsert(scenesList.map(s => ({
+          id: s.id,
+          project_id: s.project_id,
+          scene_number: s.scene_number,
+          setting: s.setting,
+          int_ext: s.int_ext,
+          day_night: s.day_night,
+          description: s.description,
+          cast: s.cast,
+          location: s.location,
+          props: s.props,
+          wardrobe: s.wardrobe,
+          tech_notes: s.tech_notes,
+          status: s.status
+        })))
+        .select();
+      if (error) throw error;
+      return data;
+    } else {
+      await delay();
+      const scenes = getDbData(STORAGE_KEYS.SCENES);
+      const remaining = scenes.filter(s => !scenesList.some(ul => ul.id === s.id));
+      const updated = [...remaining, ...scenesList];
+      setDbData(STORAGE_KEYS.SCENES, updated);
+      return scenesList;
+    }
+  },
+
   async deleteScene(sceneId) {
     if (isSupabaseConfigured) {
       const { error } = await supabase

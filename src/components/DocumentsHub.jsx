@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useProject } from '../context/ProjectContext';
 import { 
   FileText, 
   Video, 
@@ -24,6 +24,21 @@ import {
   Briefcase
 } from 'lucide-react';
 
+const ELEMENT_CATEGORIES = [
+  { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500' },
+  { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', dotColor: 'bg-pink-500' },
+  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', dotColor: 'bg-orange-500' },
+  { id: 'set_dressing', label: 'Set Dressing', labelTh: 'การตกแต่งฉาก', dotColor: 'bg-blue-500' },
+  { id: 'costumes', label: 'Costumes', labelTh: 'เครื่องแต่งกาย', dotColor: 'bg-amber-500' },
+  { id: 'makeup_hair', label: 'Makeup & Hair', labelTh: 'แต่งหน้าทำผม', dotColor: 'bg-teal-500' },
+  { id: 'sound', label: 'Sound', labelTh: 'เสียงและเอฟเฟกต์', dotColor: 'bg-violet-500' },
+  { id: 'vfx', label: 'VFX', labelTh: 'วิชวลเอฟเฟกต์', dotColor: 'bg-indigo-500' },
+  { id: 'vehicles', label: 'Vehicles', labelTh: 'ยานพาหนะ', dotColor: 'bg-emerald-500' },
+  { id: 'stunts', label: 'Stunts', labelTh: 'สตันท์', dotColor: 'bg-red-500' },
+  { id: 'animals', label: 'Animals', labelTh: 'นักแสดงสัตว์', dotColor: 'bg-green-500' },
+  { id: 'other', label: 'Other', labelTh: 'อื่นๆ', dotColor: 'bg-slate-500' }
+];
+
 export default function DocumentsHub({ 
   scenes, 
   crew, 
@@ -38,6 +53,46 @@ export default function DocumentsHub({
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
+  const { currentProject: project } = useProject();
+
+  const getSceneDayMap = () => {
+    if (!scenes || scenes.length === 0) return {};
+    
+    const scheduled = scenes.filter(s => !s.tech_notes?.scheduling?.inBoneyard);
+    const sortedScheduled = [...scheduled].sort((a, b) => {
+      const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
+      const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
+      return orderA - orderB;
+    });
+
+    const map = {};
+    let currentDay = 1;
+    const projectStart = project?.start_date ? new Date(project.start_date) : new Date();
+
+    sortedScheduled.forEach((scene) => {
+      const dayDate = new Date(projectStart.getTime() + (currentDay - 1) * 24 * 60 * 60 * 1000);
+      const dateStr = dayDate.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      const rawDateStr = dayDate.toISOString().split('T')[0];
+
+      map[scene.scene_number] = {
+        day: currentDay,
+        dateStr,
+        rawDate: rawDateStr
+      };
+
+      if (scene.tech_notes?.scheduling?.dayBreakAfter) {
+        currentDay += 1;
+      }
+    });
+    return map;
+  };
+
+  const sceneDayMap = getSceneDayMap();
 
   // Sub-tabs: 'callsheet' | 'shotlist' | 'storyboard'
   const [activeSubTab, setActiveSubTab] = useState(() => {
@@ -125,7 +180,8 @@ export default function DocumentsHub({
     }
 
     // Default values for new shoot day
-    setSchedDate(new Date().toISOString().split('T')[0]);
+    const resolvedRawDate = sceneDayMap[selectedSceneNum]?.rawDate;
+    setSchedDate(resolvedRawDate || new Date().toISOString().split('T')[0]);
     setSchedLocation(activeScene?.location?.[language] || activeScene?.location?.en || activeScene?.location?.th || '');
     setSchedCrewCall('07:00 AM');
     setSchedShootCall('08:30 AM');
@@ -144,7 +200,7 @@ export default function DocumentsHub({
     setSchedWardrobeNotes(activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || '');
     setSchedProductionNotes(activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || '');
     setSchedCrewAssigned([]);
-  }, [activeEventId, selectedSceneNum, activeScene, events, language]);
+  }, [activeEventId, selectedSceneNum, activeScene, events, language, sceneDayMap]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Filter shots for active scene (supporting both database schema 'scene_id' and 'scene_number')
@@ -873,90 +929,133 @@ export default function DocumentsHub({
               theme === 'dark' ? 'border-obsidian-800 bg-obsidian-950/20' : 'border-slate-200 bg-white'
             }`}>
               
-              {/* Header metadata */}
-              <div className="border-b-2 border-slate-900 dark:border-slate-100 pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <p className="text-[10px] font-bold text-gold-500 tracking-widest uppercase">Production Document</p>
-                  <h2 className="text-2xl font-serif font-black tracking-tight">{t('docs.callSheetHeader')}</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">Scene {activeScene?.scene_number} | Setting: {activeScene?.setting}</p>
-                </div>
-                <div className="text-right font-mono text-xs space-y-0.5">
-                  <p><span className="text-slate-400">{language === 'th' ? 'วันถ่ายทำ (Shoot Date):' : 'Date:'}</span> {callSheetDate || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}</p>
-                  <p><span className="text-slate-400">Weather:</span> {weather} ({weatherWarnings[weather] ? 'Risk Checked' : 'Clear'})</p>
-                </div>
-              </div>
-
-              {/* Key Schedule Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.crewCallTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5 text-gold-500">{crewCallTime}</p>
-                </div>
-                <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.shootingCall')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5">{shootCallTime}</p>
-                </div>
-                <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.lunchTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5 text-slate-400">{lunchTime}</p>
-                </div>
-                <div className="pl-0 md:pl-4">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.wrapTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5">{wrapTime}</p>
-                </div>
-              </div>
-
-              {/* Weather Alert Integration */}
-              <div className={`p-4 rounded-lg border text-xs flex gap-2.5 items-start ${
-                weather === 'Rainy' || weather === 'Thunderstorm'
-                  ? 'bg-red-500/10 border-red-500/20 text-red-500'
-                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-              }`}>
-                <CloudSun size={16} className="shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold">{t('docs.weatherForecast')}: {weather}</p>
-                  <p className="mt-1 leading-relaxed">{weatherWarnings[weather]?.[language] || 'Clear weather forecast.'}</p>
-                </div>
-              </div>
-
-              {/* Map Link / Coordinates Block */}
-              <div className={`p-4 rounded-lg border text-xs space-y-2 ${
-                theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800/80' : 'bg-slate-50 border-slate-200'
-              }`}>
-                <p className="font-bold flex items-center gap-1">
-                  <MapPin size={12} className="text-gold-500" />
-                  <span>{t('docs.mapLocation')}</span>
-                </p>
-                <p className="text-slate-400">📍 {resolvedLocation}</p>
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedLocation)}`}
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="inline-block mt-1 font-semibold text-gold-500 hover:underline no-print"
-                >
-                  Open Google Maps Navigation →
-                </a>
-              </div>
-
-              {/* Shoot Scene Specific details */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                  Scene Specific Breakdown Info
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+              {/* Header & Main Info Card */}
+              <div className="print-card space-y-6">
+                {/* Header metadata */}
+                <div className="border-b-2 border-slate-900 dark:border-slate-100 pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <p className="text-slate-400 font-bold mb-1">SCENE DESCRIPTION</p>
-                    <p className="leading-relaxed font-medium">{activeScene?.description?.[language] || activeScene?.description?.en || 'TBD'}</p>
+                    <p className="text-[10px] font-bold text-gold-500 tracking-widest uppercase">Production Document</p>
+                    <h2 className="text-2xl font-serif font-black tracking-tight">
+                      {t('docs.callSheetHeader')}{sceneDayMap[selectedSceneNum]?.day ? ` - DAY ${sceneDayMap[selectedSceneNum].day}` : ''}
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">Scene {activeScene?.scene_number} | Setting: {activeScene?.setting}</p>
                   </div>
-                  <div>
-                    <p className="text-slate-400 font-bold mb-1">CAST & TALENT</p>
-                    <p className="leading-relaxed font-medium">{activeScene?.cast?.[language] || activeScene?.cast?.en || 'TBD'}</p>
+                  <div className="text-right font-mono text-xs space-y-0.5">
+                    <p>
+                      <span className="text-slate-400">{language === 'th' ? 'วันถ่ายทำ (Shoot Date):' : 'Date:'}</span>{' '}
+                      {sceneDayMap[selectedSceneNum]?.dateStr || callSheetDate || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}
+                    </p>
+                    <p><span className="text-slate-400">Weather:</span> {weather} ({weatherWarnings[weather] ? 'Risk Checked' : 'Clear'})</p>
                   </div>
                 </div>
+
+                {/* Key Schedule Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.crewCallTime')}</p>
+                    <p className="text-xl font-extrabold font-mono mt-0.5 text-gold-500">{crewCallTime}</p>
+                  </div>
+                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.shootingCall')}</p>
+                    <p className="text-xl font-extrabold font-mono mt-0.5">{shootCallTime}</p>
+                  </div>
+                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.lunchTime')}</p>
+                    <p className="text-xl font-extrabold font-mono mt-0.5 text-slate-400">{lunchTime}</p>
+                  </div>
+                  <div className="pl-0 md:pl-4">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.wrapTime')}</p>
+                    <p className="text-xl font-extrabold font-mono mt-0.5">{wrapTime}</p>
+                  </div>
+                </div>
+
+                {/* Weather Alert Integration */}
+                <div className={`p-4 rounded-lg border text-xs flex gap-2.5 items-start ${
+                  weather === 'Rainy' || weather === 'Thunderstorm'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                }`}>
+                  <CloudSun size={16} className="shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">{t('docs.weatherForecast')}: {weather}</p>
+                    <p className="mt-1 leading-relaxed">{weatherWarnings[weather]?.[language] || 'Clear weather forecast.'}</p>
+                  </div>
+                </div>
+
+                {/* Map Link / Coordinates Block */}
+                <div className={`p-4 rounded-lg border text-xs space-y-2 ${
+                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800/80' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <p className="font-bold flex items-center gap-1">
+                    <MapPin size={12} className="text-gold-500" />
+                    <span>{t('docs.mapLocation')}</span>
+                  </p>
+                  <p className="text-slate-400">📍 {resolvedLocation}</p>
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedLocation)}`}
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="inline-block mt-1 font-semibold text-gold-500 hover:underline no-print"
+                  >
+                    Open Google Maps Navigation →
+                  </a>
+                </div>
               </div>
 
-              {/* Department Tech Requirements */}
-              <div className="space-y-4">
+              {/* Scene & Tagged Elements Card */}
+              <div className="print-card space-y-6">
+                {/* Shoot Scene Specific details */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
+                    Scene Specific Breakdown Info
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                    <div>
+                      <p className="text-slate-400 font-bold mb-1">SCENE DESCRIPTION</p>
+                      <p className="leading-relaxed font-medium">{activeScene?.description?.[language] || activeScene?.description?.en || 'TBD'}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 font-bold mb-1">CAST & TALENT</p>
+                      <p className="leading-relaxed font-medium">{activeScene?.cast?.[language] || activeScene?.cast?.en || 'TBD'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tagged Breakdown Elements */}
+                {activeScene?.tech_notes?.scene_elements?.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
+                      {language === 'th' ? 'อุปกรณ์และองค์ประกอบฝ่ายต่าง ๆ (Tagged Elements)' : 'Production & Breakdown Elements'}
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {ELEMENT_CATEGORIES.map(category => {
+                        const elements = (activeScene.tech_notes.scene_elements || []).filter(el => el.category === category.id);
+                        if (elements.length === 0) return null;
+                        return (
+                          <div key={category.id} className={`p-3 rounded-lg border text-left ${
+                            theme === 'dark' ? 'bg-obsidian-950/20 border-obsidian-800' : 'bg-slate-50/50 border-slate-150'
+                          }`}>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-1.5 flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${category.dotColor}`} />
+                              <span>{language === 'th' ? category.labelTh : category.label}</span>
+                            </p>
+                            <ul className="text-xs space-y-1 pl-3 list-disc text-slate-650 dark:text-slate-350">
+                              {elements.map(i => (
+                                <li key={i.id}>
+                                  {i.name} {i.qty > 1 && <span className="font-mono text-[10px] opacity-75">(x{i.qty})</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Department Tech Requirements Card */}
+              <div className="print-card space-y-4">
                 <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   {t('docs.techRequirements')}
                 </h3>
@@ -1078,8 +1177,8 @@ export default function DocumentsHub({
                 </div>
               </div>
 
-              {/* Assigned Crew List Section */}
-              <div className="space-y-3">
+              {/* Assigned Crew List Card */}
+              <div className="print-card space-y-3">
                 <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   {language === 'th' ? 'ทีมงานปฏิบัติหน้าที่ประจำวัน (Assigned Crew)' : 'Assigned Crew Roster'}
                 </h3>
@@ -1106,7 +1205,9 @@ export default function DocumentsHub({
                   </div>
                 )}
               </div>
-              <div className="space-y-3">
+
+              {/* Camera Shot List Card */}
+              <div className="print-card space-y-3">
                 <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   {t('docs.cameraShotList')}
                 </h3>
@@ -1150,10 +1251,10 @@ export default function DocumentsHub({
                 </div>
               </div>
 
-              {/* Storyboard Visual References in Call Sheet (Incredible premium feature!) */}
+              {/* Storyboard Visual References Card */}
               {activeSceneShots.some(s => s.description?.image_url) && (
-                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-obsidian-800 page-break-before">
-                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider">
+                <div className="print-card space-y-4 page-break-before">
+                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                     {language === 'th' ? 'ภาพสตอรี่บอร์ดอ้างอิงกองถ่าย' : 'Visual Storyboard References'}
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,1060 +15,403 @@ import {
   Sparkles,
   Info,
   Clapperboard,
-  Loader2
+  Loader2,
+  Printer,
+  FileText,
+  Tag,
+  Minus,
+  Check
 } from 'lucide-react';
+
+const ELEMENT_CATEGORIES = [
+  { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20', dotColor: 'bg-purple-500' },
+  { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20 hover:bg-pink-500/20', dotColor: 'bg-pink-500' },
+  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 hover:bg-orange-500/20', dotColor: 'bg-orange-500' },
+  { id: 'set_dressing', label: 'Set Dressing', labelTh: 'การตกแต่งฉาก', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20', dotColor: 'bg-blue-500' },
+  { id: 'costumes', label: 'Costumes', labelTh: 'เครื่องแต่งกาย', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20', dotColor: 'bg-amber-500' },
+  { id: 'makeup_hair', label: 'Makeup & Hair', labelTh: 'แต่งหน้าทำผม', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20 hover:bg-teal-500/20', dotColor: 'bg-teal-500' },
+  { id: 'sound', label: 'Sound', labelTh: 'เสียงและเอฟเฟกต์', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 hover:bg-violet-500/20', dotColor: 'bg-violet-500' },
+  { id: 'vfx', label: 'VFX', labelTh: 'วิชวลเอฟเฟกต์', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20', dotColor: 'bg-indigo-500' },
+  { id: 'vehicles', label: 'Vehicles', labelTh: 'ยานพาหนะ', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20', dotColor: 'bg-emerald-500' },
+  { id: 'stunts', label: 'Stunts', labelTh: 'สตันท์', color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 hover:bg-red-500/20', dotColor: 'bg-red-500' },
+  { id: 'animals', label: 'Animals', labelTh: 'นักแสดงสัตว์', color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20 hover:bg-green-500/20', dotColor: 'bg-green-500' },
+  { id: 'other', label: 'Other', labelTh: 'อื่นๆ', color: 'bg-slate-500/10 text-slate-650 dark:text-slate-400 border-slate-500/20 hover:bg-slate-500/20', dotColor: 'bg-slate-500' }
+];
 
 export default function ScriptBreakdown() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
-  
-  const {
-    activeScenes: scenes,
-    addScene,
-    updateScene,
-    deleteScene,
-    isLoading
-  } = useProject();
+  const { currentProject: project, activeScenes: scenes, addScene, updateScene, deleteScene, isLoading, scriptBlocks } = useProject();
 
-  // Search & Filter State
+  const [activeSubTab, setActiveSubTab] = useState('summary');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterIntExt, setFilterIntExt] = useState('ALL');
   const [filterDayNight, setFilterDayNight] = useState('ALL');
-
-  // Expanded Rows State
-  const [expandedSceneId, setExpandedSceneId] = useState(null);
-
-  // Form Modal State
+  const [selectedSceneId, setSelectedSceneId] = useState(null);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingScene, setEditingScene] = useState(null);
-
-  // Form Fields State
   const [formSceneNum, setFormSceneNum] = useState('');
   const [formSetting, setFormSetting] = useState('');
   const [formIntExt, setFormIntExt] = useState('INT');
   const [formDayNight, setFormDayNight] = useState('DAY');
+  const [formPages, setFormPages] = useState('1/8');
   const [formDescTh, setFormDescTh] = useState('');
   const [formDescEn, setFormDescEn] = useState('');
   const [formCastTh, setFormCastTh] = useState('');
   const [formCastEn, setFormCastEn] = useState('');
   const [formLocTh, setFormLocTh] = useState('');
   const [formLocEn, setFormLocEn] = useState('');
-  const [formPropsTh, setFormPropsTh] = useState('');
-  const [formPropsEn, setFormPropsEn] = useState('');
-  const [formWardrobeTh, setFormWardrobeTh] = useState('');
-  const [formWardrobeEn, setFormWardrobeEn] = useState('');
-  const [formTechTh, setFormTechTh] = useState('');
-  const [formTechEn, setFormTechEn] = useState('');
-  const [formCameraNotesTh, setFormCameraNotesTh] = useState('');
-  const [formCameraNotesEn, setFormCameraNotesEn] = useState('');
-  const [formArtNotesTh, setFormArtNotesTh] = useState('');
-  const [formArtNotesEn, setFormArtNotesEn] = useState('');
-  const [formLightingNotesTh, setFormLightingNotesTh] = useState('');
-  const [formLightingNotesEn, setFormLightingNotesEn] = useState('');
-  const [formSoundNotesTh, setFormSoundNotesTh] = useState('');
-  const [formSoundNotesEn, setFormSoundNotesEn] = useState('');
-  const [formWardrobeNotesTh, setFormWardrobeNotesTh] = useState('');
-  const [formWardrobeNotesEn, setFormWardrobeNotesEn] = useState('');
-  const [formProductionNotesTh, setFormProductionNotesTh] = useState('');
-  const [formProductionNotesEn, setFormProductionNotesEn] = useState('');
   const [formStatus, setFormStatus] = useState('pending');
 
-  // Reset form helper
+  const [popoverState, setPopoverState] = useState({ isOpen: false, id: null, blockId: null, start: null, end: null, name: '', qty: 1, category: 'props', coords: { x: 0, y: 0 } });
+  const [sidebarAddCategory, setSidebarAddCategory] = useState(null);
+  const [sidebarItemName, setSidebarItemName] = useState('');
+  const [sidebarItemQty, setSidebarItemQty] = useState(1);
+
+  useEffect(() => {
+    if (scenes && scenes.length > 0 && !selectedSceneId) {
+      const sorted = [...scenes].sort((a, b) => (parseFloat(a.scene_number) || 0) - (parseFloat(b.scene_number) || 0));
+      setSelectedSceneId(sorted[0].id);
+    }
+  }, [scenes, selectedSceneId]);
+
+  const activeScene = scenes.find(s => s.id === selectedSceneId) || scenes[0] || null;
+
+  const blockTypes = {
+    heading: { class: 'font-mono font-extrabold uppercase tracking-wider text-slate-805 dark:text-white pl-4 border-l-4 border-slate-500 mt-6 mb-3 text-left' },
+    action: { class: 'font-mono text-slate-700 dark:text-slate-350 mt-3 mb-3 text-left leading-relaxed' },
+    character: { class: 'font-mono font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-center' },
+    parenthetical: { class: 'font-mono text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-center' },
+    dialogue: { class: 'font-mono text-slate-800 dark:text-slate-200 mt-1.5 mb-2 mx-auto max-w-[85%] text-center' },
+    transition: { class: 'font-mono font-bold text-amber-600 dark:text-amber-500 uppercase mt-4 mb-4 text-right pr-4 border-r-4 border-amber-500' }
+  };
+
   const resetForm = () => {
-    setFormSceneNum('');
-    setFormSetting('');
-    setFormIntExt('INT');
-    setFormDayNight('DAY');
-    setFormDescTh('');
-    setFormDescEn('');
-    setFormCastTh('');
-    setFormCastEn('');
-    setFormLocTh('');
-    setFormLocEn('');
-    setFormPropsTh('');
-    setFormPropsEn('');
-    setFormWardrobeTh('');
-    setFormWardrobeEn('');
-    setFormTechTh('');
-    setFormTechEn('');
-    setFormCameraNotesTh('');
-    setFormCameraNotesEn('');
-    setFormArtNotesTh('');
-    setFormArtNotesEn('');
-    setFormLightingNotesTh('');
-    setFormLightingNotesEn('');
-    setFormSoundNotesTh('');
-    setFormSoundNotesEn('');
-    setFormWardrobeNotesTh('');
-    setFormWardrobeNotesEn('');
-    setFormProductionNotesTh('');
-    setFormProductionNotesEn('');
-    setFormStatus('pending');
+    setFormSceneNum(''); setFormSetting(''); setFormIntExt('INT'); setFormDayNight('DAY'); setFormPages('1/8');
+    setFormDescTh(''); setFormDescEn(''); setFormCastTh(''); setFormCastEn(''); setFormLocTh(''); setFormLocEn(''); setFormStatus('pending');
     setEditingScene(null);
   };
 
-  // Open modal for adding
-  const handleAddClick = () => {
-    resetForm();
-    setIsModalOpen(true);
-  };
+  const handleAddClick = () => { resetForm(); setFormSceneNum(String(scenes.length + 1)); setIsModalOpen(true); };
 
-  // Open modal for editing
   const handleEditClick = (scene, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     setEditingScene(scene);
     setFormSceneNum(scene.scene_number || '');
     setFormSetting(scene.setting || '');
     setFormIntExt(scene.int_ext || 'INT');
     setFormDayNight(scene.day_night || 'DAY');
+    setFormPages(scene.pages || '1/8');
     setFormDescTh(scene.description?.th || '');
     setFormDescEn(scene.description?.en || '');
     setFormCastTh(scene.cast?.th || '');
     setFormCastEn(scene.cast?.en || '');
     setFormLocTh(scene.location?.th || '');
     setFormLocEn(scene.location?.en || '');
-    setFormPropsTh(scene.props?.th || '');
-    setFormPropsEn(scene.props?.en || '');
-    setFormWardrobeTh(scene.wardrobe?.th || '');
-    setFormWardrobeEn(scene.wardrobe?.en || '');
-    setFormTechTh(scene.tech_notes?.th || '');
-    setFormTechEn(scene.tech_notes?.en || '');
-    setFormCameraNotesTh(scene.tech_notes?.camera_notes?.th || scene.tech_notes?.th || '');
-    setFormCameraNotesEn(scene.tech_notes?.camera_notes?.en || scene.tech_notes?.en || '');
-    setFormArtNotesTh(scene.tech_notes?.art_notes?.th || '');
-    setFormArtNotesEn(scene.tech_notes?.art_notes?.en || '');
-    setFormLightingNotesTh(scene.tech_notes?.lighting_notes?.th || '');
-    setFormLightingNotesEn(scene.tech_notes?.lighting_notes?.en || '');
-    setFormSoundNotesTh(scene.tech_notes?.sound_notes?.th || '');
-    setFormSoundNotesEn(scene.tech_notes?.sound_notes?.en || '');
-    setFormWardrobeNotesTh(scene.tech_notes?.wardrobe_notes?.th || '');
-    setFormWardrobeNotesEn(scene.tech_notes?.wardrobe_notes?.en || '');
-    setFormProductionNotesTh(scene.tech_notes?.production_notes?.th || '');
-    setFormProductionNotesEn(scene.tech_notes?.production_notes?.en || '');
     setFormStatus(scene.status || 'pending');
     setIsModalOpen(true);
   };
 
-  // Handle delete scene
   const handleDeleteClick = async (sceneId, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     if (confirm(t('breakdown.deleteScene') + '?')) {
-      try {
-        await deleteScene(sceneId);
-      } catch (err) {
-        alert("Failed to delete scene: " + err.message);
-      }
+      await deleteScene(sceneId);
+      if (selectedSceneId === sceneId) setSelectedSceneId(null);
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formSceneNum || !formSetting) return;
+    const existingElements = editingScene?.tech_notes?.scene_elements || [];
 
     const sceneData = {
       scene_number: formSceneNum,
       setting: formSetting,
       int_ext: formIntExt,
       day_night: formDayNight,
-      description: {
-        th: formDescTh || formDescEn,
-        en: formDescEn || formDescTh
-      },
-      cast: {
-        th: formCastTh || formCastEn,
-        en: formCastEn || formCastTh
-      },
-      location: {
-        th: formLocTh || formLocEn,
-        en: formLocEn || formLocTh
-      },
-      props: {
-        th: formPropsTh || formPropsEn,
-        en: formPropsEn || formPropsTh
-      },
-      wardrobe: {
-        th: formWardrobeTh || formWardrobeEn,
-        en: formWardrobeEn || formWardrobeTh
-      },
+      pages: formPages,
+      description: { th: formDescTh || formDescEn, en: formDescEn || formDescTh },
+      cast: { th: formCastTh, en: formCastEn },
+      location: { th: formLocTh, en: formLocEn },
       tech_notes: {
-        th: formTechTh || formTechEn,
-        en: formTechEn || formTechTh,
-        camera_notes: { th: formCameraNotesTh || '', en: formCameraNotesEn || '' },
-        art_notes: { th: formArtNotesTh || '', en: formArtNotesEn || '' },
-        lighting_notes: { th: formLightingNotesTh || '', en: formLightingNotesEn || '' },
-        sound_notes: { th: formSoundNotesTh || '', en: formSoundNotesEn || '' },
-        wardrobe_notes: { th: formWardrobeNotesTh || '', en: formWardrobeNotesEn || '' },
-        production_notes: { th: formProductionNotesTh || '', en: formProductionNotesEn || '' }
+        ...(editingScene?.tech_notes || {}),
+        scene_elements: existingElements
       },
       status: formStatus
     };
 
     try {
-      if (editingScene) {
-        await updateScene({ ...editingScene, ...sceneData });
-      } else {
-        await addScene(sceneData);
-      }
+      if (editingScene) await updateScene({ ...editingScene, ...sceneData });
+      else await addScene(sceneData);
       setIsModalOpen(false);
       resetForm();
-    } catch (err) {
-      alert("Failed to save scene: " + err.message);
+    } catch (err) { alert("Failed to save: " + err.message); }
+  };
+
+  const saveSceneElements = async (targetScene, updatedElements) => {
+    const updatedScene = { ...targetScene, tech_notes: { ...(targetScene.tech_notes || {}), scene_elements: updatedElements } };
+    await updateScene(updatedScene);
+  };
+
+  const getSceneBlocks = (sceneNum) => {
+    let currentSceneNum = 0;
+    const blocksForScene = [];
+    for (const block of scriptBlocks || []) {
+      if (block.type === 'heading') currentSceneNum += 1;
+      if (String(currentSceneNum) === String(sceneNum)) blocksForScene.push(block);
     }
+    return blocksForScene;
   };
 
-  const toggleRow = (sceneId) => {
-    setExpandedSceneId(prev => (prev === sceneId ? null : sceneId));
+  const handleTextSelection = (block, e) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const blockElement = document.getElementById(`block-viewer-${block.id}`);
+    if (!blockElement) return;
+
+    try {
+      const preRange = document.createRange();
+      preRange.selectNodeContents(blockElement);
+      preRange.setEnd(range.startContainer, range.startOffset);
+      const startOffset = preRange.toString().length;
+      setPopoverState({
+        isOpen: true,
+        id: null,
+        blockId: block.id,
+        start: startOffset,
+        end: startOffset + selection.toString().trim().length,
+        name: selection.toString().trim(),
+        qty: 1,
+        category: 'props',
+        coords: { x: Math.min(window.innerWidth - 300, rect.left + window.scrollX), y: rect.bottom + window.scrollY + 8 }
+      });
+    } catch (err) { console.warn(err); }
   };
 
-  // Filter scenes based on search & selectors
-  const filteredScenes = scenes.filter((scene) => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      (scene.scene_number || '').toLowerCase().includes(searchLower) ||
-      (scene.setting || '').toLowerCase().includes(searchLower) ||
-      (scene.description?.th || '').toLowerCase().includes(searchLower) ||
-      (scene.description?.en || '').toLowerCase().includes(searchLower) ||
-      (scene.location?.th || '').toLowerCase().includes(searchLower) ||
-      (scene.location?.en || '').toLowerCase().includes(searchLower) ||
-      (scene.cast?.th || '').toLowerCase().includes(searchLower) ||
-      (scene.cast?.en || '').toLowerCase().includes(searchLower);
+  const handleTagClick = (tag, e) => {
+    const rect = e.target.getBoundingClientRect();
+    setPopoverState({ isOpen: true, id: tag.id, blockId: tag.blockId, start: tag.start, end: tag.end, name: tag.name, qty: tag.qty, category: tag.category, coords: { x: Math.min(window.innerWidth - 300, rect.left + window.scrollX), y: rect.bottom + window.scrollY + 8 } });
+  };
 
-    const matchesIntExt = filterIntExt === 'ALL' || scene.int_ext === filterIntExt;
-    const matchesDayNight = filterDayNight === 'ALL' || scene.day_night === filterDayNight;
+  const handleSavePopoverTag = async () => {
+    if (!activeScene) return;
+    const currentElements = activeScene.tech_notes?.scene_elements || [];
+    const updated = popoverState.id 
+      ? currentElements.map(el => el.id === popoverState.id ? { ...el, name: popoverState.name, category: popoverState.category, qty: Number(popoverState.qty) } : el)
+      : [...currentElements, { id: `tag-${Date.now()}`, blockId: popoverState.blockId, start: popoverState.start, end: popoverState.end, name: popoverState.name, category: popoverState.category, qty: Number(popoverState.qty) }];
+    await saveSceneElements(activeScene, updated);
+    setPopoverState({ ...popoverState, isOpen: false });
+    window.getSelection()?.removeAllRanges();
+  };
 
-    return matchesSearch && matchesIntExt && matchesDayNight;
-  });
+  const handleRemovePopoverTag = async () => {
+    if (!activeScene || !popoverState.id) return;
+    await saveSceneElements(activeScene, (activeScene.tech_notes?.scene_elements || []).filter(el => el.id !== popoverState.id));
+    setPopoverState({ ...popoverState, isOpen: false });
+  };
+
+  const handleAddSidebarItem = async (e) => {
+    e.preventDefault();
+    if (!activeScene || !sidebarItemName.trim()) return;
+    await saveSceneElements(activeScene, [...(activeScene.tech_notes?.scene_elements || []), { id: `manual-${Date.now()}`, name: sidebarItemName.trim(), category: sidebarAddCategory, qty: Number(sidebarItemQty) }]);
+    setSidebarItemName(''); setSidebarItemQty(1); setSidebarAddCategory(null);
+  };
+
+  const handleDeleteTag = async (tagId) => {
+    if (!activeScene) return;
+    await saveSceneElements(activeScene, (activeScene.tech_notes?.scene_elements || []).filter(el => el.id !== tagId));
+  };
+
+  const renderHighlightText = (block, tags) => {
+    const blockTags = (tags || []).filter(t => t.blockId === block.id).sort((a, b) => a.start - b.start);
+    if (blockTags.length === 0) return block.text;
+    const output = []; let lastOffset = 0;
+    blockTags.forEach((tag) => {
+      if (tag.start > lastOffset) output.push(block.text.substring(lastOffset, tag.start));
+      const cat = ELEMENT_CATEGORIES.find(c => c.id === tag.category) || ELEMENT_CATEGORIES[11];
+      output.push(<span key={tag.id} onClick={(e) => handleTagClick(tag, e)} className={`cursor-pointer px-1 py-0.5 rounded font-bold border text-xs inline-block ${cat.color}`}>{block.text.substring(tag.start, tag.end)}<span className="text-[9px] opacity-75 font-normal ml-0.5">({tag.qty})</span></span>);
+      lastOffset = tag.end;
+    });
+    if (lastOffset < block.text.length) output.push(block.text.substring(lastOffset));
+    return output;
+  };
+
+  const filteredScenes = scenes.filter(s => (s.scene_number?.toLowerCase().includes(searchTerm.toLowerCase()) || s.setting?.toLowerCase().includes(searchTerm.toLowerCase())) && (filterIntExt === 'ALL' || s.int_ext === filterIntExt) && (filterDayNight === 'ALL' || s.day_night === filterDayNight)).sort((a, b) => (parseFloat(a.scene_number) || 0) - (parseFloat(b.scene_number) || 0));
+  const activeSceneBlocks = activeScene ? getSceneBlocks(activeScene.scene_number) : [];
+  const activeSceneElements = activeScene?.tech_notes?.scene_elements || [];
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/30 dark:border-obsidian-850 pb-5">
+    <div className="space-y-6 animate-fadeIn pb-16">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-slate-200/30 dark:border-obsidian-850 pb-5 no-print">
         <div>
           <h1 className="text-2xl font-extrabold font-serif tracking-tight flex items-center gap-2">
-            <Clapperboard className="text-gold-500" />
+            <Clapperboard className="text-gold-500" /> 
             <span>{t('nav.scriptBreakdown')}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {language === 'th' ? 'ระบุอุปกรณ์ นักแสดง โลเคชั่น และบันทึกทางเทคนิคของแต่ละช็อต' : 'Define props, cast, settings, and technical requirements per scene'}
-          </p>
         </div>
-        {hasWriteAccess() && (
-          <button
-            onClick={handleAddClick}
-            className="px-4 py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white font-bold text-sm rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-98"
-          >
-            <Plus size={16} />
-            <span>{t('breakdown.addScene')}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="glass-panel p-4 rounded-xl flex flex-col md:flex-row gap-4 items-center justify-between">
-        
-        {/* Search */}
-        <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={t('common.search')}
-            className={`w-full pl-9 pr-4 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-              theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
-            }`}
-          />
-        </div>
-
-        {/* Filter Badges */}
-        <div className="flex flex-wrap gap-4 items-center w-full md:w-auto justify-end">
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-            <SlidersHorizontal size={14} />
-            <span>{t('common.filter')}:</span>
-          </div>
-
-          {/* INT / EXT filter */}
-          <div className="flex rounded-lg overflow-hidden border border-slate-200/50 dark:border-obsidian-850">
-            {['ALL', 'INT', 'EXT'].map(type => (
-              <button
-                key={type}
-                onClick={() => setFilterIntExt(type)}
-                className={`px-3 py-1.5 text-xs font-bold transition-all ${
-                  filterIntExt === type
-                    ? 'bg-gold-500/15 text-gold-500 font-extrabold'
-                    : theme === 'dark'
-                      ? 'bg-obsidian-900 text-slate-450 hover:bg-obsidian-800'
-                      : 'bg-white text-slate-650 hover:bg-slate-50'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {/* DAY / NIGHT filter */}
-          <div className="flex rounded-lg overflow-hidden border border-slate-200/50 dark:border-obsidian-850">
-            {['ALL', 'DAY', 'NIGHT'].map(time => (
-              <button
-                key={time}
-                onClick={() => setFilterDayNight(time)}
-                className={`px-3 py-1.5 text-xs font-bold transition-all ${
-                  filterDayNight === time
-                    ? 'bg-gold-500/15 text-gold-500 font-extrabold'
-                    : theme === 'dark'
-                      ? 'bg-obsidian-900 text-slate-450 hover:bg-obsidian-800'
-                      : 'bg-white text-slate-650 hover:bg-slate-50'
-                }`}
-              >
-                {time === 'ALL' ? 'ALL' : (time === 'DAY' ? 'DAY ☀️' : 'NIGHT 🌙')}
-              </button>
-            ))}
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* Loading state */}
-      {isLoading && scenes.length === 0 ? (
-        <div className="p-16 text-center space-y-3">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-gold-500" />
-          <p className="text-xs text-slate-400 font-medium">
-            {language === 'th' ? 'กำลังโหลดรายละเอียดบทถ่ายทำ...' : 'Loading script breakdown...'}
-          </p>
-        </div>
-      ) : scenes.length === 0 ? (
-        // Empty State UI
-        <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-350 dark:border-obsidian-800">
-          <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
-            <Clapperboard size={32} />
-          </div>
-          <h3 className="text-lg font-bold font-serif">{language === 'th' ? 'ยังไม่มีฉากถ่ายทำในบทภาพยนตร์' : 'No Scenes in Breakdown'}</h3>
-          <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-            {language === 'th' 
-              ? 'เริ่มต้นแจกแจงฉากของคุณ ระบุพิกัดสถานที่ถ่ายทำ ตัวละครที่เข้ากล้อง เสื้อผ้า พร็อพ และบันทึกรายละเอียดทางเทคนิคของกล้องและแสงไฟ' 
-              : 'Add your first scene breakdown to list props, cast members, wardrobes, camera specs, and location notes.'}
-          </p>
+        <div className="flex items-center gap-2">
+          <button onClick={() => window.print()} className={`p-2.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 ${theme === 'dark' ? 'bg-obsidian-900 border-obsidian-850' : 'bg-white border-slate-200'}`}><Printer size={14} /> Print</button>
           {hasWriteAccess() && (
-            <button
-              onClick={handleAddClick}
-              className="px-4 py-2 bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs rounded-lg shadow-sm transition-all"
-            >
-              + {t('breakdown.addScene')}
-            </button>
+            <button onClick={handleAddClick} className="px-4 py-2.5 bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs rounded-lg shadow-sm">+ {t('breakdown.addScene')}</button>
           )}
         </div>
-      ) : (
-        /* Scenes Table */
-        <div className="glass-panel rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className={`border-b text-xs font-bold uppercase tracking-wider ${
-                  theme === 'dark' ? 'bg-obsidian-900/50 border-obsidian-800/40 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-                }`}>
-                  <th className="py-3.5 px-4 w-20">{t('breakdown.sceneNum')}</th>
-                  <th className="py-3.5 px-4 w-28">Type</th>
-                  <th className="py-3.5 px-4">{t('breakdown.sceneTitle')}</th>
-                  <th className="py-3.5 px-4">{t('breakdown.location')}</th>
-                  <th className="py-3.5 px-4">{t('breakdown.cast')}</th>
-                  <th className="py-3.5 px-4 w-24">Status</th>
-                  <th className="py-3.5 px-4 text-right no-print">{t('breakdown.actions')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40">
-                {filteredScenes.map((scene) => {
-                  const isExpanded = expandedSceneId === scene.id;
-                  return (
-                    <React.Fragment key={scene.id}>
-                      <tr 
-                        onClick={() => toggleRow(scene.id)}
-                        className={`hover:bg-slate-100/30 dark:hover:bg-obsidian-800/20 transition-all cursor-pointer ${
-                          isExpanded ? 'bg-slate-100/20 dark:bg-obsidian-800/10' : ''
-                        }`}
-                      >
-                        <td className="py-4 px-4 font-mono font-bold text-gold-500">
-                          {scene.scene_number}
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              scene.int_ext === 'INT' 
-                                ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' 
-                                : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            }`}>
-                              {scene.int_ext}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              scene.day_night === 'DAY'
-                                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                                : 'bg-purple-500/10 text-purple-500 border border-purple-500/20'
-                            }`}>
-                              {scene.day_night}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4 font-semibold text-sm">
-                          {scene.setting}
-                        </td>
-                        <td className="py-4 px-4 text-xs">
-                          {scene.location?.[language] || scene.location?.en || '-'}
-                        </td>
-                        <td className="py-4 px-4 text-xs font-medium text-slate-400">
-                          {scene.cast?.[language] || scene.cast?.en || '-'}
-                        </td>
-                        <td className="py-4 px-4 text-xs font-semibold">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                            scene.status === 'completed'
-                              ? 'bg-emerald-500/10 text-emerald-500'
-                              : scene.status === 'shooting'
-                                ? 'bg-amber-500/10 text-amber-500'
-                                : 'bg-slate-500/10 text-slate-400'
-                          }`}>
-                            {scene.status || 'pending'}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-right no-print" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            {hasWriteAccess() && (
-                              <>
-                                <button
-                                  onClick={(e) => handleEditClick(scene, e)}
-                                  className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors ${
-                                    theme === 'dark' ? 'text-slate-400 hover:text-gold-500' : 'text-slate-600 hover:text-gold-600'
-                                  }`}
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                                <button
-                                  onClick={(e) => handleDeleteClick(scene.id, e)}
-                                  className={`p-1.5 rounded hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors ${
-                                    theme === 'dark' ? 'text-slate-400 hover:text-red-500' : 'text-slate-600 hover:text-red-600'
-                                  }`}
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              </>
-                            )}
-                            <button 
-                              onClick={() => toggleRow(scene.id)}
-                              className="p-1 text-slate-400 hover:text-slate-200"
-                            >
-                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+      </div>
 
-                      {/* Expandable Scene Details */}
-                      {isExpanded && (
-                        <tr className="bg-slate-100/10 dark:bg-obsidian-900/20">
-                          <td colSpan="7" className="p-4 border-t dark:border-obsidian-800/40">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs animate-slideDown">
-                              
-                              {/* Description and Cast */}
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                                    <Info size={12} className="text-gold-500" />
-                                    <span>{t('breakdown.sceneTitle')}</span>
-                                  </p>
-                                  <p className="text-slate-300 text-sm leading-relaxed">{scene.description?.[language] || scene.description?.en || ''}</p>
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('breakdown.cast')}</p>
-                                  <p className="font-medium text-slate-200">{scene.cast?.[language] || scene.cast?.en || '-'}</p>
-                                </div>
-                              </div>
+      <div className="flex gap-4 border-b border-slate-200/30 dark:border-obsidian-850 pb-px no-print">
+        <button onClick={() => setActiveSubTab('summary')} className={`pb-3 text-sm font-bold border-b-2 ${activeSubTab === 'summary' ? 'border-gold-500 text-gold-500' : 'border-transparent text-slate-400'}`}><FileText size={16} /> Summary Sheet</button>
+        <button onClick={() => setActiveSubTab('tagging')} className={`pb-3 text-sm font-bold border-b-2 ${activeSubTab === 'tagging' ? 'border-gold-500 text-gold-500' : 'border-transparent text-slate-400'}`}><Tag size={16} /> Tagging Editor</button>
+      </div>
 
-                              {/* Props & Wardrobe */}
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('breakdown.props')}</p>
-                                  <p className="text-slate-300 leading-relaxed">{scene.props?.[language] || scene.props?.en || '-'}</p>
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('breakdown.wardrobe')}</p>
-                                  <p className="text-slate-300 leading-relaxed">{scene.wardrobe?.[language] || scene.wardrobe?.en || '-'}</p>
-                                </div>
-                              </div>
-
-                              {/* Technical & Department Notes */}
-                              <div className="md:col-span-3 border-t border-slate-100/5 dark:border-obsidian-850/60 pt-4 mt-2">
-                                <p className="font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                                  <span>{t('breakdown.techNotes')}</span>
-                                </p>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {/* General */}
-                                  {(scene.tech_notes?.[language] || scene.tech_notes?.en) && (
-                                    <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                      theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                    }`}>
-                                      <span className="font-bold text-gold-500">{language === 'th' ? 'ทั่วไป / General' : 'General Notes'}</span>
-                                      <p className="whitespace-pre-line leading-relaxed font-medium">{scene.tech_notes?.[language] || scene.tech_notes?.en}</p>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Camera */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">🎥 {language === 'th' ? 'กล้องและอุปกรณ์ / Camera' : 'Camera Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.camera_notes?.[language] || scene.tech_notes?.camera_notes?.en || scene.tech_notes?.[language] || scene.tech_notes?.en || '-'}
-                                    </p>
-                                  </div>
-
-                                  {/* Art */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">🎨 {language === 'th' ? 'ศิลป์และอุปกรณ์ / Art' : 'Art & Props Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.art_notes?.[language] || scene.tech_notes?.art_notes?.en || '-'}
-                                    </p>
-                                  </div>
-
-                                  {/* Lighting */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-355' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">💡 {language === 'th' ? 'แสงและไฟ / Lighting' : 'Lighting Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.lighting_notes?.[language] || scene.tech_notes?.lighting_notes?.en || '-'}
-                                    </p>
-                                  </div>
-
-                                  {/* Sound */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">🔊 {language === 'th' ? 'บันทึกเสียง / Sound' : 'Sound Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.sound_notes?.[language] || scene.tech_notes?.sound_notes?.en || '-'}
-                                    </p>
-                                  </div>
-
-                                  {/* Wardrobe */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">👗 {language === 'th' ? 'เครื่องแต่งกายและแต่งหน้า / Wardrobe' : 'Wardrobe Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.wardrobe_notes?.[language] || scene.tech_notes?.wardrobe_notes?.en || '-'}
-                                    </p>
-                                  </div>
-
-                                  {/* Production */}
-                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
-                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
-                                  }`}>
-                                    <span className="font-bold text-gold-500">💼 {language === 'th' ? 'การจัดการกอง / Production' : 'Production Notes'}</span>
-                                    <p className="whitespace-pre-line leading-relaxed font-medium">
-                                      {scene.tech_notes?.production_notes?.[language] || scene.tech_notes?.production_notes?.en || '-'}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div className="lg:col-span-1 glass-panel p-4 rounded-xl border no-print">
+          <div className="max-h-[600px] overflow-y-auto space-y-2">
+            {filteredScenes.map(scene => (
+              <div key={scene.id} onClick={() => setSelectedSceneId(scene.id)} className={`p-2.5 rounded-lg border cursor-pointer ${scene.id === selectedSceneId ? 'ring-2 ring-gold-500' : ''}`}>
+                <div className="text-[10px] font-black text-gold-500">SCENE {scene.scene_number} ({scene.pages || '1/8'} pgs)</div>
+                <div className="text-xs font-bold truncate">{scene.setting}</div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Breakdown Creation/Edit Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
-          <div className={`w-full max-w-3xl rounded-xl shadow-2xl overflow-hidden border max-h-[90vh] flex flex-col ${
-            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
-          }`}>
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-inherit flex items-center justify-between shrink-0">
-              <h2 className="text-lg font-bold font-serif flex items-center gap-2">
-                <Sparkles size={18} className="text-gold-500" />
-                <span>{editingScene ? t('breakdown.editSceneTitle') : t('breakdown.formTitle')}</span>
-              </h2>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-obsidian-800 transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
+        <div className="lg:col-span-3">
+          {activeSubTab === 'summary' && activeScene && (
+            <div className={`p-8 border rounded-2xl text-left ${theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800' : 'bg-white border-slate-200'}`}>
+              <div className="flex justify-between items-center border-b pb-4">
+                <div>
+                  <h2 className="text-2xl font-black font-serif uppercase">{activeScene.setting}</h2>
+                  <p className="text-xs text-slate-400 mt-1">Location: {activeScene.location?.[language] || activeScene.location?.en || '-'}</p>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono text-sm font-black text-gold-500">{activeScene.int_ext} / {activeScene.day_night}</span>
+                  <p className="text-xs text-slate-400 font-mono mt-1">Length: {activeScene.pages || '1/8'} pgs</p>
+                </div>
+              </div>
               
-              {/* Scene Number & Setting & Status */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.sceneNum')} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formSceneNum}
-                    onChange={(e) => setFormSceneNum(e.target.value)}
-                    placeholder="e.g. 1, 2A, 14"
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {language === 'th' ? 'สลักหัวฉาก (Slugline / Setting)' : 'Slugline / Setting'} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formSetting}
-                    onChange={(e) => setFormSetting(e.target.value)}
-                    placeholder="e.g. INT. COFFEE SHOP - NIGHT"
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {language === 'th' ? 'สถานะฉาก' : 'Scene Status'}
-                  </label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value)}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                {ELEMENT_CATEGORIES.map(category => {
+                  const elements = activeSceneElements.filter(el => el.category === category.id);
+                  if (elements.length === 0) return null;
+                  return (
+                    <div key={category.id} className="p-4 rounded-xl border bg-slate-50 dark:bg-obsidian-950/20 border-slate-200/50 dark:border-obsidian-850">
+                      <div className="text-xs font-extrabold mb-2 border-b pb-1 text-slate-500 uppercase">{language === 'th' ? category.labelTh : category.label}</div>
+                      <ul className="text-xs space-y-1">
+                        {elements.map(i => <li key={i.id}>• {i.name} {i.qty > 1 && `(x${i.qty})`}</li>)}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeSubTab === 'tagging' && activeScene && (
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 text-left">
+              <div className="xl:col-span-3 p-8 border rounded-2xl min-h-[500px] relative">
+                {activeSceneBlocks.map(block => (
+                  <div key={block.id} id={`block-viewer-${block.id}`} onMouseUp={(e) => handleTextSelection(block, e)} className={`p-1 ${blockTypes[block.type]?.class}`}>
+                    {renderHighlightText(block, activeSceneElements)}
+                  </div>
+                ))}
+                {activeSceneBlocks.length === 0 && (
+                  <p className="text-xs text-slate-500 italic py-10 text-center">No script text. Write screenplay headers in the Editor.</p>
+                )}
+
+                {popoverState.isOpen && (
+                  <div 
+                    className={`absolute z-50 w-64 p-4 rounded-xl border shadow-2xl ${theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-white border-slate-200'}`}
+                    style={{ left: `${popoverState.coords.x - 20}px`, top: `${popoverState.coords.y - 120}px` }}
                   >
-                    <option value="pending">{language === 'th' ? 'รอถ่ายทำ (Pending)' : 'Pending'}</option>
-                    <option value="shooting">{language === 'th' ? 'กำลังถ่ายทำ (Shooting)' : 'Shooting'}</option>
-                    <option value="completed">{language === 'th' ? 'ถ่ายเสร็จแล้ว (Completed)' : 'Completed'}</option>
-                  </select>
-                </div>
+                    <div className="flex justify-between items-center pb-1 border-b mb-2">
+                      <span className="text-[10px] font-bold text-gold-500">Tag Element</span>
+                      <button onClick={() => setPopoverState({ ...popoverState, isOpen: false })} className="text-slate-400">X</button>
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <input value={popoverState.name} onChange={(e) => setPopoverState({ ...popoverState, name: e.target.value })} className="w-full border p-1 rounded bg-transparent" />
+                      <div className="flex gap-2">
+                        <select value={popoverState.category} onChange={(e) => setPopoverState({ ...popoverState, category: e.target.value })} className="w-2/3 border p-1 rounded bg-obsidian-900 text-white">
+                          {ELEMENT_CATEGORIES.map(cat => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
+                        </select>
+                        <input type="number" min="1" value={popoverState.qty} onChange={(e) => setPopoverState({ ...popoverState, qty: Number(e.target.value) })} className="w-1/3 border p-1 rounded bg-transparent" />
+                      </div>
+                      <div className="flex gap-2">
+                        {popoverState.id && <button onClick={handleRemovePopoverTag} className="flex-1 bg-red-600/20 text-red-500 py-1 rounded">Remove</button>}
+                        <button onClick={handleSavePopoverTag} className="flex-1 bg-gold-500 text-white py-1 rounded">Save</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* INT/EXT and DAY/NIGHT */}
+              <div className="xl:col-span-1 glass-panel p-4 rounded-xl border space-y-4">
+                <div className="text-xs font-bold border-b pb-1 text-slate-400">ELEMENT CATEGORIES</div>
+                {ELEMENT_CATEGORIES.map(cat => {
+                  const catItems = activeSceneElements.filter(i => i.category === cat.id);
+                  return (
+                    <div key={cat.id} className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold">
+                        <span>{cat.label} ({catItems.length})</span>
+                        <button onClick={() => setSidebarAddCategory(cat.id)} className="text-gold-500 text-[10px]">+ Add</button>
+                      </div>
+                      {sidebarAddCategory === cat.id && (
+                        <form onSubmit={handleAddSidebarItem} className="flex gap-1 border p-1 rounded">
+                          <input required value={sidebarItemName} onChange={(e) => setSidebarItemName(e.target.value)} placeholder="Item..." className="w-2/3 text-xs p-1" />
+                          <button type="submit" className="w-1/3 bg-gold-500 text-white text-[10px] rounded">Add</button>
+                        </form>
+                      )}
+                      <ul className="text-xs pl-2 text-slate-450 space-y-1">
+                        {catItems.map(i => (
+                          <li key={i.id} className="flex justify-between items-center">
+                            <span>• {i.name} {i.qty > 1 && `(x${i.qty})`}</span>
+                            <button onClick={() => handleDeleteTag(i.id)} className="text-slate-405 hover:text-red-500">x</button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs no-print">
+          <div className={`w-full max-w-xl rounded-xl shadow-2xl border p-6 text-left ${theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800' : 'bg-white border-slate-200'}`}>
+            <h3 className="text-lg font-bold font-serif mb-4 flex items-center gap-2"><Sparkles className="text-gold-500" /> {editingScene ? 'Edit Scene' : 'Add Scene'}</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.intExt')}
-                  </label>
-                  <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-obsidian-850">
-                    {['INT', 'EXT'].map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setFormIntExt(type)}
-                        className={`flex-1 py-2 text-xs font-bold transition-all ${
-                          formIntExt === type
-                            ? 'bg-gold-500/15 text-gold-500 font-extrabold'
-                            : theme === 'dark' ? 'bg-obsidian-950 text-slate-400 hover:bg-obsidian-800' : 'bg-slate-50 text-slate-650 hover:bg-slate-100'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.dayNight')}
-                  </label>
-                  <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-obsidian-850">
-                    {['DAY', 'NIGHT'].map(time => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => setFormDayNight(time)}
-                        className={`flex-1 py-2 text-xs font-bold transition-all ${
-                          formDayNight === time
-                            ? 'bg-gold-500/15 text-gold-500 font-extrabold'
-                            : theme === 'dark' ? 'bg-obsidian-950 text-slate-400 hover:bg-obsidian-800' : 'bg-slate-50 text-slate-650 hover:bg-slate-100'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <input required placeholder="Scene Number" value={formSceneNum} onChange={e => setFormSceneNum(e.target.value)} className="w-full border p-2 rounded bg-transparent text-slate-900 dark:text-slate-100" />
+                <input required placeholder="Slugline / Setting" value={formSetting} onChange={e => setFormSetting(e.target.value)} className="w-full border p-2 rounded bg-transparent text-slate-900 dark:text-slate-100" />
               </div>
-
-              {/* Description TH & EN */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {language === 'th' ? 'คำอธิบายฉาก (ภาษาไทย)' : 'Description (Thai version)'}
-                  </label>
-                  <textarea
-                    rows="3"
-                    value={formDescTh}
-                    onChange={(e) => setFormDescTh(e.target.value)}
-                    placeholder={t('breakdown.scenePlaceholder')}
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Description (English version) *
-                  </label>
-                  <textarea
-                    rows="3"
-                    required
-                    value={formDescEn}
-                    onChange={(e) => setFormDescEn(e.target.value)}
-                    placeholder="Describe actions or events in English..."
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
+              <div className="grid grid-cols-3 gap-4">
+                <select value={formIntExt} onChange={e => setFormIntExt(e.target.value)} className="border p-2 rounded bg-slate-100 dark:bg-obsidian-900 text-slate-900 dark:text-slate-100">
+                  <option value="INT">INT</option>
+                  <option value="EXT">EXT</option>
+                  <option value="INT/EXT">INT/EXT</option>
+                </select>
+                <select value={formDayNight} onChange={e => setFormDayNight(e.target.value)} className="border p-2 rounded bg-slate-100 dark:bg-obsidian-900 text-slate-900 dark:text-slate-100">
+                  <option value="DAY">DAY</option>
+                  <option value="NIGHT">NIGHT</option>
+                  <option value="DUSK">DUSK</option>
+                  <option value="DAWN">DAWN</option>
+                </select>
+                <input placeholder="Pages (e.g. 5/8)" value={formPages} onChange={e => setFormPages(e.target.value)} className="border p-2 rounded bg-transparent text-slate-905 dark:text-slate-100" />
               </div>
-
-              {/* Cast & Location */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.cast')} (TH / EN)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formCastTh}
-                      onChange={(e) => setFormCastTh(e.target.value)}
-                      placeholder="โบว์, นก"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                    <input
-                      type="text"
-                      value={formCastEn}
-                      onChange={(e) => setFormCastEn(e.target.value)}
-                      placeholder="Bow, Nok"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.location')} (TH / EN)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formLocTh}
-                      onChange={(e) => setFormLocTh(e.target.value)}
-                      placeholder="ร้านกาแฟบีทีเอส"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                    <input
-                      type="text"
-                      value={formLocEn}
-                      onChange={(e) => setFormLocEn(e.target.value)}
-                      placeholder="Skytrain Café"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input placeholder="Location (TH)" value={formLocTh} onChange={e => setFormLocTh(e.target.value)} className="border p-2 rounded bg-transparent text-slate-900 dark:text-slate-100" />
+                <input placeholder="Cast (TH)" value={formCastTh} onChange={e => setFormCastTh(e.target.value)} className="border p-2 rounded bg-transparent text-slate-900 dark:text-slate-100" />
               </div>
-
-              {/* Props & Wardrobe */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.props')} (TH / EN)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formPropsTh}
-                      onChange={(e) => setFormPropsTh(e.target.value)}
-                      placeholder="กระเป๋าเป้สีแดง"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                    <input
-                      type="text"
-                      value={formPropsEn}
-                      onChange={(e) => setFormPropsEn(e.target.value)}
-                      placeholder="Red backpack"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.wardrobe')} (TH / EN)
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formWardrobeTh}
-                      onChange={(e) => setFormWardrobeTh(e.target.value)}
-                      placeholder="เสื้อกันหนาวหนังดำ"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                    <input
-                      type="text"
-                      value={formWardrobeEn}
-                      onChange={(e) => setFormWardrobeEn(e.target.value)}
-                      placeholder="Black leather jacket"
-                      className={`w-1/2 px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Technical Notes (TH / EN) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    {t('breakdown.techNotes')} (ภาษาไทย)
-                  </label>
-                  <input
-                    type="text"
-                    value={formTechTh}
-                    onChange={(e) => setFormTechTh(e.target.value)}
-                    placeholder="กล้องมือถือวิ่งตามตัวแสดง..."
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
-                    Technical Notes (English)
-                  </label>
-                  <input
-                    type="text"
-                    value={formTechEn}
-                    onChange={(e) => setFormTechEn(e.target.value)}
-                    placeholder="Handheld tracking shots, prime lens..."
-                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Department Notes */}
-              <div className="border-t border-slate-100/5 dark:border-obsidian-800/40 pt-4 space-y-4">
-                <h4 className="text-sm font-extrabold text-gold-500 font-serif flex items-center gap-1.5">
-                  <span>{language === 'th' ? 'คำแนะนำสำหรับแต่ละแผนก / Department Instructions' : 'Department Specific Instructions'}</span>
-                </h4>
-                
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Camera */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      🎥 {language === 'th' ? 'แผนกกล้องและอุปกรณ์ (Camera & Grip)' : 'Camera & Grip Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formCameraNotesTh}
-                        onChange={(e) => setFormCameraNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกกล้อง (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formCameraNotesEn}
-                        onChange={(e) => setFormCameraNotesEn(e.target.value)}
-                        placeholder="Camera instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Art */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      🎨 {language === 'th' ? 'แผนกศิลป์และอุปกรณ์ประกอบฉาก (Art & Props)' : 'Art & Props Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formArtNotesTh}
-                        onChange={(e) => setFormArtNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกศิลป์ (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formArtNotesEn}
-                        onChange={(e) => setFormArtNotesEn(e.target.value)}
-                        placeholder="Art instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Lighting */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      💡 {language === 'th' ? 'แผนกแสงและไฟ (Lighting)' : 'Lighting Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formLightingNotesTh}
-                        onChange={(e) => setFormLightingNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกแสง (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formLightingNotesEn}
-                        onChange={(e) => setFormLightingNotesEn(e.target.value)}
-                        placeholder="Lighting instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Sound */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      🔊 {language === 'th' ? 'แผนกบันทึกเสียง (Sound)' : 'Sound Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formSoundNotesTh}
-                        onChange={(e) => setFormSoundNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกเสียง (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formSoundNotesEn}
-                        onChange={(e) => setFormSoundNotesEn(e.target.value)}
-                        placeholder="Sound instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Wardrobe */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      👗 {language === 'th' ? 'แผนกเสื้อผ้าและแต่งหน้า (Wardrobe & Makeup)' : 'Wardrobe & Makeup Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formWardrobeNotesTh}
-                        onChange={(e) => setFormWardrobeNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกเสื้อผ้า (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formWardrobeNotesEn}
-                        onChange={(e) => setFormWardrobeNotesEn(e.target.value)}
-                        placeholder="Wardrobe instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Production */}
-                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
-                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
-                      💼 {language === 'th' ? 'แผนกจัดการและอำนวยการสร้าง (Production)' : 'Production & Direction Department'}
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formProductionNotesTh}
-                        onChange={(e) => setFormProductionNotesTh(e.target.value)}
-                        placeholder="คำแนะนำแผนกจัดการ (ไทย)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                      <input
-                        type="text"
-                        value={formProductionNotesEn}
-                        onChange={(e) => setFormProductionNotesEn(e.target.value)}
-                        placeholder="Production instructions (English)"
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
-                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
-                        }`}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-inherit shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold border ${
-                    theme === 'dark'
-                      ? 'border-obsidian-800 hover:bg-obsidian-800 text-slate-400 hover:text-slate-100'
-                      : 'border-slate-200 hover:bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {t('breakdown.cancel')}
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg text-sm font-bold bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white shadow-md transition-all"
-                >
-                  {t('breakdown.save')}
-                </button>
+              <textarea placeholder="Description" rows="3" value={formDescTh} onChange={e => setFormDescTh(e.target.value)} className="w-full border p-2 rounded bg-transparent text-slate-900 dark:text-slate-100" />
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="border px-4 py-2 rounded text-slate-900 dark:text-slate-100">Cancel</button>
+                <button type="submit" className="bg-gold-500 text-white px-5 py-2 rounded">Save</button>
               </div>
             </form>
           </div>

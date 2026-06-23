@@ -92,7 +92,7 @@
     /* Configure A4 portrait page sizing and sheet margins */
     @page {
       size: A4 portrait;
-      margin: 18mm 15mm;
+      margin: 10mm 12mm;
     }
 
     /* Expand main layout wrapper to consume full print width */
@@ -106,30 +106,40 @@
       margin: 0 !important;
       float: none !important;
       position: relative !important;
-      background: #ffffff !important;
+      background: transparent !important;
       border: none !important;
       box-shadow: none !important;
     }
 
-    /* Force glass-panel and card designs to drop screen shadows and render as flat boxes */
+    /* Force glass-panel and card designs to drop screen shadows and render as flat transparent boxes */
     .glass-panel, 
-    .glass-card,
-    .print-container {
+    .glass-card {
+      background: transparent !important;
+      color: #000000 !important;
+      border: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Clean solid border print cards */
+    .print-card {
       background: #ffffff !important;
       color: #000000 !important;
       border: 1px solid #cbd5e1 !important;
       box-shadow: none !important;
-      backdrop-filter: none !important;
-      padding: 1.5rem !important;
       border-radius: 6px !important;
-      margin-bottom: 2rem !important;
+      padding: 1.5rem !important;
+      margin-bottom: 1.5rem !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+      display: block !important;
     }
 
     /* Reset container elements backgrounds to plain white and border colors to clean gray */
     .print-container div,
     .print-container section {
-      background-color: #ffffff !important;
-      background: #ffffff !important;
       border-color: #cbd5e1 !important;
     }
 
@@ -139,6 +149,8 @@
       border: 1px solid #94a3b8 !important;
       border-radius: 6px !important;
       padding: 12px !important;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     /* Standardize table styling and cell spacing */
@@ -148,10 +160,20 @@
       margin-top: 1rem !important;
       margin-bottom: 1rem !important;
       table-layout: fixed !important;
+      page-break-inside: auto !important;
+    }
+
+    thead {
+      display: table-header-group !important;
+    }
+
+    tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     th, td {
-      border: 1px solid #94a3b8 !important;
+      border: 1px solid #cbd5e1 !important;
       padding: 6px 10px !important;
       font-size: 9.5pt !important;
       color: #000000 !important;
@@ -167,7 +189,7 @@
 
     /* Clean percentage widths for shot list table columns in print to prevent vertical wrapping */
     .print-container table th:nth-child(1),
-    .print-container table td:nth-child(1) { width: 8% !important; } /* Shot # */
+    .print-container table td:nth-child(1) { width: 10% !important; } /* Shot # */
     .print-container table th:nth-child(2),
     .print-container table td:nth-child(2) { width: 12% !important; } /* Framing */
     .print-container table th:nth-child(3),
@@ -177,7 +199,7 @@
     .print-container table th:nth-child(5),
     .print-container table td:nth-child(5) { width: 15% !important; } /* Equipment */
     .print-container table th:nth-child(6),
-    .print-container table td:nth-child(6) { width: 38% !important; } /* Description */
+    .print-container table td:nth-child(6) { width: 36% !important; } /* Description */
 
     /* Reset custom text headings to black color */
     h1, h2, h3, h4, h5, h6, p, span, div, td, th {
@@ -189,10 +211,7 @@
     }
 
     /* Avoid splitting row contents or image cards across page breaks */
-    tr, 
-    img, 
-    .print-card,
-    .grid > div {
+    img {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
@@ -244,15 +263,6 @@
       display: grid !important;
       grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
       gap: 12px !important;
-    }
-
-    /* Prevent page break splitting inside cards/blocks */
-    .print-card,
-    .print-container .grid > div,
-    .print-container .space-y-3,
-    .print-container .space-y-4 {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
     }
   }
 }

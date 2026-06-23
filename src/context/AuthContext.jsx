@@ -189,7 +189,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isCrewOrTalent = () => {
-    return ['Crew', 'Talent'].includes(user?.role);
+    return !hasWriteAccess();
   };
 
   return (

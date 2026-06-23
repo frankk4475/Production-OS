@@ -12,6 +12,7 @@ import DocumentsHub from './components/DocumentsHub';
 import LoginPage from './components/LoginPage';
 import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
+import ShootingSchedule from './components/ShootingSchedule';
 
 function MainApp() {
   const { user, isCrewOrTalent } = useAuth();
@@ -45,7 +46,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -58,7 +59,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'calendar', 'crew', 'docs'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {
@@ -123,6 +124,10 @@ function MainApp() {
             scenes={activeScenes} 
             setScenes={setScenes} 
           />
+        );
+      case 'shootingSchedule':
+        return (
+          <ShootingSchedule key={currentProjectId} />
         );
       case 'calendar':
         return (
