@@ -27,7 +27,7 @@ export default function UserManager({ hideHeader = false }) {
     deleteUserByAdmin 
   } = useAuth();
 
-  const { refreshCrew, activeCrew: crew } = useProject();
+  const { refreshCrew, activeCrew: crew, updateCrewMember } = useProject();
 
   // New user form states
   const [name, setName] = useState('');
@@ -51,10 +51,11 @@ export default function UserManager({ hideHeader = false }) {
     const c = (crew || []).find(member => member.id === crewId);
     if (c) {
       setName(c.name[language] || c.name.en || '');
-      setEmail(c.email || '');
+      setEmail(c.email === '-' ? '' : c.email || '');
       
       // Auto-map system role
       const pos = (c.role || '').toUpperCase();
+      const posTh = (c.role_th || '').toUpperCase();
       if (pos.includes('PRODUCER') || pos === 'PROD') {
         setRole('Producer');
       } else if (pos.includes('1ST AD') || pos.includes('1ST_AD') || pos === 'AD' || pos === 'ASSISTANT DIRECTOR') {
@@ -63,6 +64,8 @@ export default function UserManager({ hideHeader = false }) {
         setRole('Director');
       } else if (pos.includes('MANAGER') || pos.includes('PM') || pos.includes('MANAGE')) {
         setRole('Production_Manager');
+      } else if (pos.includes('WRITER') || pos.includes('SCREENPLAY') || pos.includes('SCRIPT') || posTh.includes('เขียนบท') || posTh.includes('บท')) {
+        setRole('Screenwriter');
       } else if (pos.includes('TALENT') || pos.includes('ACTOR') || pos.includes('MODEL')) {
         setRole('Talent');
       } else {
@@ -91,6 +94,18 @@ export default function UserManager({ hideHeader = false }) {
     setTimeout(async () => {
       try {
         await registerUserByAdmin(name, email, password, role);
+        
+        // If linking a crew member, update their email in the roster if they didn't have one
+        if (selectedCrewLinkId !== 'independent' && updateCrewMember) {
+          const matchedCrew = (crew || []).find(member => member.id === selectedCrewLinkId);
+          if (matchedCrew && (!matchedCrew.email || matchedCrew.email === '-')) {
+            await updateCrewMember({
+              ...matchedCrew,
+              email: email
+            });
+          }
+        }
+
         if (refreshCrew) await refreshCrew();
         setSuccessMsg(language === 'th' ? 'สร้างบัญชีผู้ใช้งานสำเร็จ!' : 'User account created successfully!');
         
@@ -210,7 +225,7 @@ export default function UserManager({ hideHeader = false }) {
                 </option>
                 {(() => {
                   const crewWithoutAccount = (crew || []).filter(c => 
-                    c.email && c.email !== '-' && !(users || []).some(u => u.email?.toLowerCase() === c.email?.toLowerCase())
+                    !(users || []).some(u => u.email && u.email !== '-' && u.email.toLowerCase() === c.email?.toLowerCase())
                   );
                   return crewWithoutAccount.map(c => (
                     <option key={c.id} value={c.id}>
@@ -256,13 +271,13 @@ export default function UserManager({ hideHeader = false }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  readOnly={selectedCrewLinkId !== 'independent'}
+                  readOnly={selectedCrewLinkId !== 'independent' && email && email !== ''}
                   placeholder="somchai@production.com"
                   className={`w-full pl-9 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-gold-500 transition-all ${
                     theme === 'dark' 
                       ? 'bg-obsidian-950 border-obsidian-800 text-slate-100 placeholder-slate-650' 
                       : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 shadow-inner'
-                  } ${selectedCrewLinkId !== 'independent' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  } ${selectedCrewLinkId !== 'independent' && email && email !== '' ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -307,6 +322,7 @@ export default function UserManager({ hideHeader = false }) {
                 <option value="1st_AD">{language === 'th' ? 'ผู้ช่วยผู้กำกับ 1 (1st AD) • สิทธิ์เขียน/แก้ไข' : '1st AD (Write/Edit Access)'}</option>
                 <option value="Director">{language === 'th' ? 'ผู้กำกับ (Director) • สิทธิ์เขียน/แก้ไข' : 'Director (Write/Edit Access)'}</option>
                 <option value="Production_Manager">{language === 'th' ? 'ผู้จัดการกองถ่าย (Production Manager) • สิทธิ์เขียน/แก้ไข' : 'Production Manager (Write/Edit Access)'}</option>
+                <option value="Screenwriter">{language === 'th' ? 'นักเขียนบท (Screenwriter) • สิทธิ์เขียน/แก้ไข' : 'Screenwriter (Write/Edit Access)'}</option>
                 <option value="Crew">{language === 'th' ? 'ทีมงาน (Crew) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Crew Member (Personal schedule / Read-only)'}</option>
                 <option value="Talent">{language === 'th' ? 'นักแสดง (Talent) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Talent / Actor (Personal schedule / Read-only)'}</option>
               </select>
@@ -380,6 +396,8 @@ export default function UserManager({ hideHeader = false }) {
                               ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                               : u.role === 'Production_Manager'
                               ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                              : u.role === 'Screenwriter'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                               : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                           }`}>
                             {getRoleLabel(u.role)}

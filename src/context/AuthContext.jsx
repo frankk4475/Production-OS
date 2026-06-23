@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
                        : role === '1st_AD' ? 'ผู้ช่วยผู้กำกับ 1 (1st AD)' 
                        : role === 'Director' ? 'ผู้กำกับ (Director)' 
                        : role === 'Production_Manager' ? 'ผู้จัดการกองถ่าย (Production Manager)' 
+                       : role === 'Screenwriter' ? 'นักเขียนบท (Screenwriter)' 
                        : role === 'Crew' ? 'ทีมงานฝ่ายผลิต (Crew)' 
                        : role === 'Talent' ? 'นักแสดง / แบบ (Talent)' : role;
         await api.createCrewMember({
@@ -184,7 +185,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasWriteAccess = () => {
-    return ['Producer', '1st_AD', 'Director', 'Production_Manager'].includes(user?.role);
+    return ['Producer', '1st_AD', 'Director', 'Production_Manager', 'Screenwriter'].includes(user?.role);
   };
 
   const isCrewOrTalent = () => {

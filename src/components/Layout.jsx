@@ -34,6 +34,8 @@ const getRoleLabel = (roleName, language) => {
       return language === 'th' ? 'ผู้กำกับ' : 'Director';
     case 'Production_Manager':
       return language === 'th' ? 'ผู้จัดการกองถ่าย' : 'Production Manager';
+    case 'Screenwriter':
+      return language === 'th' ? 'นักเขียนบท' : 'Screenwriter';
     case 'Crew':
       return language === 'th' ? 'ทีมงานฝ่ายผลิต' : 'Crew';
     case 'Talent':
