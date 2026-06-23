@@ -98,7 +98,7 @@ export const th = {
     techRequirements: "ข้อมูลทางเทคนิคของแต่ละแผนก",
     cameraShotList: "รายการช็อตกล้อง",
     shotNum: "ช็อตที่",
-    framing: "ขนาดภาพ (เช่น ECU, MCU, WS)",
+    framing: "ขนาดภาพ",
     lens: "ระยะเลนส์",
     movement: "การเคลื่อนกล้อง",
     equipment: "อุปกรณ์เสริมที่ต้องใช้",

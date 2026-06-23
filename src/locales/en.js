@@ -98,7 +98,7 @@ export const en = {
     techRequirements: "Department Tech Notes",
     cameraShotList: "Camera Shot List",
     shotNum: "Shot #",
-    framing: "Framing (e.g. ECU, MCU, WS)",
+    framing: "Framing",
     lens: "Lens Focal Length",
     movement: "Camera Movement",
     equipment: "Required Equipment",

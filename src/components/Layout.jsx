@@ -24,6 +24,25 @@ import {
   Shield
 } from 'lucide-react';
 
+const getRoleLabel = (roleName, language) => {
+  switch (roleName) {
+    case 'Producer':
+      return language === 'th' ? 'ผู้ดำเนินงานสร้าง' : 'Producer';
+    case '1st_AD':
+      return language === 'th' ? 'ผู้ช่วยผู้กำกับ 1' : '1st AD';
+    case 'Director':
+      return language === 'th' ? 'ผู้กำกับ' : 'Director';
+    case 'Production_Manager':
+      return language === 'th' ? 'ผู้จัดการกองถ่าย' : 'Production Manager';
+    case 'Crew':
+      return language === 'th' ? 'ทีมงานฝ่ายผลิต' : 'Crew';
+    case 'Talent':
+      return language === 'th' ? 'นักแสดง/แบบ' : 'Talent';
+    default:
+      return roleName;
+  }
+};
+
 export default function Layout({ 
   children, 
   currentTab, 
@@ -349,7 +368,7 @@ export default function Layout({
                 <div className="hidden lg:flex flex-col text-left">
                   <span className="text-xs font-bold leading-tight truncate max-w-[100px]">{user?.name || 'User'}</span>
                   <span className="text-[10px] text-slate-400 font-medium leading-tight">
-                    {user?.role || '1st AD'}
+                    {getRoleLabel(user?.role, language) || '1st AD'}
                   </span>
                 </div>
               </div>

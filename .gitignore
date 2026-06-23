@@ -30,3 +30,6 @@ dist-ssr
 .env.development
 .env.test
 
+# Database backups
+production_os_database_backup_*.json
+

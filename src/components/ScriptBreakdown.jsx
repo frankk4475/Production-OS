@@ -60,6 +60,18 @@ export default function ScriptBreakdown() {
   const [formWardrobeEn, setFormWardrobeEn] = useState('');
   const [formTechTh, setFormTechTh] = useState('');
   const [formTechEn, setFormTechEn] = useState('');
+  const [formCameraNotesTh, setFormCameraNotesTh] = useState('');
+  const [formCameraNotesEn, setFormCameraNotesEn] = useState('');
+  const [formArtNotesTh, setFormArtNotesTh] = useState('');
+  const [formArtNotesEn, setFormArtNotesEn] = useState('');
+  const [formLightingNotesTh, setFormLightingNotesTh] = useState('');
+  const [formLightingNotesEn, setFormLightingNotesEn] = useState('');
+  const [formSoundNotesTh, setFormSoundNotesTh] = useState('');
+  const [formSoundNotesEn, setFormSoundNotesEn] = useState('');
+  const [formWardrobeNotesTh, setFormWardrobeNotesTh] = useState('');
+  const [formWardrobeNotesEn, setFormWardrobeNotesEn] = useState('');
+  const [formProductionNotesTh, setFormProductionNotesTh] = useState('');
+  const [formProductionNotesEn, setFormProductionNotesEn] = useState('');
   const [formStatus, setFormStatus] = useState('pending');
 
   // Reset form helper
@@ -80,6 +92,18 @@ export default function ScriptBreakdown() {
     setFormWardrobeEn('');
     setFormTechTh('');
     setFormTechEn('');
+    setFormCameraNotesTh('');
+    setFormCameraNotesEn('');
+    setFormArtNotesTh('');
+    setFormArtNotesEn('');
+    setFormLightingNotesTh('');
+    setFormLightingNotesEn('');
+    setFormSoundNotesTh('');
+    setFormSoundNotesEn('');
+    setFormWardrobeNotesTh('');
+    setFormWardrobeNotesEn('');
+    setFormProductionNotesTh('');
+    setFormProductionNotesEn('');
     setFormStatus('pending');
     setEditingScene(null);
   };
@@ -110,6 +134,18 @@ export default function ScriptBreakdown() {
     setFormWardrobeEn(scene.wardrobe?.en || '');
     setFormTechTh(scene.tech_notes?.th || '');
     setFormTechEn(scene.tech_notes?.en || '');
+    setFormCameraNotesTh(scene.tech_notes?.camera_notes?.th || scene.tech_notes?.th || '');
+    setFormCameraNotesEn(scene.tech_notes?.camera_notes?.en || scene.tech_notes?.en || '');
+    setFormArtNotesTh(scene.tech_notes?.art_notes?.th || '');
+    setFormArtNotesEn(scene.tech_notes?.art_notes?.en || '');
+    setFormLightingNotesTh(scene.tech_notes?.lighting_notes?.th || '');
+    setFormLightingNotesEn(scene.tech_notes?.lighting_notes?.en || '');
+    setFormSoundNotesTh(scene.tech_notes?.sound_notes?.th || '');
+    setFormSoundNotesEn(scene.tech_notes?.sound_notes?.en || '');
+    setFormWardrobeNotesTh(scene.tech_notes?.wardrobe_notes?.th || '');
+    setFormWardrobeNotesEn(scene.tech_notes?.wardrobe_notes?.en || '');
+    setFormProductionNotesTh(scene.tech_notes?.production_notes?.th || '');
+    setFormProductionNotesEn(scene.tech_notes?.production_notes?.en || '');
     setFormStatus(scene.status || 'pending');
     setIsModalOpen(true);
   };
@@ -158,7 +194,13 @@ export default function ScriptBreakdown() {
       },
       tech_notes: {
         th: formTechTh || formTechEn,
-        en: formTechEn || formTechTh
+        en: formTechEn || formTechTh,
+        camera_notes: { th: formCameraNotesTh || '', en: formCameraNotesEn || '' },
+        art_notes: { th: formArtNotesTh || '', en: formArtNotesEn || '' },
+        lighting_notes: { th: formLightingNotesTh || '', en: formLightingNotesEn || '' },
+        sound_notes: { th: formSoundNotesTh || '', en: formSoundNotesEn || '' },
+        wardrobe_notes: { th: formWardrobeNotesTh || '', en: formWardrobeNotesEn || '' },
+        production_notes: { th: formProductionNotesTh || '', en: formProductionNotesEn || '' }
       },
       status: formStatus
     };
@@ -453,15 +495,82 @@ export default function ScriptBreakdown() {
                                 </div>
                               </div>
 
-                              {/* Technical Notes */}
-                              <div>
-                                <p className="font-semibold text-slate-400 uppercase tracking-wider mb-1">{t('breakdown.techNotes')}</p>
-                                <div className={`p-3 rounded-lg border leading-relaxed ${
-                                  theme === 'dark' 
-                                    ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-300' 
-                                    : 'bg-slate-50 border-slate-200 text-slate-700'
-                                }`}>
-                                  {scene.tech_notes?.[language] || scene.tech_notes?.en || '-'}
+                              {/* Technical & Department Notes */}
+                              <div className="md:col-span-3 border-t border-slate-100/5 dark:border-obsidian-850/60 pt-4 mt-2">
+                                <p className="font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                  <span>{t('breakdown.techNotes')}</span>
+                                </p>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {/* General */}
+                                  {(scene.tech_notes?.[language] || scene.tech_notes?.en) && (
+                                    <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                      theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                    }`}>
+                                      <span className="font-bold text-gold-500">{language === 'th' ? 'ทั่วไป / General' : 'General Notes'}</span>
+                                      <p className="whitespace-pre-line leading-relaxed font-medium">{scene.tech_notes?.[language] || scene.tech_notes?.en}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Camera */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">🎥 {language === 'th' ? 'กล้องและอุปกรณ์ / Camera' : 'Camera Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.camera_notes?.[language] || scene.tech_notes?.camera_notes?.en || scene.tech_notes?.[language] || scene.tech_notes?.en || '-'}
+                                    </p>
+                                  </div>
+
+                                  {/* Art */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">🎨 {language === 'th' ? 'ศิลป์และอุปกรณ์ / Art' : 'Art & Props Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.art_notes?.[language] || scene.tech_notes?.art_notes?.en || '-'}
+                                    </p>
+                                  </div>
+
+                                  {/* Lighting */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-355' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">💡 {language === 'th' ? 'แสงและไฟ / Lighting' : 'Lighting Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.lighting_notes?.[language] || scene.tech_notes?.lighting_notes?.en || '-'}
+                                    </p>
+                                  </div>
+
+                                  {/* Sound */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">🔊 {language === 'th' ? 'บันทึกเสียง / Sound' : 'Sound Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.sound_notes?.[language] || scene.tech_notes?.sound_notes?.en || '-'}
+                                    </p>
+                                  </div>
+
+                                  {/* Wardrobe */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">👗 {language === 'th' ? 'เครื่องแต่งกายและแต่งหน้า / Wardrobe' : 'Wardrobe Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.wardrobe_notes?.[language] || scene.tech_notes?.wardrobe_notes?.en || '-'}
+                                    </p>
+                                  </div>
+
+                                  {/* Production */}
+                                  <div className={`p-3 rounded-lg border flex flex-col gap-1 ${
+                                    theme === 'dark' ? 'bg-obsidian-950/60 border-obsidian-800/40 text-slate-350' : 'bg-slate-50 border-slate-200 text-slate-700'
+                                  }`}>
+                                    <span className="font-bold text-gold-500">💼 {language === 'th' ? 'การจัดการกอง / Production' : 'Production Notes'}</span>
+                                    <p className="whitespace-pre-line leading-relaxed font-medium">
+                                      {scene.tech_notes?.production_notes?.[language] || scene.tech_notes?.production_notes?.en || '-'}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
 
@@ -767,6 +876,177 @@ export default function ScriptBreakdown() {
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
                     }`}
                   />
+                </div>
+              </div>
+
+              {/* Department Notes */}
+              <div className="border-t border-slate-100/5 dark:border-obsidian-800/40 pt-4 space-y-4">
+                <h4 className="text-sm font-extrabold text-gold-500 font-serif flex items-center gap-1.5">
+                  <span>{language === 'th' ? 'คำแนะนำสำหรับแต่ละแผนก / Department Instructions' : 'Department Specific Instructions'}</span>
+                </h4>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Camera */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      🎥 {language === 'th' ? 'แผนกกล้องและอุปกรณ์ (Camera & Grip)' : 'Camera & Grip Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formCameraNotesTh}
+                        onChange={(e) => setFormCameraNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกกล้อง (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formCameraNotesEn}
+                        onChange={(e) => setFormCameraNotesEn(e.target.value)}
+                        placeholder="Camera instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Art */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      🎨 {language === 'th' ? 'แผนกศิลป์และอุปกรณ์ประกอบฉาก (Art & Props)' : 'Art & Props Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formArtNotesTh}
+                        onChange={(e) => setFormArtNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกศิลป์ (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formArtNotesEn}
+                        onChange={(e) => setFormArtNotesEn(e.target.value)}
+                        placeholder="Art instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Lighting */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      💡 {language === 'th' ? 'แผนกแสงและไฟ (Lighting)' : 'Lighting Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formLightingNotesTh}
+                        onChange={(e) => setFormLightingNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกแสง (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formLightingNotesEn}
+                        onChange={(e) => setFormLightingNotesEn(e.target.value)}
+                        placeholder="Lighting instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sound */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      🔊 {language === 'th' ? 'แผนกบันทึกเสียง (Sound)' : 'Sound Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formSoundNotesTh}
+                        onChange={(e) => setFormSoundNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกเสียง (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formSoundNotesEn}
+                        onChange={(e) => setFormSoundNotesEn(e.target.value)}
+                        placeholder="Sound instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Wardrobe */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      👗 {language === 'th' ? 'แผนกเสื้อผ้าและแต่งหน้า (Wardrobe & Makeup)' : 'Wardrobe & Makeup Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formWardrobeNotesTh}
+                        onChange={(e) => setFormWardrobeNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกเสื้อผ้า (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formWardrobeNotesEn}
+                        onChange={(e) => setFormWardrobeNotesEn(e.target.value)}
+                        placeholder="Wardrobe instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Production */}
+                  <div className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-obsidian-950/30 border-obsidian-800/50' : 'bg-slate-50/50 border-slate-150'}`}>
+                    <label className="block text-xs font-extrabold text-gold-500 uppercase tracking-wider mb-2">
+                      💼 {language === 'th' ? 'แผนกจัดการและอำนวยการสร้าง (Production)' : 'Production & Direction Department'}
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={formProductionNotesTh}
+                        onChange={(e) => setFormProductionNotesTh(e.target.value)}
+                        placeholder="คำแนะนำแผนกจัดการ (ไทย)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                      <input
+                        type="text"
+                        value={formProductionNotesEn}
+                        onChange={(e) => setFormProductionNotesEn(e.target.value)}
+                        placeholder="Production instructions (English)"
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none ${
+                          theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200'
+                        }`}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

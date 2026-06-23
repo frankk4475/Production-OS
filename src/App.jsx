@@ -12,10 +12,9 @@ import DocumentsHub from './components/DocumentsHub';
 import LoginPage from './components/LoginPage';
 import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
-import UserManager from './components/UserManager';
 
 function MainApp() {
-  const { user, login, isCrewOrTalent } = useAuth();
+  const { user, isCrewOrTalent } = useAuth();
   const {
     projects,
     currentProjectId,
@@ -89,10 +88,6 @@ function MainApp() {
     window.location.hash = `#/${tab}`;
   };
 
-  const handleLogin = (userData) => {
-    login(userData.email, userData.role, userData.name);
-  };
-
   // Tab rendering helper
   const renderContent = () => {
     switch (currentTab) {
@@ -141,6 +136,7 @@ function MainApp() {
       case 'crew':
         return (
           <CrewPortal
+            key="crew-portal-global"
             crew={activeCrew}
             setCrew={setCrew}
             events={activeEvents}
@@ -149,18 +145,22 @@ function MainApp() {
             setCompletedTasks={setCompletedTasks}
           />
         );
-      case 'personal':
+      case 'personal': {
+        const myCrewMember = (activeCrew || []).find(c => c.email?.toLowerCase() === user?.email?.toLowerCase());
+        const personalKey = myCrewMember?.id || 'none';
         return (
           <CrewPortal
+            key={personalKey}
             crew={activeCrew}
             setCrew={setCrew}
             events={activeEvents}
             setEvents={setEvents}
             completedTasks={activeCompletedTasks}
             setCompletedTasks={setCompletedTasks}
-            lockedCrewId={user?.id}
+            lockedCrewId={personalKey}
           />
         );
+      }
       case 'docs':
         return (
           <DocumentsHub
@@ -170,6 +170,8 @@ function MainApp() {
             initialSceneNum={tabParams?.sceneNum}
             shotList={activeShotList}
             setShotList={setShotList}
+            events={activeEvents}
+            setEvents={setEvents}
           />
         );
       case 'callsheets':
@@ -182,6 +184,8 @@ function MainApp() {
             shotList={activeShotList}
             setShotList={setShotList}
             lockedTab="callsheet"
+            events={activeEvents}
+            setEvents={setEvents}
           />
         );
       default:

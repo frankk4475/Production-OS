@@ -19,12 +19,49 @@ import {
   Shield
 } from 'lucide-react';
 
+const STANDARD_CREW_ROLES = [
+  { th: 'ผู้ดำเนินงานสร้าง', en: 'Producer' },
+  { th: 'ผู้กำกับ', en: 'Director' },
+  { th: 'นักเขียนบท', en: 'Screenwriter' },
+  { th: 'ผู้ช่วยผู้กำกับ 1', en: '1st Assistant Director' },
+  { th: 'ผู้จัดการกองถ่าย', en: 'Production Manager' },
+  { th: 'ผู้บันทึกการถ่ายทำ', en: 'Script Supervisor' },
+  { th: 'ผู้กำกับภาพ', en: 'Director of Photography' },
+  { th: 'ผู้ช่วยกล้อง 1', en: 'Focus Puller' },
+  { th: 'ผู้ช่วยกล้อง 2', en: 'Camera Assistant' },
+  { th: 'หัวหน้าช่างคุมอุปกรณ์กล้อง', en: 'Key Grip' },
+  { th: 'หัวหน้าช่างไฟ', en: 'Gaffer' },
+  { th: 'ช่างไฟ', en: 'Best Boy Electric' },
+  { th: 'ผู้กำกับศิลป์', en: 'Production Designer' },
+  { th: 'ผู้ดูแลอุปกรณ์ประกอบฉาก', en: 'Prop Master' },
+  { th: 'ช่างบันทึกเสียง', en: 'Sound Mixer' },
+  { th: 'คนถือไมค์บูม', en: 'Boom Operator' },
+  { th: 'ช่างแต่งหน้าหลัก', en: 'Key Makeup Artist' },
+  { th: 'ช่างออกแบบเครื่องแต่งกาย', en: 'Costume Designer' },
+  { th: 'นักแสดง', en: 'Actor/Talent' },
+  { th: 'ผู้ช่วยทั่วไปในกองถ่าย', en: 'Production Assistant' }
+];
+
+const getCrewDepartment = (member) => {
+  if (!member) return null;
+  const role = (member.role || '').toLowerCase();
+  const roleTh = (member.role_th || '').toLowerCase();
+  if (role.includes('camera') || role.includes('photography') || role.includes('grip') || role.includes('dp') || role.includes('dop') || role.includes('focus') || role.includes('dit') || roleTh.includes('กล้อง') || roleTh.includes('ภาพ')) return 'camera';
+  if (role.includes('art') || role.includes('prop') || role.includes('design') || role.includes('set') || roleTh.includes('ศิลป์') || roleTh.includes('ประกอบฉาก')) return 'art';
+  if (role.includes('gaffer') || role.includes('light') || role.includes('electric') || roleTh.includes('ไฟ') || roleTh.includes('ไฟฟ้า')) return 'lighting';
+  if (role.includes('sound') || role.includes('mixer') || role.includes('boom') || role.includes('audio') || roleTh.includes('เสียง') || roleTh.includes('บันทึกเสียง')) return 'sound';
+  if (role.includes('makeup') || role.includes('wardrobe') || role.includes('stylist') || role.includes('costume') || roleTh.includes('แต่งหน้า') || roleTh.includes('เสื้อผ้า') || roleTh.includes('แต่งกาย')) return 'wardrobe';
+  if (role.includes('director') || role.includes('ad') || role.includes('manager') || role.includes('coordinator') || role.includes('producer') || role.includes('writer') || role.includes('screen') || role.includes('script') || roleTh.includes('ผู้กำกับ') || roleTh.includes('กองถ่าย') || roleTh.includes('จัดการ') || roleTh.includes('เขียนบท') || roleTh.includes('บท')) return 'production';
+  return null;
+};
+
 export default function CrewPortal({ lockedCrewId }) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
-  const { hasWriteAccess, isCrewOrTalent } = useAuth();
+  const { user, hasWriteAccess, isCrewOrTalent } = useAuth();
   
   const {
+    activeScenes,
     activeCrew: crew,
     addCrewMember,
     updateCrewMember,
@@ -32,7 +69,7 @@ export default function CrewPortal({ lockedCrewId }) {
     activeEvents: events,
     saveEvents,
     activeCompletedTasks: completedTasks,
-    saveCompletedTasks,
+    setCompletedTasks: saveCompletedTasks,
     refreshCrew,
     isLoading
   } = useProject();
@@ -44,6 +81,16 @@ export default function CrewPortal({ lockedCrewId }) {
 
   const [selectedCrewId, setSelectedCrewId] = useState(lockedCrewId || '');
   const [allEvents, setAllEvents] = useState([]);
+
+  // Auto-select the logged-in crew member's ID if in crew/talent view
+  useEffect(() => {
+    if (user && isCrewOrTalent() && crew.length > 0) {
+      const match = crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase());
+      if (match) {
+        setSelectedCrewId(match.id);
+      }
+    }
+  }, [user, crew]);
 
   // Fetch all events across all projects for cross-project conflict checking in the roster list
   useEffect(() => {
@@ -253,12 +300,79 @@ export default function CrewPortal({ lockedCrewId }) {
   };
 
   // Get selected crew details for personal portal
-  const activeCrewMember = crew.find(c => c.id === selectedCrewId) || crew[0];
+  const activeCrewMember = selectedCrewId === 'none' 
+    ? null 
+    : (crew.find(c => c.id === selectedCrewId) || crew[0]);
 
   // Get active crew member's events
   const crewEvents = activeCrewMember
     ? events.filter(e => e.crew_assigned && e.crew_assigned.includes(activeCrewMember.id)).sort((a,b) => a.date.localeCompare(b.date))
     : [];
+
+  const [newTaskText, setNewTaskText] = useState('');
+
+  const handleAddTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskText.trim() || !activeCrewMember) return;
+
+    const currentTasksTh = activeCrewMember.tasks?.th || [];
+    const currentTasksEn = activeCrewMember.tasks?.en || [];
+
+    const updatedTasks = {
+      th: language === 'th' ? [...currentTasksTh, newTaskText.trim()] : [...currentTasksTh, newTaskText.trim()],
+      en: language === 'en' ? [...currentTasksEn, newTaskText.trim()] : [...currentTasksEn, newTaskText.trim()]
+    };
+    
+    if (language === 'th') {
+      updatedTasks.en = [...currentTasksEn, newTaskText.trim()];
+    } else {
+      updatedTasks.th = [...currentTasksTh, newTaskText.trim()];
+    }
+
+    const updatedMember = {
+      ...activeCrewMember,
+      tasks: updatedTasks
+    };
+
+    try {
+      await updateCrewMember(updatedMember);
+      setNewTaskText('');
+    } catch (err) {
+      alert("Failed to add task: " + err.message);
+    }
+  };
+
+  const handleDeleteTask = async (taskIndex) => {
+    if (!activeCrewMember) return;
+    const confirmMsg = language === 'th' ? 'คุณต้องการลบหน้าที่รับผิดชอบนี้?' : 'Are you sure you want to delete this task?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const currentTasksTh = activeCrewMember.tasks?.th || [];
+    const currentTasksEn = activeCrewMember.tasks?.en || [];
+
+    const updatedTasks = {
+      th: currentTasksTh.filter((_, idx) => idx !== taskIndex),
+      en: currentTasksEn.filter((_, idx) => idx !== taskIndex)
+    };
+
+    const updatedMember = {
+      ...activeCrewMember,
+      tasks: updatedTasks
+    };
+
+    try {
+      await updateCrewMember(updatedMember);
+      
+      const key = `${activeCrewMember.id}-${taskIndex}`;
+      if (completedTasks[key] !== undefined) {
+        const updatedCompleted = { ...completedTasks };
+        delete updatedCompleted[key];
+        await saveCompletedTasks(updatedCompleted);
+      }
+    } catch (err) {
+      alert("Failed to delete task: " + err.message);
+    }
+  };
 
   if (isLoading && crew.length === 0) {
     return (
@@ -323,31 +437,62 @@ export default function CrewPortal({ lockedCrewId }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-3">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">ตำแหน่ง (ไทย)</label>
-                <input
-                  type="text"
-                  value={formRoleTh}
-                  onChange={(e) => setFormRoleTh(e.target.value)}
-                  placeholder="เช่น ผู้กำกับภาพ"
-                  className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                <label className="block text-[10px] font-bold text-gold-500 uppercase mb-1">
+                  {language === 'th' ? 'เลือกตำแหน่งงานมาตรฐาน (หรือระบุเองด้านล่าง)' : 'Select Standard Role (or type below)'}
+                </label>
+                <select
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'custom') {
+                      // Let user type
+                    } else if (val) {
+                      const selected = STANDARD_CREW_ROLES.find(r => r.en === val);
+                      if (selected) {
+                        setFormRoleTh(selected.th);
+                        setFormRoleEn(selected.en);
+                      }
+                    }
+                  }}
+                  className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer ${
                     theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
                   }`}
-                />
+                >
+                  <option value="">-- {language === 'th' ? 'เลือกตำแหน่งงาน' : 'Select Job Title'} --</option>
+                  {STANDARD_CREW_ROLES.map((r, i) => (
+                    <option key={i} value={r.en}>{language === 'th' ? `${r.th} (${r.en})` : r.en}</option>
+                  ))}
+                  <option value="custom">{language === 'th' ? 'ระบุเอง / Custom' : 'Custom...'}</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Role (EN) *</label>
-                <input
-                  type="text"
-                  required
-                  value={formRoleEn}
-                  onChange={(e) => setFormRoleEn(e.target.value)}
-                  placeholder="e.g. Director of Photography"
-                  className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                  }`}
-                />
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">ตำแหน่ง (ไทย)</label>
+                  <input
+                    type="text"
+                    value={formRoleTh}
+                    onChange={(e) => setFormRoleTh(e.target.value)}
+                    placeholder="เช่น ผู้กำกับภาพ"
+                    className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Role (EN) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formRoleEn}
+                    onChange={(e) => setFormRoleEn(e.target.value)}
+                    placeholder="e.g. Director of Photography"
+                    className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
+                </div>
               </div>
             </div>
 
@@ -608,26 +753,106 @@ export default function CrewPortal({ lockedCrewId }) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {crewEvents.map((evt) => (
-                      <div key={evt.id} className="glass-panel p-4 rounded-xl border border-slate-200/50 dark:border-obsidian-850 bg-slate-50/20 dark:bg-obsidian-950/20 flex justify-between items-center gap-4 hover:scale-[1.005] transition-transform">
-                        <div className="space-y-1">
-                          <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider ${
-                            evt.type === 'shoot' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
-                          }`}>
-                            {evt.type === 'shoot' ? t('calendar.shootDay') : t('calendar.prepDay')}
-                          </span>
-                          <h4 className="text-sm font-bold pt-1">{evt.title?.[language] || evt.title?.en}</h4>
-                          <p className="text-xs text-slate-400 flex items-center gap-1.5">
-                            <span className="shrink-0">📍</span>
-                            <span>{evt.location?.[language] || evt.location?.en}</span>
-                          </p>
+                    {crewEvents.map((evt) => {
+                      const matchedScene = evt.scene_number ? activeScenes.find(s => s.scene_number === evt.scene_number || s.id === evt.scene_number) : null;
+                      const dept = getCrewDepartment(activeCrewMember);
+                      
+                      let deptLabel = '';
+                      let deptNote = '';
+                      if (dept === 'camera') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกกล้อง' : 'Camera & Grip Instructions';
+                        deptNote = evt.notes?.camera_notes;
+                      } else if (dept === 'art') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกศิลป์' : 'Art & Props Instructions';
+                        deptNote = evt.notes?.art_notes;
+                      } else if (dept === 'lighting') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกแสง' : 'Lighting & Electric Instructions';
+                        deptNote = evt.notes?.lighting_notes;
+                      } else if (dept === 'sound') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกเสียง' : 'Sound & Audio Instructions';
+                        deptNote = evt.notes?.sound_notes;
+                      } else if (dept === 'wardrobe') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกเครื่องแต่งกาย/แต่งหน้า' : 'Makeup & Wardrobe Instructions';
+                        deptNote = evt.notes?.wardrobe_notes;
+                      } else if (dept === 'production') {
+                        deptLabel = language === 'th' ? 'หน้าที่/คำแนะนำแผนกจัดการกองถ่าย' : 'Production & Direction Instructions';
+                        deptNote = evt.notes?.production_notes;
+                      }
+
+                      if (!deptNote && dept) {
+                        if (matchedScene) {
+                          if (dept === 'camera') deptNote = matchedScene.tech_notes?.camera_notes?.[language] || matchedScene.tech_notes?.camera_notes?.en || matchedScene.tech_notes?.[language] || matchedScene.tech_notes?.en;
+                          else if (dept === 'art') deptNote = matchedScene.tech_notes?.art_notes?.[language] || matchedScene.tech_notes?.art_notes?.en;
+                          else if (dept === 'lighting') deptNote = matchedScene.tech_notes?.lighting_notes?.[language] || matchedScene.tech_notes?.lighting_notes?.en;
+                          else if (dept === 'sound') deptNote = matchedScene.tech_notes?.sound_notes?.[language] || matchedScene.tech_notes?.sound_notes?.en;
+                          else if (dept === 'wardrobe') deptNote = matchedScene.tech_notes?.wardrobe_notes?.[language] || matchedScene.tech_notes?.wardrobe_notes?.en;
+                          else if (dept === 'production') deptNote = matchedScene.tech_notes?.production_notes?.[language] || matchedScene.tech_notes?.production_notes?.en;
+                        }
+                        
+                        if (!deptNote) {
+                          if (dept === 'camera') deptNote = language === 'th' ? 'ตรวจสอบอุปกรณ์กล้อง เลนส์ การ์ดบันทึกข้อมูล และระบบไฟสำรอง' : 'Verify camera packages, lenses, media, and power backups.';
+                          else if (dept === 'art') deptNote = language === 'th' ? 'เตรียมอุปกรณ์ประกอบฉากหลักและจัดฉากตามที่กำหนด' : 'Prepare props and set dressing as specified.';
+                          else if (dept === 'lighting') deptNote = language === 'th' ? 'ติดตั้งไฟและแผงสะท้อนแสงตามทิศทางกล้อง ตรวจสอบระบบจ่ายไฟ 220V' : 'Refer to camera setup guidelines. Ensure 220V distro feeds are routed exterior.';
+                          else if (dept === 'sound') deptNote = language === 'th' ? 'เตรียมไมโครโฟนบูมและไมค์ลาวาเลียร์ให้พร้อม ทดสอบระดับเสียงบรรยากาศ' : 'Ensure boom mics and lavaliers are prepped. Track ambient sound levels.';
+                          else if (dept === 'wardrobe') deptNote = language === 'th' ? 'ตรวจเช็กเสื้อผ้าเครื่องแต่งกายของนักแสดงและคุมการแต่งหน้าทำผมให้ต่อเนื่อง' : 'Pre-check cast costumes and makeup continuity matching storyboard.';
+                          else if (dept === 'production') deptNote = language === 'th' ? 'เตรียมใบสั่งงานกองถ่าย ดูแลความเรียบร้อยทั่วไปในกองถ่ายและประสานเวลา' : 'Prepare call sheets and script notes. Sync schedules with AD.';
+                        }
+                      }
+
+                      return (
+                        <div key={evt.id} className="glass-panel p-4 rounded-xl border border-slate-200/50 dark:border-obsidian-850 bg-slate-50/20 dark:bg-obsidian-950/20 flex flex-col gap-3 hover:scale-[1.002] transition-transform">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="space-y-1">
+                              <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider ${
+                                evt.type === 'shoot' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                              }`}>
+                                {evt.type === 'shoot' ? t('calendar.shootDay') : t('calendar.prepDay')}
+                              </span>
+                              <h4 className="text-sm font-bold pt-1">{evt.title?.[language] || evt.title?.en}</h4>
+                              <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                                <span className="shrink-0">📍</span>
+                                <span>{evt.location?.[language] || evt.location?.en}</span>
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-xs font-bold text-gold-500">{evt.date}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{evt.time}</p>
+                            </div>
+                          </div>
+
+                          {evt.type === 'shoot' && (matchedScene || deptNote) && (
+                            <div className="mt-2 pt-2.5 border-t border-slate-150 dark:border-obsidian-850/60 text-xs space-y-2 text-left animate-fadeIn">
+                              {matchedScene && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 bg-slate-100/30 dark:bg-obsidian-950/40 p-2.5 rounded-lg border border-slate-200/40 dark:border-obsidian-800/40">
+                                  <div>
+                                    <span className="font-bold text-gold-500 block mb-0.5">{language === 'th' ? 'ฉาก / เนื้อเรื่องย่อ' : 'Scene / Story Synopsis'}</span>
+                                    <p className="text-slate-700 dark:text-slate-300 font-medium">
+                                      {language === 'th' ? `ฉาก ${matchedScene.scene_number}: ` : `Scene ${matchedScene.scene_number}: `}
+                                      {matchedScene.description?.[language] || matchedScene.description?.en || '-'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-gold-500 block mb-0.5">{language === 'th' ? 'นักแสดงในฉาก' : 'Cast in Scene'}</span>
+                                    <p className="text-slate-700 dark:text-slate-300 font-medium">{matchedScene.cast?.[language] || matchedScene.cast?.en || '-'}</p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {deptNote && (
+                                <div className="p-2.5 rounded-lg border border-gold-500/10 bg-gold-500/5">
+                                  <span className="font-bold text-gold-500 block mb-1">
+                                    📌 {deptLabel}
+                                  </span>
+                                  <p className="text-slate-750 dark:text-slate-350 leading-relaxed font-medium whitespace-pre-line">
+                                    {deptNote}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-bold text-gold-500">{evt.date}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">{evt.time}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -644,30 +869,69 @@ export default function CrewPortal({ lockedCrewId }) {
                     {(activeCrewMember.tasks?.[language] || activeCrewMember.tasks?.en || []).map((task, idx) => {
                       const isChecked = !!completedTasks[`${activeCrewMember.id}-${idx}`];
                       return (
-                        <label 
+                        <div 
                           key={idx} 
-                          className="py-3 flex items-start gap-3 cursor-pointer group select-none"
+                          className="py-2.5 flex items-start justify-between gap-3 group select-none"
                         >
-                          <input 
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => toggleTask(activeCrewMember.id, idx)}
-                            className="rounded border-slate-300 dark:border-obsidian-850 text-gold-500 focus:ring-gold-500 mt-0.5 w-4 h-4 bg-obsidian-950 focus:ring-offset-0 cursor-pointer"
-                          />
-                          <span className={`text-sm transition-all ${
-                            isChecked 
-                              ? 'line-through text-slate-400 dark:text-slate-500' 
-                              : 'text-slate-800 dark:text-slate-200 group-hover:text-gold-500'
-                          }`}>
-                            {task}
-                          </span>
-                        </label>
+                          <label className="flex items-start gap-3 cursor-pointer flex-1">
+                            <input 
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => toggleTask(activeCrewMember.id, idx)}
+                              className="rounded border-slate-350 dark:border-obsidian-800 accent-gold-500 mt-0.5 w-4 h-4 cursor-pointer focus:ring-0 focus:ring-offset-0"
+                            />
+                            <span className={`text-sm transition-all ${
+                              isChecked 
+                                ? 'line-through text-slate-400 dark:text-slate-500' 
+                                : 'text-slate-800 dark:text-slate-200 group-hover:text-gold-500'
+                            }`}>
+                              {task}
+                            </span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTask(idx)}
+                            className="text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-0.5"
+                            title={language === 'th' ? "ลบหน้าที่รับผิดชอบ" : "Delete task"}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       );
                     })}
+                    
+                    {/* Add Task Input Form */}
+                    <form onSubmit={handleAddTask} className="flex gap-2 mt-4 pt-4 border-t border-slate-150 dark:border-obsidian-800/60">
+                      <input
+                        type="text"
+                        required
+                        placeholder={language === 'th' ? "เพิ่มหน้าที่รับผิดชอบใหม่..." : "Add new task..."}
+                        value={newTaskText}
+                        onChange={(e) => setNewTaskText(e.target.value)}
+                        className={`flex-1 px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                          theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100 placeholder-slate-650' : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 shadow-inner'
+                        }`}
+                      />
+                      <button
+                        type="submit"
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-gold-500 text-white hover:bg-gold-600 transition-colors"
+                      >
+                        {language === 'th' ? "เพิ่ม" : "Add"}
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>
 
+            </div>
+          ) : selectedCrewId === 'none' ? (
+            <div className="glass-panel p-8 text-center text-xs space-y-3 max-w-lg mx-auto border border-amber-500/20 bg-amber-500/5 rounded-xl">
+              <p className="text-amber-500 font-bold text-sm">⚠️ {language === 'th' ? 'พบบัญชีผู้ใช้แต่ไม่พบคู่สัญญาในรายชื่อทีมงาน' : 'Account Not Linked to Crew Roster'}</p>
+              <p className="text-slate-400 leading-relaxed font-medium">
+                {language === 'th' 
+                  ? 'บัญชีผู้ใช้นี้เข้าสู่ระบบสำเร็จแล้ว แต่ไม่ได้รับการเชื่อมโยงกับรายชื่อทีมงานในแผนกผลิต กรุณาติดต่อผู้ดำเนินงานสร้าง (Producer) เพื่อตรวจสอบให้แน่ใจว่าอีเมลของบัญชีตรงกับรายชื่อพนักงานในระบบหลัก' 
+                  : 'Your account is logged in successfully, but has not been linked to a profile in the crew roster. Please ask the Producer or 1st AD to ensure your account email matches the roster email.'}
+              </p>
             </div>
           ) : (
             <div className="text-center py-10 italic text-slate-455 text-xs">
@@ -911,35 +1175,66 @@ export default function CrewPortal({ lockedCrewId }) {
               </div>
 
               {/* Roles (TH/EN) */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                    ตำแหน่ง (ไทย)
+                  <label className="block text-xs font-bold text-gold-500 uppercase mb-1">
+                    {language === 'th' ? 'เลือกตำแหน่งงานมาตรฐาน (หรือระบุเองด้านล่าง)' : 'Select Standard Role (or type below)'}
                   </label>
-                  <input
-                    type="text"
-                    value={formRoleTh}
-                    onChange={(e) => setFormRoleTh(e.target.value)}
-                    placeholder="เช่น ผู้กำกับภาพ"
-                    className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                  <select
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'custom') {
+                        // Let user type
+                      } else if (val) {
+                        const selected = STANDARD_CREW_ROLES.find(r => r.en === val);
+                        if (selected) {
+                          setFormRoleTh(selected.th);
+                          setFormRoleEn(selected.en);
+                        }
+                      }
+                    }}
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
                     }`}
-                  />
+                  >
+                    <option value="">-- {language === 'th' ? 'เลือกตำแหน่งงาน' : 'Select Job Title'} --</option>
+                    {STANDARD_CREW_ROLES.map((r, i) => (
+                      <option key={i} value={r.en}>{language === 'th' ? `${r.th} (${r.en})` : r.en}</option>
+                    ))}
+                    <option value="custom">{language === 'th' ? 'ระบุเอง / Custom' : 'Custom...'}</option>
+                  </select>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                    Role (EN) *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formRoleEn}
-                    onChange={(e) => setFormRoleEn(e.target.value)}
-                    placeholder="e.g. Director of Photography"
-                    className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                      ตำแหน่ง (ไทย)
+                    </label>
+                    <input
+                      type="text"
+                      value={formRoleTh}
+                      onChange={(e) => setFormRoleTh(e.target.value)}
+                      placeholder="เช่น ผู้กำกับภาพ"
+                      className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                      Role (EN) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formRoleEn}
+                      onChange={(e) => setFormRoleEn(e.target.value)}
+                      placeholder="e.g. Director of Photography"
+                      className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
 

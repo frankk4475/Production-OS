@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -16,10 +17,24 @@ import {
   Bookmark,
   Edit,
   Trash2,
-  Upload
+  Upload,
+  Settings,
+  Volume2,
+  Sparkles,
+  Briefcase
 } from 'lucide-react';
 
-export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, shotList, setShotList, lockedTab }) {
+export default function DocumentsHub({ 
+  scenes, 
+  crew, 
+  weather, 
+  initialSceneNum, 
+  shotList, 
+  setShotList, 
+  lockedTab,
+  events = [],
+  setEvents
+}) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
@@ -49,6 +64,89 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   // Selected Scene resolver
   const activeScene = scenes.find(s => s.scene_number === selectedSceneNum) || scenes[0];
 
+  // Scheduler states linked with calendar events
+  const sceneEvents = (events || []).filter(e => e.scene_number === selectedSceneNum && e.type === 'shoot');
+  const [activeEventId, setActiveEventId] = useState(() => sceneEvents[0]?.id || 'new');
+  
+  const [schedDate, setSchedDate] = useState('');
+  const [schedLocation, setSchedLocation] = useState('');
+  const [schedCrewCall, setSchedCrewCall] = useState('07:00 AM');
+  const [schedShootCall, setSchedShootCall] = useState('08:30 AM');
+  const [schedLunchTime, setSchedLunchTime] = useState('12:30 PM');
+  const [schedWrapTime, setSchedWrapTime] = useState('06:00 PM');
+  const [schedGeneralNotesTh, setSchedGeneralNotesTh] = useState('');
+  const [schedGeneralNotesEn, setSchedGeneralNotesEn] = useState('');
+  const [schedCameraNotes, setSchedCameraNotes] = useState('');
+  const [schedArtNotes, setSchedArtNotes] = useState('');
+  const [schedLightingNotes, setSchedLightingNotes] = useState('');
+  const [schedSoundNotes, setSchedSoundNotes] = useState('');
+  const [schedWardrobeNotes, setSchedWardrobeNotes] = useState('');
+  const [schedProductionNotes, setSchedProductionNotes] = useState('');
+  const [schedCrewAssigned, setSchedCrewAssigned] = useState([]);
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+
+  // Sync selection state with scene change
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const currentSceneEvents = (events || []).filter(e => e.scene_number === selectedSceneNum && e.type === 'shoot');
+    if (currentSceneEvents.length > 0) {
+      if (!currentSceneEvents.some(e => e.id === activeEventId)) {
+        setActiveEventId(currentSceneEvents[0].id);
+      }
+    } else {
+      setActiveEventId('new');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSceneNum, events]);
+
+  // Sync form inputs with selected event
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (activeEventId && activeEventId !== 'new') {
+      const evt = (events || []).find(e => e.id === activeEventId);
+      if (evt) {
+        setSchedDate(evt.date || '');
+        setSchedLocation(evt.location?.[language] || evt.location?.en || evt.location?.th || '');
+        setSchedCrewCall(evt.notes?.crew_call || '07:00 AM');
+        setSchedShootCall(evt.notes?.shooting_call || evt.time || '08:30 AM');
+        setSchedLunchTime(evt.notes?.lunch_time || '12:30 PM');
+        setSchedWrapTime(evt.notes?.wrap_time || '06:00 PM');
+        setSchedGeneralNotesTh(evt.notes?.th || '');
+        setSchedGeneralNotesEn(evt.notes?.en || '');
+        setSchedCameraNotes(evt.notes?.camera_notes || '');
+        setSchedArtNotes(evt.notes?.art_notes || '');
+        setSchedLightingNotes(evt.notes?.lighting_notes || '');
+        setSchedSoundNotes(evt.notes?.sound_notes || '');
+        setSchedWardrobeNotes(evt.notes?.wardrobe_notes || '');
+        setSchedProductionNotes(evt.notes?.production_notes || '');
+        setSchedCrewAssigned(evt.crew_assigned || []);
+        return;
+      }
+    }
+
+    // Default values for new shoot day
+    setSchedDate(new Date().toISOString().split('T')[0]);
+    setSchedLocation(activeScene?.location?.[language] || activeScene?.location?.en || activeScene?.location?.th || '');
+    setSchedCrewCall('07:00 AM');
+    setSchedShootCall('08:30 AM');
+    setSchedLunchTime('12:30 PM');
+    setSchedWrapTime('06:00 PM');
+    setSchedGeneralNotesTh('');
+    setSchedGeneralNotesEn('');
+    setSchedCameraNotes(activeScene?.tech_notes?.camera_notes?.[language] || activeScene?.tech_notes?.camera_notes?.en || activeScene?.tech_notes?.[language] || activeScene?.tech_notes?.en || '');
+    
+    const defaultArtNotes = activeScene 
+      ? `${language === 'th' ? 'อุปกรณ์:' : 'Props:'} ${activeScene.props?.[language] || activeScene.props?.en || '-'}, ${language === 'th' ? 'เสื้อผ้า:' : 'Wardrobe:'} ${activeScene.wardrobe?.[language] || activeScene.wardrobe?.en || '-'}`
+      : '';
+    setSchedArtNotes(activeScene?.tech_notes?.art_notes?.[language] || activeScene?.tech_notes?.art_notes?.en || defaultArtNotes);
+    setSchedLightingNotes(activeScene?.tech_notes?.lighting_notes?.[language] || activeScene?.tech_notes?.lighting_notes?.en || '');
+    setSchedSoundNotes(activeScene?.tech_notes?.sound_notes?.[language] || activeScene?.tech_notes?.sound_notes?.en || '');
+    setSchedWardrobeNotes(activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || '');
+    setSchedProductionNotes(activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || '');
+    setSchedCrewAssigned([]);
+  }, [activeEventId, selectedSceneNum, activeScene, events, language]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   // Filter shots for active scene (supporting both database schema 'scene_id' and 'scene_number')
   const activeSceneShots = shotList.filter(s => 
     s.scene_id === selectedSceneNum || 
@@ -58,9 +156,67 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
   );
 
   // Resolve crew for departments
-  const dp = crew.find(c => c.role.includes('Director of Photography'));
-  const art = crew.find(c => c.role.includes('Production Designer'));
-  const gaffer = crew.find(c => c.role.includes('Gaffer'));
+  const dp = crew.find(c => c.role.includes('Director of Photography') || c.role.includes('DP') || c.role.includes('DOP'));
+  const art = crew.find(c => c.role.includes('Production Designer') || c.role.includes('Designer') || c.role.includes('Art'));
+  const gaffer = crew.find(c => c.role.includes('Gaffer') || c.role.includes('Lighting'));
+  const soundRecordist = crew.find(c => c.role.toLowerCase().includes('sound') || c.role.toLowerCase().includes('mixer') || c.role.toLowerCase().includes('record'));
+  const wardrobeStylist = crew.find(c => c.role.toLowerCase().includes('makeup') || c.role.toLowerCase().includes('hair') || c.role.toLowerCase().includes('wardrobe') || c.role.toLowerCase().includes('stylist') || c.role.toLowerCase().includes('costume'));
+  const director = crew.find(c => c.role.toLowerCase().includes('director') || c.role.toLowerCase().includes('ad') || c.role.toLowerCase().includes('producer'));
+
+  // Resolve active event schedule details
+  const currentEvent = (events || []).find(e => e.id === activeEventId) || null;
+  const callSheetDate = currentEvent ? currentEvent.date : '';
+  const crewCallTime = currentEvent?.notes?.crew_call || '07:00 AM';
+  const shootCallTime = currentEvent?.notes?.shooting_call || currentEvent?.time || '08:30 AM';
+  const lunchTime = currentEvent?.notes?.lunch_time || '12:30 PM';
+  const wrapTime = currentEvent?.notes?.wrap_time || '06:00 PM';
+  
+  const resolvedLocation = currentEvent?.location?.[language] || currentEvent?.location?.en || activeScene?.location?.[language] || 'TBD';
+  const resolvedCameraNotes = currentEvent?.notes?.camera_notes || activeScene?.tech_notes?.camera_notes?.[language] || activeScene?.tech_notes?.camera_notes?.en || activeScene?.tech_notes?.[language] || activeScene?.tech_notes?.en || (language === 'th' ? 'ตรวจสอบอุปกรณ์กล้อง เลนส์ การ์ดบันทึกข้อมูล และระบบไฟสำรอง' : 'Verify camera packages, lenses, media, and power backups.');
+  const resolvedArtNotes = currentEvent?.notes?.art_notes || activeScene?.tech_notes?.art_notes?.[language] || activeScene?.tech_notes?.art_notes?.en || (activeScene ? `${language === 'th' ? 'อุปกรณ์:' : 'Props:'} ${activeScene.props?.[language] || activeScene.props?.en || 'TBD'}. ${language === 'th' ? 'เสื้อผ้า:' : 'Wardrobe:'} ${activeScene.wardrobe?.[language] || activeScene.wardrobe?.en || 'TBD'}` : (language === 'th' ? 'เตรียมอุปกรณ์ประกอบฉากหลักและจัดฉากตามที่กำหนด' : 'Prepare props and set dressing as specified.'));
+  const resolvedLightingNotes = currentEvent?.notes?.lighting_notes || activeScene?.tech_notes?.lighting_notes?.[language] || activeScene?.tech_notes?.lighting_notes?.en || (language === 'th' ? 'ติดตั้งไฟและแผงสะท้อนแสงตามทิศทางกล้อง ตรวจสอบระบบจ่ายไฟ 220V ให้ปลอดภัย' : 'Refer to camera setup guidelines. Ensure 220V distro feeds are routed exterior.');
+  const resolvedSoundNotes = currentEvent?.notes?.sound_notes || activeScene?.tech_notes?.sound_notes?.[language] || activeScene?.tech_notes?.sound_notes?.en || (language === 'th' ? 'เตรียมไมโครโฟนบูมและไมค์ลาวาเลียร์ให้พร้อม ทดสอบระดับเสียงบรรยากาศ' : 'Ensure boom mics and lavaliers are prepped. Track ambient sound levels.');
+  const resolvedWardrobeNotes = currentEvent?.notes?.wardrobe_notes || activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || (language === 'th' ? 'ตรวจเช็กเสื้อผ้าเครื่องแต่งกายของนักแสดงและคุมการแต่งหน้าทำผมให้ต่อเนื่อง' : 'Pre-check cast costumes and makeup continuity matching storyboard.');
+  const resolvedProductionNotes = currentEvent?.notes?.production_notes || activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || (language === 'th' ? 'เตรียมใบสั่งงานกองถ่าย ดูแลความเรียบร้อยทั่วไปในกองถ่ายและประสานเวลา' : 'Prepare call sheets and script notes. Sync schedules with AD.');
+  
+  const assignedCrewMembers = (currentEvent?.crew_assigned || []).map(id => crew.find(c => c.id === id)).filter(Boolean);
+
+  // Filter assigned crew by department
+  const deptCameraCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('camera') || role.includes('photography') || role.includes('grip') || role.includes('dp') || role.includes('dop') || role.includes('focus') || role.includes('dit') || roleTh.includes('กล้อง') || roleTh.includes('ภาพ');
+  });
+
+  const deptArtCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('art') || role.includes('prop') || role.includes('design') || role.includes('set') || roleTh.includes('ศิลป์') || roleTh.includes('ประกอบฉาก');
+  });
+
+  const deptLightingCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('light') || role.includes('gaffer') || role.includes('electric') || role.includes('genny') || role.includes('spark') || roleTh.includes('ไฟ') || roleTh.includes('ช่างไฟ');
+  });
+
+  const deptSoundCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('sound') || role.includes('audio') || role.includes('mixer') || role.includes('boom') || role.includes('record') || roleTh.includes('เสียง');
+  });
+
+  const deptMakeupCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('makeup') || role.includes('hair') || role.includes('wardrobe') || role.includes('costume') || role.includes('stylist') || roleTh.includes('แต่งหน้า') || roleTh.includes('เสื้อผ้า') || roleTh.includes('ผม');
+  });
+
+  const deptProductionCrew = assignedCrewMembers.filter(c => {
+    const role = (c.role || '').toLowerCase();
+    const roleTh = (c.role_th || '').toLowerCase();
+    return role.includes('producer') || role.includes('director') || role.includes('ad') || role.includes('script') || role.includes('continuity') || role.includes('pa') || role.includes('assistant') || roleTh.includes('ดำเนิน') || roleTh.includes('กำกับ') || roleTh.includes('ประสาน') || roleTh.includes('บท');
+  });
 
   // Handle PDF Print
   const handlePrint = () => {
@@ -200,6 +356,76 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
     setEditingShot(null);
   };
 
+  const handleSaveSchedule = async (e) => {
+    e.preventDefault();
+    if (!schedDate || !schedShootCall) return;
+
+    const id = activeEventId === 'new' ? `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : activeEventId;
+
+    const eventObj = {
+      id,
+      project_id: activeScene?.project_id || `proj-${Date.now()}`,
+      title: {
+        th: `ถ่ายทำฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}`,
+        en: `Shooting Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`
+      },
+      date: schedDate,
+      time: schedShootCall,
+      type: 'shoot',
+      location: { th: schedLocation, en: schedLocation },
+      scene_number: selectedSceneNum,
+      crew_assigned: schedCrewAssigned,
+      notes: {
+        th: schedGeneralNotesTh,
+        en: schedGeneralNotesEn,
+        crew_call: schedCrewCall,
+        shooting_call: schedShootCall,
+        lunch_time: schedLunchTime,
+        wrap_time: schedWrapTime,
+        camera_notes: schedCameraNotes,
+        art_notes: schedArtNotes,
+        lighting_notes: schedLightingNotes,
+        sound_notes: schedSoundNotes,
+        wardrobe_notes: schedWardrobeNotes,
+        production_notes: schedProductionNotes
+      }
+    };
+
+    try {
+      let updatedEvents;
+      if (activeEventId === 'new') {
+        updatedEvents = [...(events || []), eventObj];
+      } else {
+        updatedEvents = (events || []).map(e => e.id === activeEventId ? eventObj : e);
+      }
+      
+      await setEvents(updatedEvents);
+      alert(language === 'th' ? 'บันทึกตารางถ่ายทำสำเร็จ!' : 'Shoot schedule saved successfully!');
+      setActiveEventId(id);
+      setIsSchedulerOpen(false);
+    } catch (err) {
+      alert("Failed to save schedule: " + err.message);
+    }
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (activeEventId === 'new') return;
+    const confirmMsg = language === 'th' 
+      ? 'คุณต้องการลบตารางถ่ายทำนี้ใช่หรือไม่? (การลบจะลบออกจากปฏิทินด้วย)' 
+      : 'Are you sure you want to delete this shoot schedule? (It will be removed from calendar)';
+    
+    if (window.confirm(confirmMsg)) {
+      try {
+        const updatedEvents = (events || []).filter(e => e.id !== activeEventId);
+        await setEvents(updatedEvents);
+        setActiveEventId('new');
+        alert(language === 'th' ? 'ลบตารางถ่ายทำสำเร็จ!' : 'Shoot schedule deleted!');
+      } catch (err) {
+        alert("Failed to delete schedule: " + err.message);
+      }
+    }
+  };
+
   const weatherWarnings = {
     Sunny: {
       th: "☀️ อุณหภูมิสูง: เตรียมน้ำดื่มเสริมความเย็น และเต็นท์บังแดดให้นักแสดงและทีมงานภายนอก",
@@ -227,8 +453,8 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         {`
           @media print {
             @page {
-              size: ${printOrientation};
-              margin: 15mm;
+              size: ${printOrientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
+              margin: 18mm 15mm;
             }
           }
         `}
@@ -299,7 +525,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
               value={printOrientation}
               onChange={(e) => setPrintOrientation(e.target.value)}
               className={`px-2 py-1 rounded text-xs font-semibold focus:outline-none ${
-                theme === 'dark' ? 'bg-obsidian-900 border-obsidian-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-705'
+                theme === 'dark' ? 'bg-obsidian-900 border-obsidian-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}
             >
               <option value="portrait">{language === 'th' ? 'แนวตั้ง (Portrait)' : 'Portrait'}</option>
@@ -350,6 +576,282 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
         </div>
       )}
 
+      {/* DYNAMIC SHOOT SCHEDULER & CALL SHEET SETTINGS PANEL (No Print) */}
+      {activeSubTab === 'callsheet' && scenes.length > 0 && hasWriteAccess() && (
+        <div className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print space-y-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings size={16} className="text-gold-500" />
+              <h2 className="text-sm font-bold font-serif">
+                {language === 'th' ? 'ตัววางแผนกำหนดเวลาถ่ายทำและทีมงาน' : 'Shoot Schedule & Call Sheet Planner'}
+              </h2>
+            </div>
+            <button
+              onClick={() => setIsSchedulerOpen(!isSchedulerOpen)}
+              className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
+                isSchedulerOpen 
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' 
+                  : 'bg-gold-500/10 border-gold-500/20 text-gold-500 hover:bg-gold-500/20'
+              }`}
+            >
+              {isSchedulerOpen 
+                ? (language === 'th' ? 'ปิดแผงควบคุม' : 'Close Planner') 
+                : (language === 'th' ? '⚙️ เปิดตั้งค่าคิวถ่ายทำ' : '⚙️ Open Shoot Planner')}
+            </button>
+          </div>
+
+          {/* Date Selector for this Scene */}
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase">
+                {language === 'th' ? 'เลือกคิววันที่ถ่ายทำ:' : 'Select Target Shoot Day:'}
+              </span>
+              <select
+                value={activeEventId}
+                onChange={(e) => setActiveEventId(e.target.value)}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none ${
+                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
+                {sceneEvents.map(e => (
+                  <option key={e.id} value={e.id}>
+                    🎥 {e.date} {e.time ? `[${e.time}]` : ''} ({e.location?.th || e.location?.en || 'TBD'})
+                  </option>
+                ))}
+                <option value="new">➕ {language === 'th' ? 'สร้างคิววันถ่ายทำใหม่...' : 'Schedule New Shoot Day...'}</option>
+              </select>
+            </div>
+            
+            {activeEventId === 'new' ? (
+              <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded animate-pulse">
+                ⚠️ {language === 'th' ? 'คิวฉากนี้ยังไม่ได้ถูกบรรจุลงในปฏิทิน' : 'Scene is draft: Not scheduled in Calendar yet'}
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">
+                ✓ {language === 'th' ? 'บันทึกในปฏิทินแล้ว' : 'Scheduled in Active Calendar'}
+              </span>
+            )}
+          </div>
+
+          {isSchedulerOpen && (
+            <form onSubmit={handleSaveSchedule} className="space-y-4 pt-3 border-t border-slate-200/50 dark:border-obsidian-800/40 animate-slideDown">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'วันที่ถ่ายทำ *' : 'Shoot Date *'}
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={schedDate}
+                    onChange={(e) => setSchedDate(e.target.value)}
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Crew Call Time</label>
+                  <input
+                    type="text"
+                    value={schedCrewCall}
+                    onChange={(e) => setSchedCrewCall(e.target.value)}
+                    placeholder="e.g. 07:00 AM"
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shooting Call Time</label>
+                  <input
+                    type="text"
+                    value={schedShootCall}
+                    onChange={(e) => setSchedShootCall(e.target.value)}
+                    placeholder="e.g. 08:30 AM"
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lunch Time</label>
+                  <input
+                    type="text"
+                    value={schedLunchTime}
+                    onChange={(e) => setSchedLunchTime(e.target.value)}
+                    placeholder="e.g. 12:30 PM"
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Wrap Time</label>
+                  <input
+                    type="text"
+                    value={schedWrapTime}
+                    onChange={(e) => setSchedWrapTime(e.target.value)}
+                    placeholder="e.g. 06:00 PM"
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Department Notes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camera & Grip Instructions</label>
+                  <textarea
+                    rows={2}
+                    value={schedCameraNotes}
+                    onChange={(e) => setSchedCameraNotes(e.target.value)}
+                    placeholder="Lenses, setups, gear notes..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Art Department & Props</label>
+                  <textarea
+                    rows={2}
+                    value={schedArtNotes}
+                    onChange={(e) => setSchedArtNotes(e.target.value)}
+                    placeholder="Props lists, scene setup..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lighting & Electric Requirements</label>
+                  <textarea
+                    rows={2}
+                    value={schedLightingNotes}
+                    onChange={(e) => setSchedLightingNotes(e.target.value)}
+                    placeholder="Gaffer specs, generator needs, dimmers..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sound & Audio Instructions</label>
+                  <textarea
+                    rows={2}
+                    value={schedSoundNotes}
+                    onChange={(e) => setSchedSoundNotes(e.target.value)}
+                    placeholder="Boom mic setup, radio frequencies..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Makeup & Wardrobe Notes</label>
+                  <textarea
+                    rows={2}
+                    value={schedWardrobeNotes}
+                    onChange={(e) => setSchedWardrobeNotes(e.target.value)}
+                    placeholder="Styling, costume presets..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Production & Direction Notes</label>
+                  <textarea
+                    rows={2}
+                    value={schedProductionNotes}
+                    onChange={(e) => setSchedProductionNotes(e.target.value)}
+                    placeholder="AD instructions, PA tasks, director cues..."
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Roster Assignment */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase">
+                  {language === 'th' ? 'มอบหมายทีมงานปฏิบัติหน้าที่ประจำวัน (คลิกเพื่อเลือก/ยกเลิก):' : 'Assign Crew Members (Click to toggle):'}
+                </label>
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-3 border border-slate-200 dark:border-obsidian-800/60 rounded-xl bg-slate-950/20">
+                  {crew.map(c => {
+                    const isAssigned = schedCrewAssigned.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          if (isAssigned) {
+                            setSchedCrewAssigned(prev => prev.filter(id => id !== c.id));
+                          } else {
+                            setSchedCrewAssigned(prev => [...prev, c.id]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                          isAssigned
+                            ? 'bg-gold-500/20 border-gold-500 text-gold-500 font-extrabold shadow-sm'
+                            : theme === 'dark'
+                              ? 'bg-obsidian-950 border-obsidian-850 hover:bg-obsidian-800 text-slate-400'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
+                        }`}
+                      >
+                        {c.name[language] || c.name.en} ({language === 'th' ? c.role_th || c.role : c.role})
+                      </button>
+                    );
+                  })}
+                  {crew.length === 0 && (
+                    <p className="text-[10px] text-slate-400 italic">No crew available in roster. Add crew in Crew tab first.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex justify-between items-center pt-2">
+                {activeEventId !== 'new' ? (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSchedule}
+                    className="px-3.5 py-2 rounded-lg text-xs font-bold border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    🗑️ {language === 'th' ? 'ลบคิววันถ่ายทำนี้' : 'Delete Day'}
+                  </button>
+                ) : <div />}
+
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsSchedulerOpen(false)}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                      theme === 'dark' ? 'bg-obsidian-800 hover:bg-obsidian-750 text-slate-350' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:opacity-95 shadow"
+                  >
+                    💾 {language === 'th' ? 'บันทึกตารางถ่ายทำ' : 'Save Shoot Schedule'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
       {/* CALL SHEET VIEW */}
       {activeSubTab === 'callsheet' && (
         scenes.length === 0 ? (
@@ -379,7 +881,7 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                   <p className="text-xs text-slate-400 mt-0.5">Scene {activeScene?.scene_number} | Setting: {activeScene?.setting}</p>
                 </div>
                 <div className="text-right font-mono text-xs space-y-0.5">
-                  <p><span className="text-slate-400">Date:</span> {new Date().toISOString().split('T')[0]}</p>
+                  <p><span className="text-slate-400">{language === 'th' ? 'วันถ่ายทำ (Shoot Date):' : 'Date:'}</span> {callSheetDate || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}</p>
                   <p><span className="text-slate-400">Weather:</span> {weather} ({weatherWarnings[weather] ? 'Risk Checked' : 'Clear'})</p>
                 </div>
               </div>
@@ -388,19 +890,19 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4">
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.crewCallTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5 text-gold-500">07:00 AM</p>
+                  <p className="text-xl font-extrabold font-mono mt-0.5 text-gold-500">{crewCallTime}</p>
                 </div>
                 <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.shootingCall')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5">08:30 AM</p>
+                  <p className="text-xl font-extrabold font-mono mt-0.5">{shootCallTime}</p>
                 </div>
                 <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.lunchTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5 text-slate-400">12:30 PM</p>
+                  <p className="text-xl font-extrabold font-mono mt-0.5 text-slate-400">{lunchTime}</p>
                 </div>
                 <div className="pl-0 md:pl-4">
                   <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.wrapTime')}</p>
-                  <p className="text-xl font-extrabold font-mono mt-0.5">06:00 PM</p>
+                  <p className="text-xl font-extrabold font-mono mt-0.5">{wrapTime}</p>
                 </div>
               </div>
 
@@ -425,9 +927,9 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                   <MapPin size={12} className="text-gold-500" />
                   <span>{t('docs.mapLocation')}</span>
                 </p>
-                <p className="text-slate-400">📍 {activeScene?.location?.[language] || 'TBD'} | GPS: 13.7563° N, 100.5018° E</p>
+                <p className="text-slate-400">📍 {resolvedLocation}</p>
                 <a 
-                  href="https://maps.google.com" 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedLocation)}`}
                   target="_blank" 
                   rel="noreferrer"
                   className="inline-block mt-1 font-semibold text-gold-500 hover:underline no-print"
@@ -444,11 +946,11 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
                   <div>
                     <p className="text-slate-400 font-bold mb-1">SCENE DESCRIPTION</p>
-                    <p className="leading-relaxed font-medium">{activeScene?.description?.[language] || 'TBD'}</p>
+                    <p className="leading-relaxed font-medium">{activeScene?.description?.[language] || activeScene?.description?.en || 'TBD'}</p>
                   </div>
                   <div>
                     <p className="text-slate-400 font-bold mb-1">CAST & TALENT</p>
-                    <p className="leading-relaxed font-medium">{activeScene?.cast?.[language] || 'TBD'}</p>
+                    <p className="leading-relaxed font-medium">{activeScene?.cast?.[language] || activeScene?.cast?.en || 'TBD'}</p>
                   </div>
                 </div>
               </div>
@@ -468,9 +970,15 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Camera size={12} />
                       <span>CAMERA & GRIP (DP: {dp?.name?.[language] || dp?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
-                      {activeScene?.tech_notes?.[language] || 'TBD'}
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedCameraNotes}
                     </p>
+                    {deptCameraCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptCameraCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
                   </div>
 
                   {/* Art Department */}
@@ -481,9 +989,15 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Clapperboard size={12} />
                       <span>ART & PROPS (Designer: {art?.name?.[language] || art?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
-                      Required props: <span className="font-semibold text-slate-900 dark:text-white">{activeScene?.props?.[language] || 'TBD'}</span>. Wardrobe notes: {activeScene?.wardrobe?.[language] || 'TBD'}.
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedArtNotes}
                     </p>
+                    {deptArtCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptArtCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
                   </div>
 
                   {/* Electric / Lights */}
@@ -494,14 +1008,104 @@ export default function DocumentsHub({ scenes, crew, weather, initialSceneNum, s
                       <Wrench size={12} />
                       <span>LIGHTING & ELECTRIC (Gaffer: {gaffer?.name?.[language] || gaffer?.name?.en || 'TBD'})</span>
                     </p>
-                    <p className="leading-relaxed text-slate-300 dark:text-slate-300 text-slate-700 font-medium">
-                      Refer to camera setup guidelines. Ensure 220V distro feeds are routed exterior to coffee shop if shooting outdoors.
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedLightingNotes}
                     </p>
+                    {deptLightingCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptLightingCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sound & Audio */}
+                  <div className={`p-4 rounded-lg border ${
+                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
+                  }`}>
+                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
+                      <Volume2 size={12} />
+                      <span>SOUND & AUDIO (Mixer: {soundRecordist?.name?.[language] || soundRecordist?.name?.en || 'TBD'})</span>
+                    </p>
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedSoundNotes}
+                    </p>
+                    {deptSoundCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptSoundCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Makeup & Wardrobe */}
+                  <div className={`p-4 rounded-lg border ${
+                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
+                  }`}>
+                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
+                      <Sparkles size={12} />
+                      <span>MAKEUP & WARDROBE (Stylist: {wardrobeStylist?.name?.[language] || wardrobeStylist?.name?.en || 'TBD'})</span>
+                    </p>
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedWardrobeNotes}
+                    </p>
+                    {deptMakeupCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptMakeupCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Production & Scripts */}
+                  <div className={`p-4 rounded-lg border ${
+                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
+                  }`}>
+                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
+                      <Briefcase size={12} />
+                      <span>PRODUCTION & DIRECTION (AD: {director?.name?.[language] || director?.name?.en || 'TBD'})</span>
+                    </p>
+                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
+                      {resolvedProductionNotes}
+                    </p>
+                    {deptProductionCrew.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
+                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
+                        {deptProductionCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Shot List Table inside Callsheet */}
+              {/* Assigned Crew List Section */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
+                  {language === 'th' ? 'ทีมงานปฏิบัติหน้าที่ประจำวัน (Assigned Crew)' : 'Assigned Crew Roster'}
+                </h3>
+                {assignedCrewMembers.length === 0 ? (
+                  <p className="text-xs text-slate-450 italic">{language === 'th' ? 'ยังไม่ได้ระบุทีมงานปฏิบัติหน้าที่' : 'No crew members assigned to this shoot day.'}</p>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
+                    {assignedCrewMembers.map(c => (
+                      <div 
+                        key={c.id} 
+                        className={`p-2 rounded-lg border flex items-center gap-2 ${
+                          theme === 'dark' ? 'bg-obsidian-950 border-obsidian-850' : 'bg-slate-50 border-slate-150'
+                        }`}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-gold-500/10 text-gold-500 flex items-center justify-center font-bold text-[9px] shrink-0">
+                          {c.name.en?.split(' ').map(n => n[0]).join('') || '??'}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold truncate">{c.name[language] || c.name.en}</p>
+                          <p className="text-[9px] text-slate-400 truncate">{language === 'th' ? c.role_th || c.role : c.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="space-y-3">
                 <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
                   {t('docs.cameraShotList')}

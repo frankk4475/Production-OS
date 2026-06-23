@@ -398,7 +398,10 @@ export const api = {
         console.error('Supabase error fetching events, falling back:', error);
         return getDbData(STORAGE_KEYS.EVENTS).filter(e => e.project_id === projectId);
       }
-      return data || [];
+      return (data || []).map(e => ({
+        ...e,
+        type: e.type || e.notes?.type || (e.scene_number ? 'shoot' : 'generic')
+      }));
     } else {
       await delay();
       const events = getDbData(STORAGE_KEYS.EVENTS);
@@ -424,7 +427,12 @@ export const api = {
         location: e.location || { th: '', en: '' },
         scene_number: e.scene_number || '',
         crew_assigned: e.crew_assigned || [],
-        notes: e.notes || { th: '', en: '' }
+        notes: {
+          ...(typeof e.notes === 'object' ? e.notes : {}),
+          th: e.notes?.th || (typeof e.notes === 'string' ? e.notes : ''),
+          en: e.notes?.en || (typeof e.notes === 'string' ? e.notes : ''),
+          type: e.type || (e.scene_number ? 'shoot' : 'generic')
+        }
       }));
 
       if (updatedNew.length > 0) {
@@ -433,7 +441,10 @@ export const api = {
           .insert(updatedNew);
         if (insError) throw insError;
       }
-      return updatedNew;
+      return updatedNew.map(e => ({
+        ...e,
+        type: e.notes?.type || (e.scene_number ? 'shoot' : 'generic')
+      }));
     } else {
       await delay();
       const globalEvents = getDbData(STORAGE_KEYS.EVENTS);
@@ -459,11 +470,20 @@ export const api = {
         console.error('Supabase error fetching shotlist, falling back:', error);
         return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
       }
-      return data || [];
+      return (data || []).map(s => ({
+        ...s,
+        shotNum: s.shot_number,
+        type: s.size,
+        lens: s.lens || s.description?.lens || ''
+      }));
     } else {
       await delay();
       const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
-      return shots.filter(s => s.project_id === projectId);
+      return shots.filter(s => s.project_id === projectId).map(s => ({
+        ...s,
+        shotNum: s.shot_number || s.shotNum,
+        type: s.size || s.type
+      }));
     }
   },
 
@@ -479,12 +499,17 @@ export const api = {
         id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         project_id: projectId,
         scene_id: s.scene_id || null,
-        shot_number: s.shot_number || '',
-        size: s.size || '',
+        shot_number: s.shot_number || s.shotNum || '',
+        size: s.size || s.type || '',
         angle: s.angle || '',
         movement: s.movement || '',
         equipment: s.equipment || '',
-        description: s.description || { th: '', en: '' },
+        description: {
+          ...(typeof s.description === 'object' ? s.description : {}),
+          th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
+          en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
+          lens: s.lens || s.description?.lens || ''
+        },
         cast_assigned: s.cast_assigned || []
       }));
 
@@ -494,7 +519,12 @@ export const api = {
           .insert(updatedNew);
         if (insError) throw insError;
       }
-      return updatedNew;
+      return updatedNew.map(s => ({
+        ...s,
+        shotNum: s.shot_number,
+        type: s.size,
+        lens: s.description?.lens || ''
+      }));
     } else {
       await delay();
       const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
@@ -502,7 +532,9 @@ export const api = {
       const updatedNew = projectShots.map(s => ({ 
         ...s, 
         project_id: projectId,
-        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        shot_number: s.shot_number || s.shotNum || '',
+        size: s.size || s.type || ''
       }));
       setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
       return updatedNew;
@@ -708,11 +740,9 @@ export const api = {
 
   async saveScript(projectId, blocks) {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('scripts')
-        .upsert({ project_id: projectId, blocks })
-        .select()
-        .single();
+        .upsert({ project_id: projectId, blocks });
       if (error) throw error;
       
       // Auto-sync script to script breakdown scenes
@@ -921,16 +951,14 @@ export const api = {
 
   async saveStoryOutline(projectId, outlineData) {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('story_outlines')
         .upsert({
           project_id: projectId,
           plotlines: outlineData.plotlines,
           characters: outlineData.characters,
           beats: outlineData.beats
-        })
-        .select()
-        .single();
+        });
       if (error) throw error;
       return outlineData;
     } else {
@@ -1099,7 +1127,23 @@ export const api = {
 
       // 5. Insert Events
       if (importedData.events && importedData.events.length > 0) {
-        const { error } = await supabase.from('events').insert(importedData.events);
+        const mappedEvents = importedData.events.map(e => ({
+          id: e.id && !e.id.startsWith('temp-') ? e.id : `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          project_id: e.project_id,
+          title: e.title || { th: '', en: '' },
+          date: e.date,
+          time: e.time || '',
+          location: e.location || { th: '', en: '' },
+          scene_number: e.scene_number || '',
+          crew_assigned: e.crew_assigned || [],
+          notes: {
+            ...(typeof e.notes === 'object' ? e.notes : {}),
+            th: e.notes?.th || (typeof e.notes === 'string' ? e.notes : ''),
+            en: e.notes?.en || (typeof e.notes === 'string' ? e.notes : ''),
+            type: e.type || (e.scene_number ? 'shoot' : 'generic')
+          }
+        }));
+        const { error } = await supabase.from('events').insert(mappedEvents);
         if (error) throw error;
       }
 
@@ -1109,12 +1153,17 @@ export const api = {
           id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           project_id: s.project_id,
           scene_id: s.scene_id || null,
-          shot_number: s.shot_number || '',
-          size: s.size || '',
+          shot_number: s.shot_number || s.shotNum || '',
+          size: s.size || s.type || '',
           angle: s.angle || '',
           movement: s.movement || '',
           equipment: s.equipment || '',
-          description: s.description || { th: '', en: '' },
+          description: {
+            ...(typeof s.description === 'object' ? s.description : {}),
+            th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
+            en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
+            lens: s.lens || s.description?.lens || ''
+          },
           cast_assigned: s.cast_assigned || []
         }));
         const { error } = await supabase.from('shot_list').insert(mappedShots);

@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { useTheme } from '../context/ThemeContext';
+
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { 
   BookOpen, 
-  Sparkles, 
   Save, 
   Plus, 
   Trash2, 
@@ -23,7 +22,7 @@ import {
 
 export default function StoryPlanner() {
   const { language } = useLanguage();
-  const { theme } = useTheme();
+
   const { hasWriteAccess } = useAuth();
   
   const {
@@ -103,6 +102,7 @@ export default function StoryPlanner() {
 
   useEffect(() => {
     if (storyOutline) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalOutline(storyOutline);
     }
   }, [storyOutline]);
@@ -572,7 +572,7 @@ export default function StoryPlanner() {
                   </div>
 
                   <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                    {actBeats.map((beat, index) => {
+                    {actBeats.map((beat) => {
                       const plot = getPlotline(beat.plotlineId);
                       const absoluteIndex = localOutline.beats.findIndex(b => b.id === beat.id);
                       return (

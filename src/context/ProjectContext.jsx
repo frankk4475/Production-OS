@@ -297,17 +297,19 @@ export const ProjectProvider = ({ children }) => {
   // Completed Tasks CRUD
   const saveCompletedTasks = async (projectTasks) => {
     if (!currentProjectId) return;
+    const oldTasks = { ...completedTasks };
+    // Optimistically update the UI immediately
+    setCompletedTasks(projectTasks);
     try {
-      setIsLoading(true);
       const saved = await api.saveCompletedTasks(currentProjectId, projectTasks);
       setCompletedTasks(saved);
       return saved;
     } catch (err) {
+      // Revert to old tasks on database error
+      setCompletedTasks(oldTasks);
       console.error("Failed to save completed tasks:", err);
       setError(err.message);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -10,7 +10,6 @@ import {
   Key, 
   Mail, 
   ShieldAlert, 
-  Sparkles, 
   User, 
   Shield, 
   Check, 
@@ -28,17 +27,50 @@ export default function UserManager({ hideHeader = false }) {
     deleteUserByAdmin 
   } = useAuth();
 
-  const { refreshCrew } = useProject();
+  const { refreshCrew, activeCrew: crew } = useProject();
 
   // New user form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Crew');
+  const [selectedCrewLinkId, setSelectedCrewLinkId] = useState('independent');
 
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSelectCrewLink = (crewId) => {
+    if (crewId === 'independent') {
+      setName('');
+      setEmail('');
+      setRole('Crew');
+      setSelectedCrewLinkId('independent');
+      return;
+    }
+    const c = (crew || []).find(member => member.id === crewId);
+    if (c) {
+      setName(c.name[language] || c.name.en || '');
+      setEmail(c.email || '');
+      
+      // Auto-map system role
+      const pos = (c.role || '').toUpperCase();
+      if (pos.includes('PRODUCER') || pos === 'PROD') {
+        setRole('Producer');
+      } else if (pos.includes('1ST AD') || pos.includes('1ST_AD') || pos === 'AD' || pos === 'ASSISTANT DIRECTOR') {
+        setRole('1st_AD');
+      } else if (pos.includes('DIRECTOR') || pos === 'DIR') {
+        setRole('Director');
+      } else if (pos.includes('MANAGER') || pos.includes('PM') || pos.includes('MANAGE')) {
+        setRole('Production_Manager');
+      } else if (pos.includes('TALENT') || pos.includes('ACTOR') || pos.includes('MODEL')) {
+        setRole('Talent');
+      } else {
+        setRole('Crew');
+      }
+      setSelectedCrewLinkId(crewId);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,6 +99,7 @@ export default function UserManager({ hideHeader = false }) {
         setEmail('');
         setPassword('');
         setRole('Crew');
+        setSelectedCrewLinkId('independent');
       } catch (err) {
         setError(language === 'th' ? `ข้อผิดพลาด: อีเมลนี้อาจถูกใช้งานไปแล้ว` : `Error: ${err.message}`);
       } finally {
@@ -102,6 +135,10 @@ export default function UserManager({ hideHeader = false }) {
         return language === 'th' ? 'ผู้ดำเนินงานสร้าง (Producer)' : 'Producer';
       case '1st_AD':
         return language === 'th' ? 'ผู้ช่วยผู้กำกับ 1 (1st AD)' : '1st AD (Assistant Director)';
+      case 'Director':
+        return language === 'th' ? 'ผู้กำกับ (Director)' : 'Director';
+      case 'Production_Manager':
+        return language === 'th' ? 'ผู้จัดการกองถ่าย (Production Manager)' : 'Production Manager';
       case 'Crew':
         return language === 'th' ? 'ทีมงานฝ่ายผลิต (Crew)' : 'Crew Member';
       case 'Talent':
@@ -154,6 +191,36 @@ export default function UserManager({ hideHeader = false }) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs text-left">
+            {/* Link with Crew Member Dropdown */}
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                {language === 'th' ? 'เชื่อมโยงกับรายชื่อทีมงาน' : 'Link with Crew Roster'}
+              </label>
+              <select
+                value={selectedCrewLinkId}
+                onChange={(e) => handleSelectCrewLink(e.target.value)}
+                className={`w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-gold-500 transition-all text-xs ${
+                  theme === 'dark' 
+                    ? 'bg-obsidian-950 border-obsidian-800 text-slate-200' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 shadow-inner'
+                }`}
+              >
+                <option value="independent">
+                  {language === 'th' ? '➕ บัญชีอิสระ (ไม่ผูกกับรายชื่อ)' : '➕ Independent Account (No link)'}
+                </option>
+                {(() => {
+                  const crewWithoutAccount = (crew || []).filter(c => 
+                    c.email && c.email !== '-' && !(users || []).some(u => u.email?.toLowerCase() === c.email?.toLowerCase())
+                  );
+                  return crewWithoutAccount.map(c => (
+                    <option key={c.id} value={c.id}>
+                      👤 {c.name?.[language] || c.name?.en} ({language === 'th' ? c.role_th || c.role : c.role})
+                    </option>
+                  ));
+                })()}
+              </select>
+            </div>
+
             {/* Full Name */}
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -166,12 +233,13 @@ export default function UserManager({ hideHeader = false }) {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  readOnly={selectedCrewLinkId !== 'independent'}
                   placeholder="e.g. Somchai Dev"
                   className={`w-full pl-9 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-gold-500 transition-all ${
                     theme === 'dark' 
                       ? 'bg-obsidian-950 border-obsidian-800 text-slate-100 placeholder-slate-650' 
                       : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 shadow-inner'
-                  }`}
+                  } ${selectedCrewLinkId !== 'independent' ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -188,12 +256,13 @@ export default function UserManager({ hideHeader = false }) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={selectedCrewLinkId !== 'independent'}
                   placeholder="somchai@production.com"
                   className={`w-full pl-9 pr-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-gold-500 transition-all ${
                     theme === 'dark' 
                       ? 'bg-obsidian-950 border-obsidian-800 text-slate-100 placeholder-slate-650' 
                       : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 shadow-inner'
-                  }`}
+                  } ${selectedCrewLinkId !== 'independent' ? 'opacity-60 cursor-not-allowed' : ''}`}
                 />
               </div>
             </div>
@@ -236,6 +305,8 @@ export default function UserManager({ hideHeader = false }) {
               >
                 <option value="Producer">{language === 'th' ? 'ผู้ดำเนินงานสร้าง (Producer) • สิทธิ์เขียน/แก้ไข' : 'Producer (Write/Edit Access)'}</option>
                 <option value="1st_AD">{language === 'th' ? 'ผู้ช่วยผู้กำกับ 1 (1st AD) • สิทธิ์เขียน/แก้ไข' : '1st AD (Write/Edit Access)'}</option>
+                <option value="Director">{language === 'th' ? 'ผู้กำกับ (Director) • สิทธิ์เขียน/แก้ไข' : 'Director (Write/Edit Access)'}</option>
+                <option value="Production_Manager">{language === 'th' ? 'ผู้จัดการกองถ่าย (Production Manager) • สิทธิ์เขียน/แก้ไข' : 'Production Manager (Write/Edit Access)'}</option>
                 <option value="Crew">{language === 'th' ? 'ทีมงาน (Crew) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Crew Member (Personal schedule / Read-only)'}</option>
                 <option value="Talent">{language === 'th' ? 'นักแสดง (Talent) • ดูข้อมูลคิวตัวเอง/อ่านอย่างเดียว' : 'Talent / Actor (Personal schedule / Read-only)'}</option>
               </select>
@@ -305,6 +376,10 @@ export default function UserManager({ hideHeader = false }) {
                               ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
                               : u.role === '1st_AD'
                               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              : u.role === 'Director'
+                              ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                              : u.role === 'Production_Manager'
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                               : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                           }`}>
                             {getRoleLabel(u.role)}
@@ -341,8 +416,8 @@ export default function UserManager({ hideHeader = false }) {
             <div>
               <p className="font-bold text-slate-200">{language === 'th' ? 'ข้อควรรู้เกี่ยวกับระดับสิทธิ์:' : 'Role Access Policy Info:'}</p>
               <ul className="list-disc pl-4 space-y-0.5 mt-1 font-sans">
-                <li>{language === 'th' ? 'สิทธิ์ Producer และ 1st AD สามารถเข้าถึง เขียน แก้ไข จัดการคิวงาน และจัดการรายชื่อบัญชีผู้ใช้งานได้ทั้งหมด' : 'Producer and 1st AD accounts hold root editor permissions including user management.'}</li>
-                <li>{language === 'th' ? 'สิทธิ์ Crew และ Talent จะไม่สามารถแก้ไขข้อมูลการผลิตได้ โดยสามารถล็อกอินเข้ามาเพื่อดู คิวงานนัดหมาย และตารางเวลาปฏิบัติหน้าที่ส่วนตัวเท่านั้น' : 'Crew and Talent accounts are restricted to personal schedule viewer modes.'}</li>
+                <li>{language === 'th' ? 'สิทธิ์ Producer, 1st AD, Director และ Production Manager สามารถเข้าถึง เขียน แก้ไข จัดการคิวงาน และจัดการรายชื่อบัญชีผู้ใช้งานได้ทั้งหมด' : 'Producer, 1st AD, Director, and Production Manager accounts hold editor permissions including user management.'}</li>
+                <li>{language === 'th' ? 'สิทธิ์ Crew และ Talent จะไม่สามารถแก้ไขข้อมูลการผลิตได้ โดยสามารถล็อกอินเข้ามาเพื่อดูคิวงานนัดหมาย และตารางเวลาปฏิบัติหน้าที่ส่วนตัวเท่านั้น' : 'Crew and Talent accounts are restricted to personal schedule viewer modes.'}</li>
               </ul>
             </div>
           </div>
