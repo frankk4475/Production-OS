@@ -5,7 +5,7 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly'
 ].join(' ');
 
-export const DEFAULT_CLIENT_ID = '1032663921544-kubng0781om5m1tgmek155m8tjsk8e55.apps.googleusercontent.com';
+export const DEFAULT_CLIENT_ID = '215814474218-evjuc0hpuo8uejsaul9iqojnvnoc1qje.apps.googleusercontent.com';
 
 export const googleCalendar = {
   // Helper to extract OAuth tokens from redirect URL hash
