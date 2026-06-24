@@ -413,8 +413,7 @@ export default function CrewPortal({ lockedCrewId }) {
   const getPersonalKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
   const [selectedPersonalCalendarId, setSelectedPersonalCalendarId] = useState(() => localStorage.getItem(getPersonalKey('google_personal_calendar_id')) || '');
-  const [personalClientId, setPersonalClientId] = useState(() => localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID);
-  const [showPersonalAdvanced, setShowPersonalAdvanced] = useState(false);
+  const personalClientId = DEFAULT_CLIENT_ID;
 
   useEffect(() => {
     const handleAuthMessage = (event) => {
@@ -463,12 +462,11 @@ export default function CrewPortal({ lockedCrewId }) {
   };
 
   const handleConnectPersonalGoogle = () => {
-    const clientIdToUse = personalClientId || localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID;
+    const clientIdToUse = DEFAULT_CLIENT_ID;
     if (!clientIdToUse) {
       alert(language === 'th' ? 'กรุณาระบุ Google Client ID ก่อนเชื่อมต่อ' : 'Please provide a Google Client ID first');
       return;
     }
-    localStorage.setItem('google_client_id', clientIdToUse);
     const redirectUri = window.location.origin + window.location.pathname;
     const authUrl = googleCalendar.getAuthUrl(clientIdToUse, redirectUri, 'personal-calendar');
     

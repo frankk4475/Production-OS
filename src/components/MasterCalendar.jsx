@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { googleCalendar } from '../services/googleCalendar';
+import { googleCalendar, DEFAULT_CLIENT_ID } from '../services/googleCalendar';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -27,11 +27,10 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   const { user, hasWriteAccess } = useAuth();
   const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
-  const DEFAULT_CLIENT_ID = '1036495371661-bchgqg1c0r5q3gh8949mfl86t5262799.apps.googleusercontent.com';
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
-  const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID);
+  const googleClientId = DEFAULT_CLIENT_ID;
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState('');
@@ -83,13 +82,13 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   }, [user?.id]);
 
   const handleConnectGoogle = () => {
-    if (!googleClientId) {
+    const clientIdToUse = DEFAULT_CLIENT_ID;
+    if (!clientIdToUse) {
       alert(language === 'th' ? 'กรุณาระบุ Google Client ID ก่อนเชื่อมต่อ' : 'Please provide a Google Client ID first');
       return;
     }
-    localStorage.setItem('google_client_id', googleClientId);
     const redirectUri = window.location.origin + window.location.pathname;
-    const authUrl = googleCalendar.getAuthUrl(googleClientId, redirectUri, 'project-calendar');
+    const authUrl = googleCalendar.getAuthUrl(clientIdToUse, redirectUri, 'project-calendar');
     
     // Open in popup window
     const width = 550;
