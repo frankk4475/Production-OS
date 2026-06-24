@@ -1,9 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { googleCalendar } from '../services/googleCalendar';
+import { useAuth } from './AuthContext';
 
 const ProjectContext = createContext();
 
 export const ProjectProvider = ({ children }) => {
+  const { user } = useAuth();
+  const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
+
   const [projects, setProjects] = useState([]);
   const [currentProjectId, setCurrentProjectId] = useState('');
   const [scenes, setScenes] = useState([]);
@@ -29,7 +34,8 @@ export const ProjectProvider = ({ children }) => {
         setCrew(crewData);
 
         // Pick current project
-        const savedProjId = localStorage.getItem('prod_current_project_id');
+        const currentProjKey = getProjectKey('prod_current_project_id');
+        const savedProjId = localStorage.getItem(currentProjKey) || localStorage.getItem('prod_current_project_id');
         if (savedProjId && projectsData.some(p => p.id === savedProjId)) {
           setCurrentProjectId(savedProjId);
         } else if (projectsData.length > 0) {
@@ -45,7 +51,7 @@ export const ProjectProvider = ({ children }) => {
       }
     };
     initLoad();
-  }, []);
+  }, [user?.id]);
 
   // 2. Fetch Project-specific Data when currentProjectId changes
   useEffect(() => {
@@ -62,7 +68,7 @@ export const ProjectProvider = ({ children }) => {
 
       try {
         setIsLoading(true);
-        localStorage.setItem('prod_current_project_id', currentProjectId);
+        localStorage.setItem(getProjectKey('prod_current_project_id'), currentProjectId);
 
         const [scenesData, eventsData, shotListData, tasksData, scriptData, outlineData] = await Promise.all([
           api.getScenes(currentProjectId),
@@ -289,6 +295,67 @@ export const ProjectProvider = ({ children }) => {
       setIsLoading(true);
       const saved = await api.saveEvents(currentProjectId, projectEvents);
       setEvents(saved);
+
+      // Perform background Google Calendar sync if connected
+      const token = localStorage.getItem(getProjectKey('google_project_access_token'));
+      const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+      const expiresAt = localStorage.getItem(getProjectKey('google_project_token_expires_at'));
+      
+      if (token && calId && expiresAt && Number(expiresAt) > Date.now()) {
+        (async () => {
+          try {
+            const syncedEvents = JSON.parse(localStorage.getItem(`synced_google_events_${calId}`) || '{}');
+            
+            // 1. Sync active events
+            for (const evt of saved) {
+              const attendeesEmails = (evt.crew_assigned || []).map(crewId => {
+                const cInfo = crew.find(c => c.id === crewId);
+                return cInfo?.email !== '-' ? cInfo?.email : null;
+              }).filter(email => !!email);
+
+              const eventData = {
+                title: evt.title?.th || evt.title?.en || 'Event',
+                date: evt.date,
+                location: evt.location?.th || evt.location?.en || '',
+                description: `Project Event\nTime: ${evt.time || ''}\nScene: ${evt.scene_number || 'N/A'}`,
+                attendees: attendeesEmails
+              };
+
+              const googleEventId = syncedEvents[evt.id];
+              if (googleEventId) {
+                try {
+                  await googleCalendar.updateEvent(token, calId, googleEventId, eventData);
+                } catch {
+                  const res = await googleCalendar.createEvent(token, calId, eventData);
+                  syncedEvents[evt.id] = res.id;
+                }
+              } else {
+                const res = await googleCalendar.createEvent(token, calId, eventData);
+                syncedEvents[evt.id] = res.id;
+              }
+            }
+            
+            // 2. Delete removed events
+            const activeIds = saved.map(e => e.id);
+            for (const oldId of Object.keys(syncedEvents)) {
+              if (!activeIds.includes(oldId)) {
+                const googleEventId = syncedEvents[oldId];
+                try {
+                  await googleCalendar.deleteEvent(token, calId, googleEventId);
+                  delete syncedEvents[oldId];
+                } catch (err) {
+                  console.error("Failed to delete event from Google Calendar:", err);
+                }
+              }
+            }
+
+            localStorage.setItem(`synced_google_events_${calId}`, JSON.stringify(syncedEvents));
+          } catch (syncErr) {
+            console.error("Background Google Calendar sync failed:", syncErr);
+          }
+        })();
+      }
+
       return saved;
     } catch (err) {
       console.error("Failed to save events:", err);

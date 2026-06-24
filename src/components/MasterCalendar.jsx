@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { googleCalendar } from '../services/googleCalendar';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -9,7 +11,10 @@ import {
   Users, 
   FileText,
   Calendar as CalendarIcon,
-  X
+  X,
+  Settings,
+  RefreshCw,
+  Check
 } from 'lucide-react';
 
 export default function MasterCalendar({ events, crew, setCurrentTab, setTabParams }) {
@@ -18,6 +23,121 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
 
   // Views: 'month' | 'week' | 'day'
   const [currentView, setCurrentView] = useState('month');
+  const { user, hasWriteAccess } = useAuth();
+  const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
+
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+  const [googleCalendars, setGoogleCalendars] = useState([]);
+  const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
+  const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('google_client_id') || '');
+  const [isConnected, setIsConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState('');
+
+  const loadCalendars = async (token) => {
+    try {
+      const list = await googleCalendar.fetchCalendars(token);
+      setGoogleCalendars(list);
+      setIsConnected(true);
+    } catch (err) {
+      console.error("Failed to load Google calendars:", err);
+      setIsConnected(false);
+      localStorage.removeItem(getProjectKey('google_project_access_token'));
+    }
+  };
+
+  useEffect(() => {
+    const params = googleCalendar.parseHashParams();
+    if (params) {
+      localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
+      localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
+      window.location.hash = '#/calendar';
+      loadCalendars(params.accessToken);
+      setIsGoogleModalOpen(true);
+    } else {
+      const token = localStorage.getItem(getProjectKey('google_project_access_token'));
+      const expiresAt = localStorage.getItem(getProjectKey('google_project_token_expires_at'));
+      if (token && expiresAt && Number(expiresAt) > Date.now()) {
+        loadCalendars(token);
+      }
+    }
+  }, [user?.id]);
+
+  const handleConnectGoogle = () => {
+    if (!googleClientId) {
+      alert(language === 'th' ? 'กรุณาระบุ Google Client ID ก่อนเชื่อมต่อ' : 'Please provide a Google Client ID first');
+      return;
+    }
+    localStorage.setItem('google_client_id', googleClientId);
+    const redirectUri = window.location.origin + window.location.pathname;
+    window.location.href = googleCalendar.getAuthUrl(googleClientId, redirectUri, 'project-calendar');
+  };
+
+  const handleDisconnectGoogle = () => {
+    localStorage.removeItem(getProjectKey('google_project_access_token'));
+    localStorage.removeItem(getProjectKey('google_project_token_expires_at'));
+    localStorage.removeItem(getProjectKey('google_project_calendar_id'));
+    setGoogleCalendars([]);
+    setSelectedCalendarId('');
+    setIsConnected(false);
+  };
+
+  const handleSelectCalendar = (calId) => {
+    setSelectedCalendarId(calId);
+    localStorage.setItem(getProjectKey('google_project_calendar_id'), calId);
+  };
+
+  const handleSyncAll = async () => {
+    const token = localStorage.getItem(getProjectKey('google_project_access_token'));
+    if (!token || !selectedCalendarId) {
+      alert(language === 'th' ? 'กรุณาเชื่อมปฏิทิน Google Calendar ก่อน' : 'Please connect a Google Calendar first');
+      return;
+    }
+    
+    setIsSyncing(true);
+    setSyncStatusMsg(language === 'th' ? 'กำลังซิงค์ข้อมูล...' : 'Syncing...');
+    
+    try {
+      const syncedEvents = JSON.parse(localStorage.getItem(`synced_google_events_${selectedCalendarId}`) || '{}');
+      
+      for (const evt of events) {
+        const attendeesEmails = (evt.crew_assigned || []).map(crewId => {
+          const cInfo = crew.find(c => c.id === crewId);
+          return cInfo?.email !== '-' ? cInfo?.email : null;
+        }).filter(email => !!email);
+
+        const eventData = {
+          title: evt.title[language] || evt.title.en || 'Shoot Event',
+          date: evt.date,
+          location: evt.location?.[language] || evt.location?.en || '',
+          description: `Project Event\nTime: ${evt.time || ''}\nScene: ${evt.scene_number || 'N/A'}`,
+          attendees: attendeesEmails
+        };
+
+        const googleEventId = syncedEvents[evt.id];
+        if (googleEventId) {
+          try {
+            await googleCalendar.updateEvent(token, selectedCalendarId, googleEventId, eventData);
+          } catch (err) {
+            console.warn("Event update failed, recreating:", err);
+            const res = await googleCalendar.createEvent(token, selectedCalendarId, eventData);
+            syncedEvents[evt.id] = res.id;
+          }
+        } else {
+          const res = await googleCalendar.createEvent(token, selectedCalendarId, eventData);
+          syncedEvents[evt.id] = res.id;
+        }
+      }
+      
+      localStorage.setItem(`synced_google_events_${selectedCalendarId}`, JSON.stringify(syncedEvents));
+      alert(language === 'th' ? 'ซิงค์ข้อมูลกับ Google Calendar เรียบร้อยแล้ว!' : 'Google Calendar sync completed successfully!');
+    } catch (err) {
+      alert("Sync failed: " + err.message);
+    } finally {
+      setIsSyncing(false);
+      setSyncStatusMsg('');
+    }
+  };
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -122,7 +242,37 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
 
   // Helper to filter events by date
   const getEventsForDate = (dateStr) => {
-    return events.filter(e => e.date === dateStr);
+    const matchedEvents = events.filter(e => e.date === dateStr);
+    const blockedEvents = [];
+    
+    (crew || []).forEach(c => {
+      if (!c.booked_dates) return;
+      const found = c.booked_dates.find(d => (typeof d === 'string' ? d : d?.date) === dateStr);
+      if (found) {
+        const reason = typeof found === 'string' 
+          ? (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands') 
+          : (found.reason || (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands'));
+        
+        blockedEvents.push({
+          id: `blocked-${c.id}-${dateStr}`,
+          title: {
+            th: `ติดธุระ: ${c.name?.th || c.name?.en} (${reason})`,
+            en: `Busy: ${c.name?.en || c.name?.th} (${reason})`
+          },
+          date: dateStr,
+          type: 'blocked',
+          crew_member: c,
+          reason: reason,
+          location: {
+            th: 'ไม่มีระบุสถานที่',
+            en: 'N/A'
+          },
+          time: language === 'th' ? 'ทั้งวัน' : 'All Day'
+        });
+      }
+    });
+    
+    return [...matchedEvents, ...blockedEvents];
   };
 
   // Crew name resolver helper
@@ -176,6 +326,24 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
               </button>
             ))}
           </div>
+
+          {/* Google Calendar Settings Button (Producers/ADs only) */}
+          {hasWriteAccess() && (
+            <button
+              onClick={() => setIsGoogleModalOpen(true)}
+              className={`p-1.5 rounded-lg border flex items-center gap-1.5 transition-all text-xs font-bold ${
+                isConnected
+                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
+                  : theme === 'dark'
+                    ? 'border-obsidian-800 hover:bg-obsidian-800 text-slate-400'
+                    : 'border-slate-200 hover:bg-slate-100 text-slate-655'
+              }`}
+              title="Google Calendar Integration Settings"
+            >
+              <Settings size={15} className={isSyncing ? 'animate-spin text-gold-500' : ''} />
+              <span className="hidden sm:inline">Google Calendar</span>
+            </button>
+          )}
 
           {/* Prev/Next buttons */}
           <div className="flex items-center gap-1.5">
@@ -252,13 +420,19 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                             ? theme === 'dark'
                               ? 'bg-gold-500/10 border-gold-500/20 text-gold-400 hover:bg-gold-500/15'
                               : 'bg-gold-50 border-gold-200 text-gold-800 hover:bg-gold-100'
-                            : theme === 'dark'
-                              ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
-                              : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
+                            : evt.type === 'blocked'
+                              ? theme === 'dark'
+                                ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15'
+                                : 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100'
+                              : theme === 'dark'
+                                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
+                                : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
                         }`}
                       >
-                        <span className="mr-1">{evt.type === 'shoot' ? '🎥' : '🛠️'}</span>
-                        {evt.title[language]}
+                        <span className="mr-1">
+                          {evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : '🛠️'}
+                        </span>
+                        {evt.title[language] || evt.title.en}
                       </button>
                     ))}
                   </div>
@@ -303,18 +477,22 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                           ? theme === 'dark'
                             ? 'bg-gold-500/5 border-gold-500/20 text-gold-300'
                             : 'bg-gold-50 border-gold-200 text-gold-800'
-                          : theme === 'dark'
-                            ? 'bg-blue-500/5 border-blue-500/20 text-blue-300'
-                            : 'bg-blue-50 border-blue-200 text-blue-800'
+                          : evt.type === 'blocked'
+                            ? theme === 'dark'
+                              ? 'bg-red-500/5 border-red-500/20 text-red-350'
+                              : 'bg-red-50 border-red-200 text-red-800'
+                            : theme === 'dark'
+                              ? 'bg-blue-500/5 border-blue-500/20 text-blue-300'
+                              : 'bg-blue-50 border-blue-200 text-blue-800'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 mb-1.5 font-bold">
-                        <span>{evt.type === 'shoot' ? '🎥' : '🛠️'}</span>
+                        <span>{evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : '🛠️'}</span>
                         <span className="uppercase tracking-widest text-[9px] px-1 rounded bg-current/10">
-                          {t(`calendar.${evt.type}Day`)}
+                          {evt.type === 'blocked' ? (language === 'th' ? 'ติดธุระ' : 'Busy') : t(`calendar.${evt.type}Day`)}
                         </span>
                       </div>
-                      <p className="font-bold">{evt.title[language]}</p>
+                      <p className="font-bold">{evt.title[language] || evt.title.en}</p>
                       <p className="text-[10px] opacity-75 mt-1 flex items-center gap-1">
                         <Clock size={10} />
                         <span>{evt.time}</span>
@@ -364,25 +542,34 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                 className={`p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer transition-all hover:scale-[1.005] ${
                   evt.type === 'shoot'
                     ? theme === 'dark' ? 'bg-gold-500/5 border-gold-500/25 text-gold-300' : 'bg-gold-50 border-gold-200 text-gold-800'
-                    : theme === 'dark' ? 'bg-blue-500/5 border-blue-500/25 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800'
+                    : evt.type === 'blocked'
+                      ? theme === 'dark' ? 'bg-red-500/5 border-red-500/25 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
+                      : theme === 'dark' ? 'bg-blue-500/5 border-blue-500/25 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800'
                 }`}
               >
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider bg-current/10 px-2 py-0.5 rounded">
-                      {t(`calendar.${evt.type}Day`)}
+                      {evt.type === 'blocked' ? (language === 'th' ? 'ติดธุระ' : 'Busy') : t(`calendar.${evt.type}Day`)}
                     </span>
                     <span className="text-xs text-slate-400 font-mono">🕒 {evt.time}</span>
                   </div>
-                  <h3 className="text-lg font-bold">{evt.title[language]}</h3>
+                  <h3 className="text-lg font-bold">{evt.title[language] || evt.title.en}</h3>
                   <div className="flex items-center gap-1.5 text-xs text-slate-400">
                     <MapPin size={12} />
-                    <span>{evt.location[language]}</span>
+                    <span>{evt.location[language] || evt.location.en}</span>
                   </div>
                 </div>
 
                 <div className="flex -space-x-2 overflow-hidden self-start sm:self-auto">
-                  {(evt.crew_assigned || []).map((crewId, idx) => {
+                  {evt.type === 'blocked' ? (
+                    <div 
+                      className="w-8 h-8 rounded-full border border-obsidian-950 bg-red-650 flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                      title={`${evt.crew_member?.name?.[language]} - ${evt.crew_member?.role}`}
+                    >
+                      {evt.crew_member?.name?.en?.split(' ').map(n => n[0]).join('') || '??'}
+                    </div>
+                  ) : (evt.crew_assigned || []).map((crewId, idx) => {
                     const cInfo = getCrewInfo(crewId);
                     return (
                       <div 
@@ -416,9 +603,13 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-inherit flex items-center justify-between shrink-0">
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
-                selectedEvent.type === 'shoot' ? 'bg-gold-500/10 text-gold-500' : 'bg-blue-500/10 text-blue-500'
+                selectedEvent.type === 'shoot'
+                  ? 'bg-gold-500/10 text-gold-500'
+                  : selectedEvent.type === 'blocked'
+                    ? 'bg-red-500/10 text-red-500'
+                    : 'bg-blue-500/10 text-blue-500'
               }`}>
-                {t(`calendar.${selectedEvent.type}Day`)}
+                {selectedEvent.type === 'blocked' ? (language === 'th' ? 'ติดธุระ' : 'Busy') : t(`calendar.${selectedEvent.type}Day`)}
               </span>
               <button 
                 onClick={() => setSelectedEvent(null)}
@@ -433,7 +624,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
               
               {/* Event title */}
               <div className="space-y-1">
-                <h2 className="text-xl font-bold font-serif">{selectedEvent.title[language]}</h2>
+                <h2 className="text-xl font-bold font-serif">{selectedEvent.title[language] || selectedEvent.title.en}</h2>
                 <p className="text-xs text-slate-400">
                   🗓️ {new Date(selectedEvent.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
                     weekday: 'long',
@@ -444,71 +635,217 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                 </p>
               </div>
 
-              {/* Time slot & location */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className={`p-3 rounded-lg border ${
-                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                    <Clock size={10} />
-                    <span>{t('calendar.scheduledTime')}</span>
-                  </p>
-                  <p className="text-sm font-bold">{selectedEvent.time}</p>
-                </div>
-                <div className={`p-3 rounded-lg border ${
-                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
-                    <MapPin size={10} />
-                    <span>{t('calendar.shootLocation')}</span>
-                  </p>
-                  <p className="text-sm font-bold truncate" title={selectedEvent.location[language]}>
-                    {selectedEvent.location[language]}
-                  </p>
-                </div>
-              </div>
-
-              {/* Crew assigned */}
-              <div className="space-y-2">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Users size={12} className="text-gold-500" />
-                  <span>{t('calendar.assignedCrew')}</span>
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
-                  {(selectedEvent.crew_assigned || []).map((crewId) => {
-                    const cInfo = getCrewInfo(crewId);
-                    return (
-                      <div 
-                        key={crewId} 
-                        className={`p-2 rounded-lg border flex items-center gap-2.5 ${
-                          theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-850' : 'bg-slate-50 border-slate-100 shadow-xs'
-                        }`}
-                      >
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 flex items-center justify-center text-[10px] font-bold text-white shadow-xs">
-                          {cInfo?.name?.en?.split(' ').map(n => n[0]).join('') || '??'}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold truncate">{cInfo?.name?.[language]}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{language === 'th' ? cInfo?.role_th : cInfo?.role}</p>
-                        </div>
+              {selectedEvent.type === 'blocked' ? (
+                /* Blocked Crew Details */
+                <div className="space-y-4 animate-fadeIn">
+                  <div className={`p-4 rounded-lg border ${
+                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                  } space-y-2`}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                      {language === 'th' ? 'ทีมงานที่แจ้งติดธุระ' : 'Crew Member Profile'}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-600 to-pink-500 flex items-center justify-center text-xs font-bold text-white shadow-xs">
+                        {selectedEvent.crew_member?.name?.en?.split(' ').map(n => n[0]).join('') || '??'}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                          {selectedEvent.crew_member?.name?.[language] || selectedEvent.crew_member?.name?.en}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {language === 'th' ? selectedEvent.crew_member?.role_th : selectedEvent.crew_member?.role}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* Action Button: Call Sheet */}
-              {selectedEvent.type === 'shoot' && selectedEvent.scene_number && (
-                <button
-                  onClick={() => viewCallSheet(selectedEvent.scene_number)}
-                  className="w-full py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white flex items-center justify-center gap-2 shadow-md transition-all"
-                >
-                  <FileText size={16} />
-                  <span>{t('crew.callSheetLink')} (Scene {selectedEvent.scene_number})</span>
-                </button>
+                  <div className={`p-3 rounded-lg border ${
+                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1">
+                      {language === 'th' ? 'รายละเอียดเพิ่มเติม' : 'Description'}
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                      {selectedEvent.reason 
+                        ? `${language === 'th' ? 'เหตุผลที่ติดธุระ: ' : 'Reason: '}${selectedEvent.reason}`
+                        : (language === 'th' 
+                            ? 'ทีมงานแจ้งวันหยุดติดธุระส่วนตัวในระบบพอร์ทัลหลัก และบล็อกคิวงานสำหรับช่วงวันดังกล่าว'
+                            : 'Member marked this day as busy in their roster workspace, blocking schedule bookings for this date.')}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Regular Event Details */
+                <>
+                  {/* Time slot & location */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className={`p-3 rounded-lg border ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                        <Clock size={10} />
+                        <span>{t('calendar.scheduledTime')}</span>
+                      </p>
+                      <p className="text-sm font-bold">{selectedEvent.time}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg border ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                        <MapPin size={10} />
+                        <span>{t('calendar.shootLocation')}</span>
+                      </p>
+                      <p className="text-sm font-bold truncate" title={selectedEvent.location[language] || selectedEvent.location.en}>
+                        {selectedEvent.location[language] || selectedEvent.location.en}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Crew assigned */}
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users size={12} className="text-gold-500" />
+                      <span>{t('calendar.assignedCrew')}</span>
+                    </p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                      {(selectedEvent.crew_assigned || []).map((crewId) => {
+                        const cInfo = getCrewInfo(crewId);
+                        return (
+                          <div 
+                            key={crewId} 
+                            className={`p-2 rounded-lg border flex items-center gap-2.5 ${
+                              theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-850' : 'bg-slate-50 border-slate-100 shadow-xs'
+                            }`}
+                          >
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 flex items-center justify-center text-[10px] font-bold text-white shadow-xs">
+                              {cInfo?.name?.en?.split(' ').map(n => n[0]).join('') || '??'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold truncate">{cInfo?.name?.[language]}</p>
+                              <p className="text-[10px] text-slate-400 truncate">{language === 'th' ? cInfo?.role_th : cInfo?.role}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Action Button: Call Sheet */}
+                  {selectedEvent.type === 'shoot' && selectedEvent.scene_number && (
+                    <button
+                      onClick={() => viewCallSheet(selectedEvent.scene_number)}
+                      className="w-full py-2.5 rounded-lg text-sm font-bold bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white flex items-center justify-center gap-2 shadow-md transition-all"
+                    >
+                      <FileText size={16} />
+                      <span>{t('crew.callSheetLink')} (Scene {selectedEvent.scene_number})</span>
+                    </button>
+                  )}
+                </>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+      {/* GOOGLE CALENDAR SETTINGS MODAL */}
+      {isGoogleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
+          <div className={`w-full max-w-md rounded-xl shadow-2xl overflow-hidden border ${
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <div className="px-5 py-4 border-b border-inherit flex items-center justify-between">
+              <h3 className="text-sm font-bold font-serif flex items-center gap-1.5">
+                <Settings size={16} className="text-gold-500" />
+                <span>{language === 'th' ? 'ตั้งค่าซิงค์ Google Calendar' : 'Google Calendar Sync Settings'}</span>
+              </h3>
+              <button 
+                onClick={() => setIsGoogleModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-obsidian-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {/* Google Client ID setup */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                  Google API Client ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 12345-abcde.apps.googleusercontent.com"
+                  value={googleClientId}
+                  onChange={(e) => setGoogleClientId(e.target.value)}
+                  className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                  }`}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {language === 'th' 
+                    ? 'ได้มาจาก Google Cloud Console (OAuth Client ID) โดยตั้งค่า Redirect URIs ให้ตรงกับแอดเดรสของหน้าเว็บนี้'
+                    : 'Obtained from Google Cloud Console. Set Authorized Redirect URIs to match this web app URL.'}
+                </p>
+              </div>
+
+              {/* Status / Actions */}
+              <div className="pt-2 border-t border-inherit">
+                {isConnected ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-emerald-500 font-bold flex items-center gap-1">
+                        <Check size={14} />
+                        {language === 'th' ? 'เชื่อมต่อ Google Account แล้ว' : 'Connected to Google'}
+                      </span>
+                      <button
+                        onClick={handleDisconnectGoogle}
+                        className="text-[10px] font-bold text-red-500 hover:underline"
+                      >
+                        {language === 'th' ? 'ยกเลิกการเชื่อมต่อ' : 'Disconnect'}
+                      </button>
+                    </div>
+
+                    {/* Select Calendar */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                        {language === 'th' ? 'เลือกปฏิทินที่ใช้ซิงค์' : 'Select Sync Calendar'}
+                      </label>
+                      <select
+                        value={selectedCalendarId}
+                        onChange={(e) => handleSelectCalendar(e.target.value)}
+                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                          theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <option value="">-- Choose Calendar --</option>
+                        {googleCalendars.map(c => (
+                          <option key={c.id} value={c.id}>{c.summary}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sync Button */}
+                    {selectedCalendarId && (
+                      <button
+                        onClick={handleSyncAll}
+                        disabled={isSyncing}
+                        className="w-full py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                        <span>{isSyncing ? syncStatusMsg : (language === 'th' ? 'เริ่มการซิงค์ตารางงานปฏิทิน' : 'Sync Calendar Events')}</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleConnectGoogle}
+                    className="w-full py-2 bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs rounded-lg shadow-md transition-all"
+                  >
+                    {language === 'th' ? 'เชื่อมต่อ Google Account' : 'Connect Google Account'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

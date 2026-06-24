@@ -12,6 +12,7 @@ import {
   Clock, 
   Loader2, 
   Save, 
+  Check,
   ChevronRight, 
   Sparkles,
   GripVertical

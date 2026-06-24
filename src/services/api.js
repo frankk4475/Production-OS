@@ -657,12 +657,15 @@ export const api = {
         .eq('id', crewId)
         .single();
       
-      if (!crewError && crewMember && crewMember.booked_dates && crewMember.booked_dates.includes(dateStr)) {
+      const isBlocked = crewMember && crewMember.booked_dates && crewMember.booked_dates.some(d => d === dateStr || (d && d.date === dateStr));
+      if (!crewError && isBlocked) {
+        const blockedItem = crewMember.booked_dates.find(d => d === dateStr || (d && d.date === dateStr));
+        const reason = (blockedItem && typeof blockedItem === 'object') ? blockedItem.reason : '';
         return {
           hasConflict: true,
           reason: 'profile_booking',
-          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})`,
-          messageEn: `This date is blocked in their personal profile (${dateStr})`
+          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})${reason ? `: ${reason}` : ''}`,
+          messageEn: `This date is blocked in their personal profile (${dateStr})${reason ? `: ${reason}` : ''}`
         };
       }
 
@@ -707,12 +710,15 @@ export const api = {
       
       const crew = getDbData(STORAGE_KEYS.CREW);
       const member = crew.find(c => c.id === crewId);
-      if (member && member.booked_dates && member.booked_dates.includes(dateStr)) {
+      const isBlocked = member && member.booked_dates && member.booked_dates.some(d => d === dateStr || (d && d.date === dateStr));
+      if (isBlocked) {
+        const blockedItem = member.booked_dates.find(d => d === dateStr || (d && d.date === dateStr));
+        const reason = (blockedItem && typeof blockedItem === 'object') ? blockedItem.reason : '';
         return {
           hasConflict: true,
           reason: 'profile_booking',
-          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})`,
-          messageEn: `This date is blocked in their personal profile (${dateStr})`
+          messageTh: `มีการบล็อกวันทำงานนี้ไว้ในโปรไฟล์ส่วนตัว (${dateStr})${reason ? `: ${reason}` : ''}`,
+          messageEn: `This date is blocked in their personal profile (${dateStr})${reason ? `: ${reason}` : ''}`
         };
       }
 

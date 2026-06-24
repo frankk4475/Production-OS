@@ -126,7 +126,8 @@ export default function Layout({
   const baseMenuItems = isCrewOrTalent()
     ? [
         { id: 'personal', label: language === 'th' ? 'พื้นที่งานส่วนตัว' : 'Personal Workspace', icon: Users },
-        { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงานของฉัน' : 'My Call Sheets', icon: FileText }
+        { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงานของฉัน' : 'My Call Sheets', icon: FileText },
+        { id: 'calendar', label: language === 'th' ? 'ปฏิทินงานหลัก' : 'Calendar', icon: Calendar }
       ]
     : [
         { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },

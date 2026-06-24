@@ -45,7 +45,7 @@ function MainApp() {
   const [currentTab, setCurrentTab] = useState(() => {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
-      ? ['personal', 'callsheets'] 
+      ? ['personal', 'callsheets', 'calendar'] 
       : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
@@ -58,7 +58,7 @@ function MainApp() {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
-        ? ['personal', 'callsheets'] 
+        ? ['personal', 'callsheets', 'calendar'] 
         : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
       
       const savedUser = localStorage.getItem('prod_user');

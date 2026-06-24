@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { api } from '../services/api';
 import UserManager from './UserManager';
+import { googleCalendar } from '../services/googleCalendar';
 import { 
   Users, 
   UserPlus, 
@@ -16,7 +17,10 @@ import {
   X,
   Loader2,
   Trash2,
-  Shield
+  Shield,
+  Settings,
+  Check,
+  RefreshCw
 } from 'lucide-react';
 
 const STANDARD_CREW_ROLES = [
@@ -53,6 +57,29 @@ const getCrewDepartment = (member) => {
   if (role.includes('makeup') || role.includes('wardrobe') || role.includes('stylist') || role.includes('costume') || roleTh.includes('แต่งหน้า') || roleTh.includes('เสื้อผ้า') || roleTh.includes('แต่งกาย')) return 'wardrobe';
   if (role.includes('director') || role.includes('ad') || role.includes('manager') || role.includes('coordinator') || role.includes('producer') || role.includes('writer') || role.includes('screen') || role.includes('script') || roleTh.includes('ผู้กำกับ') || roleTh.includes('กองถ่าย') || roleTh.includes('จัดการ') || roleTh.includes('เขียนบท') || roleTh.includes('บท')) return 'production';
   return null;
+};
+
+const generateGoogleCalendarUrl = (title, dateStr, location = '', details = '') => {
+  if (!dateStr) return '#';
+  const cleanDate = dateStr.replace(/-/g, '');
+  const dateObj = new Date(dateStr);
+  let endStr = cleanDate;
+  if (!isNaN(dateObj.getTime())) {
+    const nextDate = new Date(dateObj);
+    nextDate.setDate(nextDate.getDate() + 1);
+    const year = nextDate.getFullYear();
+    const month = String(nextDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nextDate.getDate()).padStart(2, '0');
+    endStr = `${year}${month}${day}`;
+  }
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${cleanDate}/${endStr}`,
+    details: details,
+    location: location
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 };
 
 export default function CrewPortal({ lockedCrewId }) {
@@ -147,10 +174,13 @@ export default function CrewPortal({ lockedCrewId }) {
     const memberObj = crew.find(c => c.id === memberId);
     if (memberObj && memberObj.booked_dates) {
       for (const d of memberObj.booked_dates) {
-        const hasEvent = allEvents.some(e => e.date === d && e.crew_assigned && e.crew_assigned.includes(memberId));
+        const dateVal = typeof d === 'string' ? d : d?.date;
+        if (!dateVal) continue;
+        const hasEvent = allEvents.some(e => e.date === dateVal && e.crew_assigned && e.crew_assigned.includes(memberId));
         if (hasEvent) {
-          const conflictingEvents = allEvents.filter(e => e.date === d && e.crew_assigned && e.crew_assigned.includes(memberId));
-          return { date: d, events: conflictingEvents };
+          const conflictingEvents = allEvents.filter(e => e.date === dateVal && e.crew_assigned && e.crew_assigned.includes(memberId));
+          const reasonVal = typeof d === 'string' ? (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands') : (d?.reason || (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands'));
+          return { date: dateVal, reason: reasonVal, events: conflictingEvents };
         }
       }
     }
@@ -164,6 +194,7 @@ export default function CrewPortal({ lockedCrewId }) {
       const conflictEvents = assignedEvents.filter(e => e.date === conflictDate);
       return {
         date: conflictDate,
+        reason: language === 'th' ? 'งานซ้อนในโปรเจกต์' : 'Double Booked Events',
         events: conflictEvents
       };
     }
@@ -371,6 +402,212 @@ export default function CrewPortal({ lockedCrewId }) {
       }
     } catch (err) {
       alert("Failed to delete task: " + err.message);
+    }
+  };
+
+  const [newBlockedDate, setNewBlockedDate] = useState('');
+  const [newBlockedReason, setNewBlockedReason] = useState('');
+
+  const [personalIsConnected, setPersonalIsConnected] = useState(false);
+  const [personalCalendars, setPersonalCalendars] = useState([]);
+  const getPersonalKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
+
+  const [selectedPersonalCalendarId, setSelectedPersonalCalendarId] = useState(() => localStorage.getItem(getPersonalKey('google_personal_calendar_id')) || '');
+  const [personalClientId, setPersonalClientId] = useState(() => localStorage.getItem('google_client_id') || '');
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('state=personal-calendar')) {
+      const params = googleCalendar.parseHashParams();
+      if (params) {
+        localStorage.setItem(getPersonalKey('google_personal_access_token'), params.accessToken);
+        localStorage.setItem(getPersonalKey('google_personal_token_expires_at'), params.expiresAt);
+        window.location.hash = '#/personal';
+        loadPersonalCalendars(params.accessToken);
+      }
+    } else {
+      const token = localStorage.getItem(getPersonalKey('google_personal_access_token'));
+      const expiresAt = localStorage.getItem(getPersonalKey('google_personal_token_expires_at'));
+      if (token && expiresAt && Number(expiresAt) > Date.now()) {
+        loadPersonalCalendars(token);
+      }
+    }
+  }, [user?.id]);
+
+  const loadPersonalCalendars = async (token) => {
+    try {
+      const list = await googleCalendar.fetchCalendars(token);
+      setPersonalCalendars(list);
+      setPersonalIsConnected(true);
+    } catch (err) {
+      console.error("Failed to load Google personal calendars:", err);
+      setPersonalIsConnected(false);
+      localStorage.removeItem(getPersonalKey('google_personal_access_token'));
+    }
+  };
+
+  const handleConnectPersonalGoogle = () => {
+    const clientIdToUse = personalClientId || localStorage.getItem('google_client_id');
+    if (!clientIdToUse) {
+      alert(language === 'th' ? 'กรุณาระบุ Google Client ID ก่อนเชื่อมต่อ' : 'Please provide a Google Client ID first');
+      return;
+    }
+    localStorage.setItem('google_client_id', clientIdToUse);
+    const redirectUri = window.location.origin + window.location.pathname;
+    window.location.href = googleCalendar.getAuthUrl(clientIdToUse, redirectUri, 'personal-calendar');
+  };
+
+  const handleDisconnectPersonalGoogle = () => {
+    localStorage.removeItem(getPersonalKey('google_personal_access_token'));
+    localStorage.removeItem(getPersonalKey('google_personal_token_expires_at'));
+    localStorage.removeItem(getPersonalKey('google_personal_calendar_id'));
+    setPersonalCalendars([]);
+    setSelectedPersonalCalendarId('');
+    setPersonalIsConnected(false);
+  };
+
+  const handleSelectPersonalCalendar = (calId) => {
+    setSelectedPersonalCalendarId(calId);
+    localStorage.setItem(getPersonalKey('google_personal_calendar_id'), calId);
+  };
+
+  const handleSyncAllBlockedDatesToGoogle = async () => {
+    const token = localStorage.getItem(getPersonalKey('google_personal_access_token'));
+    const calId = localStorage.getItem(getPersonalKey('google_personal_calendar_id'));
+    if (!token || !calId || !activeCrewMember) {
+      alert(language === 'th' ? 'กรุณาเชื่อมต่อปฏิทิน Google ก่อน' : 'Please connect Google Calendar first');
+      return;
+    }
+    
+    try {
+      const updatedDates = [];
+      for (const d of (activeCrewMember.booked_dates || [])) {
+        const dateVal = typeof d === 'string' ? d : d?.date;
+        const reasonVal = typeof d === 'string' ? 'ติดธุระส่วนตัว' : d?.reason;
+        let gId = typeof d === 'string' ? null : d?.googleEventId;
+        
+        const eventData = {
+          title: (language === 'th' ? `ติดธุระ: ` : `Busy: `) + (activeCrewMember.name?.th || activeCrewMember.name?.en) + ` (${reasonVal})`,
+          date: dateVal,
+          description: language === 'th' ? `เหตุผล: ${reasonVal}` : `Reason: ${reasonVal}`
+        };
+        
+        if (gId) {
+          try {
+            await googleCalendar.updateEvent(token, calId, gId, eventData);
+          } catch (err) {
+            const res = await googleCalendar.createEvent(token, calId, eventData);
+            gId = res.id;
+          }
+        } else {
+          const res = await googleCalendar.createEvent(token, calId, eventData);
+          gId = res.id;
+        }
+        
+        updatedDates.push({
+          date: dateVal,
+          reason: reasonVal,
+          googleEventId: gId
+        });
+      }
+      
+      const updatedMember = {
+        ...activeCrewMember,
+        booked_dates: updatedDates
+      };
+      await updateCrewMember(updatedMember);
+      alert(language === 'th' ? 'ซิงค์วันติดธุระไปยัง Google Calendar แล้ว' : 'Sync completed successfully');
+    } catch (err) {
+      alert("Failed to sync: " + err.message);
+    }
+  };
+
+  const handleAddBlockedDate = async (e) => {
+    e.preventDefault();
+    if (!newBlockedDate || !activeCrewMember) return;
+    
+    const isAlreadyBlocked = (activeCrewMember.booked_dates || []).some(d => (typeof d === 'string' ? d : d?.date) === newBlockedDate);
+    if (isAlreadyBlocked) {
+      alert(language === 'th' ? 'วันนี้ถูกบันทึกไปแล้ว' : 'This date is already blocked');
+      return;
+    }
+
+    const token = localStorage.getItem(getPersonalKey('google_personal_access_token'));
+    const calId = localStorage.getItem(getPersonalKey('google_personal_calendar_id'));
+    const expiresAt = localStorage.getItem(getPersonalKey('google_personal_token_expires_at'));
+    const reasonText = newBlockedReason.trim() || (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands');
+    
+    let googleEventId = null;
+    if (token && calId && expiresAt && Number(expiresAt) > Date.now()) {
+      try {
+        const eventData = {
+          title: (language === 'th' ? `ติดธุระ: ` : `Busy: `) + (activeCrewMember.name?.th || activeCrewMember.name?.en) + ` (${reasonText})`,
+          date: newBlockedDate,
+          description: language === 'th' ? `เหตุผล: ${reasonText}` : `Reason: ${reasonText}`
+        };
+        const res = await googleCalendar.createEvent(token, calId, eventData);
+        googleEventId = res.id;
+      } catch (err) {
+        console.error("Failed to sync new blocked date to Google Calendar:", err);
+      }
+    }
+    
+    const newEntry = {
+      date: newBlockedDate,
+      reason: reasonText,
+      googleEventId
+    };
+
+    const updatedMember = {
+      ...activeCrewMember,
+      booked_dates: [...(activeCrewMember.booked_dates || []), newEntry].sort((a, b) => {
+        const dateA = typeof a === 'string' ? a : a?.date || '';
+        const dateB = typeof b === 'string' ? b : b?.date || '';
+        return dateA.localeCompare(dateB);
+      })
+    };
+    
+    try {
+      await updateCrewMember(updatedMember);
+      setNewBlockedDate('');
+      setNewBlockedReason('');
+    } catch (err) {
+      alert("Failed to block date: " + err.message);
+    }
+  };
+
+  const handleRemoveBlockedDate = async (dateStr) => {
+    if (!activeCrewMember) return;
+    const confirmMsg = language === 'th' 
+      ? `ยืนยันการลบวันติดธุระวันที่ ${dateStr}?` 
+      : `Are you sure you want to delete blocked date ${dateStr}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    const targetEntry = (activeCrewMember.booked_dates || []).find(d => (typeof d === 'string' ? d : d?.date) === dateStr);
+    const googleEventId = targetEntry && typeof targetEntry === 'object' ? targetEntry.googleEventId : null;
+    
+    if (googleEventId) {
+      const token = localStorage.getItem(getPersonalKey('google_personal_access_token'));
+      const calId = localStorage.getItem(getPersonalKey('google_personal_calendar_id'));
+      const expiresAt = localStorage.getItem(getPersonalKey('google_personal_token_expires_at'));
+      if (token && calId && expiresAt && Number(expiresAt) > Date.now()) {
+        try {
+          await googleCalendar.deleteEvent(token, calId, googleEventId);
+        } catch (err) {
+          console.error("Failed to delete blocked date from Google Calendar:", err);
+        }
+      }
+    }
+    
+    const updatedMember = {
+      ...activeCrewMember,
+      booked_dates: (activeCrewMember.booked_dates || []).filter(d => (typeof d === 'string' ? d : d?.date) !== dateStr)
+    };
+    
+    try {
+      await updateCrewMember(updatedMember);
+    } catch (err) {
+      alert("Failed to unblock date: " + err.message);
     }
   };
 
@@ -640,7 +877,10 @@ export default function CrewPortal({ lockedCrewId }) {
                           </td>
                           <td className="py-3.5 px-4">
                             {conflict ? (
-                              <span className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20">
+                              <span 
+                                className="px-2 py-0.5 rounded-[4px] text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20"
+                                title={`${language === 'th' ? 'เหตุผล: ' : 'Reason: '}${conflict.reason}`}
+                              >
                                 Double Booked ({conflict.date})
                               </span>
                             ) : (
@@ -693,7 +933,8 @@ export default function CrewPortal({ lockedCrewId }) {
                     </div>
                     <p className="font-semibold">{member.name?.[language] || member.name?.en || ''}</p>
                     <p className="mt-1 leading-relaxed">
-                      Double booked on <span className="underline font-bold font-mono">{conflict.date}</span>:
+                      {language === 'th' ? 'ชนคิวงานในวันที่' : 'Double booked on'} <span className="underline font-bold font-mono">{conflict.date}</span>
+                      {conflict.reason && ` (${language === 'th' ? 'เหตุผล' : 'Reason'}: ${conflict.reason})`}:
                     </p>
                     <ul className="list-disc pl-4 mt-1 space-y-0.5">
                       {conflict.events.map(e => (
@@ -813,6 +1054,20 @@ export default function CrewPortal({ lockedCrewId }) {
                                 <span className="shrink-0">📍</span>
                                 <span>{evt.location?.[language] || evt.location?.en}</span>
                               </p>
+                              <a
+                                href={generateGoogleCalendarUrl(
+                                  (evt.type === 'shoot' ? '🎥 ' : '🛠️ ') + (evt.title?.[language] || evt.title?.en || 'Event'),
+                                  evt.date,
+                                  evt.location?.[language] || evt.location?.en || '',
+                                  `Time: ${evt.time}\n${evt.type === 'shoot' ? 'Shoot Day' : 'Prep Day'}\n${deptNote || ''}`
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-gold-500 hover:text-gold-600 transition-colors mt-1"
+                              >
+                                <CalendarIcon size={11} />
+                                <span>{language === 'th' ? 'ซิงค์ลง Google Calendar' : 'Sync to Google Calendar'}</span>
+                              </a>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-xs font-bold text-gold-500">{evt.date}</p>
@@ -919,6 +1174,178 @@ export default function CrewPortal({ lockedCrewId }) {
                         {language === 'th' ? "เพิ่ม" : "Add"}
                       </button>
                     </form>
+                  </div>
+                </div>
+
+                {/* My Blocked Dates (Busy) */}
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-base font-bold font-serif flex items-center gap-1.5">
+                    <CalendarIcon size={16} className="text-red-500" />
+                    <span>{language === 'th' ? 'วันติดธุระของฉัน' : 'My Blocked Dates (Busy)'}</span>
+                  </h3>
+                  
+                  <div className="glass-panel p-4 rounded-xl space-y-3">
+                    <form onSubmit={handleAddBlockedDate} className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          required
+                          value={newBlockedDate}
+                          onChange={(e) => setNewBlockedDate(e.target.value)}
+                          className={`w-1/2 px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                            theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-900 shadow-inner'
+                          }`}
+                        />
+                        <input
+                          type="text"
+                          placeholder={language === 'th' ? "ระบุเหตุผล (เช่น ติดธุระส่วนตัว)" : "Reason (e.g. Family Errands)"}
+                          value={newBlockedReason}
+                          onChange={(e) => setNewBlockedReason(e.target.value)}
+                          className={`flex-1 px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                            theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200 text-slate-900 shadow-inner'
+                          }`}
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full py-1.5 rounded-lg text-xs font-bold bg-red-500 hover:bg-red-650 text-white transition-colors"
+                      >
+                        {language === 'th' ? 'บล็อกวันติดธุระ' : 'Block Date'}
+                      </button>
+                    </form>
+
+                    <div className="divide-y divide-slate-100 dark:divide-obsidian-800/40 max-h-[220px] overflow-y-auto pr-1">
+                      {(activeCrewMember.booked_dates || []).map((d, idx) => {
+                        const dateVal = typeof d === 'string' ? d : d?.date;
+                        const reasonVal = typeof d === 'string' ? (language === 'th' ? 'ติดธุระส่วนตัว' : 'Personal Errands') : d?.reason;
+                        const hasConflict = crewEvents.some(evt => evt.date === dateVal);
+                        
+                        return (
+                          <div key={idx} className="py-2.5 flex flex-col gap-1 text-xs">
+                            <div className="flex items-center justify-between gap-3 group select-none">
+                              <div className="min-w-0 text-left">
+                                <span className="font-mono font-bold text-slate-700 dark:text-slate-350 block">{dateVal}</span>
+                                <span className="text-[10px] text-slate-450 italic truncate block">{reasonVal}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={generateGoogleCalendarUrl(
+                                    (language === 'th' ? `ติดธุระ: ` : `Busy: `) + (activeCrewMember.name?.th || activeCrewMember.name?.en) + ` (${reasonVal})`,
+                                    dateVal,
+                                    '',
+                                    language === 'th' ? `เหตุผล: ${reasonVal}` : `Reason: ${reasonVal}`
+                                  )}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-bold text-gold-500 hover:text-gold-600 flex items-center gap-1"
+                                  title="Add to Google Calendar"
+                                >
+                                  <CalendarIcon size={12} />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveBlockedDate(dateVal)}
+                                  className="text-slate-400 hover:text-red-500 transition-colors p-0.5"
+                                  title={language === 'th' ? "ลบวันติดธุระ" : "Unblock date"}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                            {hasConflict && (
+                              <div className="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded w-max">
+                                <span>⚠️ {language === 'th' ? 'ชนคิวงานถ่ายทำ!' : 'Double-booked with shoot!'}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {(activeCrewMember.booked_dates || []).length === 0 && (
+                        <p className="text-[11px] text-slate-400 italic py-4 text-center">
+                          {language === 'th' ? 'ไม่มีการบล็อกวันติดธุระ' : 'No blocked dates added.'}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personal Google Calendar Sync Settings */}
+                <div className="mt-6 space-y-4">
+                  <h3 className="text-base font-bold font-serif flex items-center gap-1.5">
+                    <Settings size={16} className="text-gold-500" />
+                    <span>{language === 'th' ? 'ตั้งค่า Google Calendar ส่วนตัว' : 'Personal Google Calendar'}</span>
+                  </h3>
+                  
+                  <div className="glass-panel p-4 rounded-xl space-y-3 text-left">
+                    {!localStorage.getItem('google_client_id') && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Google API Client ID</label>
+                        <input
+                          type="text"
+                          placeholder="ClientID.apps.googleusercontent.com"
+                          value={personalClientId}
+                          onChange={(e) => setPersonalClientId(e.target.value)}
+                          className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                            theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                          }`}
+                        />
+                      </div>
+                    )}
+                    
+                    {personalIsConnected ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-emerald-500 font-bold flex items-center gap-1">
+                            <Check size={13} />
+                            {language === 'th' ? 'เชื่อมต่อ Google แล้ว' : 'Connected'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleDisconnectPersonalGoogle}
+                            className="text-[10px] text-red-500 hover:underline font-bold"
+                          >
+                            {language === 'th' ? 'ยกเลิกการเชื่อมต่อ' : 'Disconnect'}
+                          </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            {language === 'th' ? 'ปฏิทินที่จะซิงค์วันติดธุระ' : 'Select Google Calendar'}
+                          </label>
+                          <select
+                            value={selectedPersonalCalendarId}
+                            onChange={(e) => handleSelectPersonalCalendar(e.target.value)}
+                            className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer ${
+                              theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <option value="">-- Choose Calendar --</option>
+                            {personalCalendars.map(c => (
+                              <option key={c.id} value={c.id}>{c.summary}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {selectedPersonalCalendarId && (
+                          <button
+                            type="button"
+                            onClick={handleSyncAllBlockedDatesToGoogle}
+                            className="w-full py-1.5 rounded-lg text-xs font-bold bg-gold-500 text-white hover:bg-gold-600 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <RefreshCw size={13} />
+                            <span>{language === 'th' ? 'ซิงค์วันหยุดทั้งหมดลง Google' : 'Sync All Blocked Dates'}</span>
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleConnectPersonalGoogle}
+                        className="w-full py-2 rounded-lg text-xs font-bold bg-gold-500 text-white hover:bg-gold-600 transition-colors"
+                      >
+                        {language === 'th' ? 'เชื่อมต่อ Google Calendar' : 'Connect Google Account'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
