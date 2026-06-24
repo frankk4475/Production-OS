@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { api } from '../services/api';
 import UserManager from './UserManager';
-import { googleCalendar } from '../services/googleCalendar';
+import { googleCalendar, DEFAULT_CLIENT_ID } from '../services/googleCalendar';
 import { 
   Users, 
   UserPlus, 
@@ -413,9 +413,23 @@ export default function CrewPortal({ lockedCrewId }) {
   const getPersonalKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
   const [selectedPersonalCalendarId, setSelectedPersonalCalendarId] = useState(() => localStorage.getItem(getPersonalKey('google_personal_calendar_id')) || '');
-  const [personalClientId, setPersonalClientId] = useState(() => localStorage.getItem('google_client_id') || '');
+  const [personalClientId, setPersonalClientId] = useState(() => localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID);
+  const [showPersonalAdvanced, setShowPersonalAdvanced] = useState(false);
 
   useEffect(() => {
+    const handleAuthMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data && event.data.type === 'GOOGLE_AUTH_CALLBACK' && event.data.state === 'personal-calendar') {
+        const params = googleCalendar.parseHashParams(event.data.hash);
+        if (params) {
+          localStorage.setItem(getPersonalKey('google_personal_access_token'), params.accessToken);
+          localStorage.setItem(getPersonalKey('google_personal_token_expires_at'), params.expiresAt);
+          loadPersonalCalendars(params.accessToken);
+        }
+      }
+    };
+    window.addEventListener('message', handleAuthMessage);
+
     const hash = window.location.hash;
     if (hash && hash.includes('state=personal-calendar')) {
       const params = googleCalendar.parseHashParams();
@@ -432,6 +446,8 @@ export default function CrewPortal({ lockedCrewId }) {
         loadPersonalCalendars(token);
       }
     }
+
+    return () => window.removeEventListener('message', handleAuthMessage);
   }, [user?.id]);
 
   const loadPersonalCalendars = async (token) => {
@@ -447,14 +463,28 @@ export default function CrewPortal({ lockedCrewId }) {
   };
 
   const handleConnectPersonalGoogle = () => {
-    const clientIdToUse = personalClientId || localStorage.getItem('google_client_id');
+    const clientIdToUse = personalClientId || localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID;
     if (!clientIdToUse) {
       alert(language === 'th' ? 'กรุณาระบุ Google Client ID ก่อนเชื่อมต่อ' : 'Please provide a Google Client ID first');
       return;
     }
     localStorage.setItem('google_client_id', clientIdToUse);
     const redirectUri = window.location.origin + window.location.pathname;
-    window.location.href = googleCalendar.getAuthUrl(clientIdToUse, redirectUri, 'personal-calendar');
+    const authUrl = googleCalendar.getAuthUrl(clientIdToUse, redirectUri, 'personal-calendar');
+    
+    // Open in popup window
+    const width = 550;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    const popup = window.open(
+      authUrl,
+      'GoogleAuthPopup',
+      `width=${width},height=${height},top=${top},left=${left},status=no,resizable=yes,scrollbars=yes`
+    );
+    if (popup) {
+      popup.focus();
+    }
   };
 
   const handleDisconnectPersonalGoogle = () => {
@@ -893,7 +923,7 @@ export default function CrewPortal({ lockedCrewId }) {
                             {hasWriteAccess() && (
                               <button
                                 onClick={() => handleDeleteCrewClick(member.id)}
-                                className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-500/5 transition-all"
+                                className="p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
                                 title="Remove Crew Member"
                               >
                                 <Trash2 size={13} />
@@ -1277,18 +1307,26 @@ export default function CrewPortal({ lockedCrewId }) {
                   </h3>
                   
                   <div className="glass-panel p-4 rounded-xl space-y-3 text-left">
-                    {!localStorage.getItem('google_client_id') && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Google API Client ID</label>
-                        <input
-                          type="text"
-                          placeholder="ClientID.apps.googleusercontent.com"
-                          value={personalClientId}
-                          onChange={(e) => setPersonalClientId(e.target.value)}
-                          className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                            theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                          }`}
-                        />
+
+                    
+                    {personalIsConnected && (
+                      <div className="text-right">
+                        <button 
+                          type="button"
+                          onClick={() => setShowPersonalAdvanced(!showPersonalAdvanced)}
+                          className="text-[10px] font-bold text-gold-500 hover:text-gold-400 focus:outline-none transition-colors"
+                        >
+                          {showPersonalAdvanced 
+                            ? (language === 'th' ? '⚙️ ซ่อนข้อมูล Client ID' : '⚙️ Hide Client ID')
+                            : (language === 'th' ? '⚙️ แสดงข้อมูล Client ID' : '⚙️ Show Client ID')
+                          }
+                        </button>
+                        
+                        {showPersonalAdvanced && (
+                          <div className="mt-2 text-left p-2 rounded bg-slate-500/5 border border-slate-200 dark:border-obsidian-800/80 font-mono text-[10px] text-slate-400 truncate">
+                            ID: {personalClientId}
+                          </div>
+                        )}
                       </div>
                     )}
                     

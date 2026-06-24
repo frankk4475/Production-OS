@@ -380,10 +380,9 @@ export default function ShootingSchedule() {
     const list = [];
     let dayIndex = 1;
     let dayPagesSum = 0;
-    let tempDayStrips = [];
 
     // Helper to push a day break banner
-    const pushDayBreak = (dbIndex, key, prevSceneId) => {
+    const pushDayBreak = (dbIndex, key) => {
       // Calculate shoot day date
       const projectStart = project?.start_date ? new Date(project.start_date) : new Date();
       // Add days (0-indexed for Day 1)
@@ -401,22 +400,25 @@ export default function ShootingSchedule() {
       list.push(
         <div 
           key={key} 
-          className="my-3 overflow-hidden rounded-lg shadow-sm"
+          className="my-4 overflow-hidden rounded-xl shadow-sm border border-slate-800 dark:border-obsidian-800/80 animate-fadeIn"
         >
-          <div className="bg-slate-900 border-y border-slate-800 text-slate-300 px-6 py-2.5 flex justify-between items-center text-xs font-bold no-print">
-            <span className="flex items-center gap-1.5 text-gold-500 uppercase tracking-widest font-black">
-              <Calendar size={13} />
+          <div className="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 text-slate-300 px-6 py-3 flex justify-between items-center text-xs font-bold no-print">
+            <span className="flex items-center gap-2 text-gold-500 uppercase tracking-widest font-black text-[11px]">
+              <Calendar size={14} className="animate-pulse" />
               {language === 'th' ? `สิ้นสุดวันถ่ายทำที่ ${dayIndex}` : `End of Day ${dayIndex}`}
             </span>
-            <span className="font-mono text-slate-400">
-              Total Pages: <strong className="text-white">{formattedTotal}</strong> • {dateStr}
+            <span className="font-mono text-slate-355 text-[11px] flex items-center gap-4">
+              <span>{language === 'th' ? 'หน้ากระดาษรวม:' : 'Total Pages:'} <strong className="text-white font-extrabold">{formattedTotal}</strong></span>
+              <span className="opacity-40">•</span>
+              <span className="text-gold-400">{dateStr}</span>
             </span>
             {hasWriteAccess() && (
               <button 
                 onClick={() => removeDayBreak(savedIndex)} 
-                className="text-red-400 hover:text-red-300 text-[10px] uppercase font-black pl-4"
+                className="text-red-400 hover:text-red-300 hover:scale-105 active:scale-95 transition-all text-[10px] uppercase font-black pl-4 flex items-center gap-1"
               >
-                Remove Break
+                <Trash2 size={11} />
+                <span>{language === 'th' ? 'ลบตัวคั่น' : 'Remove Break'}</span>
               </button>
             )}
           </div>
@@ -432,20 +434,37 @@ export default function ShootingSchedule() {
         const pgs = parseEighths(scene.pages || '1/8');
         dayPagesSum += pgs;
 
-        // Color coding scene strips
-        let stripColor = 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200';
+        // Custom WGA production stripboard styling
+        let stripClass = "border rounded-xl p-3.5 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 cursor-grab active:cursor-grabbing hover:shadow-md hover:scale-[1.005] duration-200 border-l-2 ";
+        
         if (theme === 'dark') {
-          stripColor = 'bg-obsidian-900 border-obsidian-850 text-slate-100 hover:bg-obsidian-800';
+          stripClass += "bg-obsidian-900/60 border-obsidian-800/80 text-slate-105 hover:bg-obsidian-850 ";
+        } else {
+          stripClass += "bg-white border-slate-200/80 text-slate-800 hover:bg-slate-50/50 ";
         }
 
+        // Apply distinct WGA Stripboard colors on the left border based on INT/EXT and DAY/NIGHT
         if (scene.day_night === 'DAY') {
-          stripColor = scene.int_ext === 'INT'
-            ? 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/20 hover:bg-amber-500/15'
-            : 'bg-yellow-500/5 text-yellow-805 dark:text-yellow-250 border-yellow-500/10 hover:bg-yellow-500/10';
+          if (scene.int_ext === 'INT') {
+            // Day/Interior - Peach/Orange
+            stripClass += "border-l-amber-500 bg-amber-500/5 dark:bg-amber-500/10";
+          } else {
+            // Day/Exterior - Yellow
+            stripClass += "border-l-yellow-400 bg-yellow-500/5 dark:bg-yellow-500/10";
+          }
         } else if (scene.day_night === 'NIGHT') {
-          stripColor = 'bg-indigo-500/10 text-indigo-800 dark:text-indigo-350 border-indigo-500/20 hover:bg-indigo-500/15';
+          if (scene.int_ext === 'INT') {
+            // Night/Interior - Indigo
+            stripClass += "border-l-indigo-600 bg-indigo-500/5 dark:bg-indigo-500/10";
+          } else {
+            // Night/Exterior - Violet/Blue
+            stripClass += "border-l-violet-600 bg-violet-500/5 dark:bg-violet-500/10";
+          }
         } else if (scene.day_night === 'DUSK' || scene.day_night === 'DAWN') {
-          stripColor = 'bg-rose-500/10 text-rose-800 dark:text-rose-355 border-rose-500/20 hover:bg-rose-500/15';
+          // Dawn/Dusk - Pink/Rose
+          stripClass += "border-l-rose-500 bg-rose-500/5 dark:bg-rose-500/10";
+        } else {
+          stripClass += "border-l-slate-400";
         }
 
         const castIds = getSceneCastIds(scene);
@@ -457,7 +476,7 @@ export default function ShootingSchedule() {
             onDragStart={(e) => handleDragStart(index, e)}
             onDragOver={(e) => handleDragOver(index, e)}
             onDrop={(e) => handleDrop(index, e)}
-            className={`border rounded-lg p-3 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4 cursor-grab active:cursor-grabbing ${stripColor} ${
+            className={`${stripClass} ${
               draggedIndex === index ? 'opacity-30 border-dashed border-gold-500' : ''
             }`}
           >
@@ -467,12 +486,12 @@ export default function ShootingSchedule() {
               {/* Scene heading metadata */}
               <div className="flex flex-col text-left">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-black text-gold-500">SCENE {scene.scene_number}</span>
-                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-900/10 dark:bg-slate-100/10">{scene.int_ext}</span>
-                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-900/10 dark:bg-slate-100/10">{scene.day_night}</span>
+                  <span className="font-mono text-xs font-black text-gold-500 uppercase tracking-wider">SCENE {scene.scene_number}</span>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900/10 dark:bg-slate-100/10 border border-slate-200/20">{scene.int_ext}</span>
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-slate-900/10 dark:bg-slate-100/10 border border-slate-200/20">{scene.day_night}</span>
                 </div>
                 <h4 className="text-sm font-extrabold tracking-tight mt-1 truncate max-w-sm">{scene.setting}</h4>
-                <p className="text-[10px] text-slate-450 truncate max-w-xs">{scene.description?.[language] || scene.description?.en || ''}</p>
+                <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-md">{scene.description?.[language] || scene.description?.en || ''}</p>
               </div>
             </div>
 
@@ -480,11 +499,11 @@ export default function ShootingSchedule() {
             <div className="flex flex-wrap items-center gap-4 w-full md:w-auto justify-end text-xs shrink-0">
               {/* Cast IDs circles */}
               {castIds.length > 0 && (
-                <div className="flex gap-1.5 items-center">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">CAST:</span>
+                <div className="flex gap-2 items-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">CAST:</span>
                   <div className="flex flex-wrap gap-1">
                     {castIds.map(id => (
-                      <span key={id} className="w-5 h-5 rounded-full bg-slate-900/20 dark:bg-slate-100/20 flex items-center justify-center font-mono text-[10px] font-bold" title={`Cast ID ${id}`}>
+                      <span key={id} className="w-5.5 h-5.5 rounded-full bg-slate-900/10 dark:bg-slate-100/10 text-slate-700 dark:text-slate-300 border border-slate-200/20 flex items-center justify-center font-mono text-[9px] font-extrabold" title={`Cast ID ${id}`}>
                         {id}
                       </span>
                     ))}
@@ -493,34 +512,34 @@ export default function ShootingSchedule() {
               )}
 
               {/* Location pin */}
-              {scene.location?.[language] && (
-                <div className="flex items-center gap-1 text-slate-400">
-                  <MapPin size={12} />
+              {(scene.location?.[language] || scene.location?.en) && (
+                <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-semibold">
+                  <MapPin size={12} className="text-gold-500/80" />
                   <span className="truncate max-w-[120px]">{scene.location?.[language] || scene.location?.en}</span>
                 </div>
               )}
 
               {/* Pages */}
-              <div className="font-mono font-black text-gold-500">
+              <div className="font-mono font-black text-gold-500 bg-gold-500/5 px-2 py-0.5 rounded border border-gold-500/10">
                 {scene.pages || '1/8'} pgs
               </div>
 
               {/* Quick Actions */}
               {hasWriteAccess() && (
-                <div className="flex items-center gap-2 pl-2 border-l border-slate-200/20 no-print">
+                <div className="flex items-center gap-2 pl-2 border-l border-slate-200/20 dark:border-obsidian-800 no-print">
                   <button 
                     onClick={() => addDayBreak(index)} 
-                    className="text-[10px] bg-slate-900 hover:bg-slate-800 text-gold-500 px-2 py-1 rounded font-bold"
-                    title="Insert Day Break"
+                    className="text-[9px] bg-slate-900 hover:bg-slate-800 text-gold-500 px-2 py-1 rounded-lg font-bold border border-slate-800 transition-all hover:scale-105"
+                    title={language === 'th' ? 'แทรกวันหยุดคิวถ่ายทำ' : 'Insert Day Break'}
                   >
-                    + Day Break
+                    + {language === 'th' ? 'วันถ่ายทำ' : 'Day Break'}
                   </button>
                   <button 
                     onClick={() => moveToBoneyard(scene.id)} 
-                    className="text-[10px] text-red-400 hover:text-red-300 font-bold px-1"
-                    title="Send to Boneyard"
+                    className="text-[9px] text-red-400 hover:text-red-300 font-bold px-1.5 py-1 rounded hover:bg-red-500/10 transition-all"
+                    title={language === 'th' ? 'ละเว้นฉากนี้' : 'Send to Boneyard'}
                   >
-                    Omit
+                    {language === 'th' ? 'ละเว้น' : 'Omit'}
                   </button>
                 </div>
               )}
@@ -545,13 +564,15 @@ export default function ShootingSchedule() {
       });
 
       list.push(
-        <div key="db-end" className="bg-slate-900 border-y border-slate-800 text-slate-350 px-6 py-2.5 flex justify-between items-center text-xs font-bold my-3 rounded-lg shadow-sm">
-          <span className="flex items-center gap-1.5 text-gold-500 uppercase tracking-widest font-black">
-            <Clock size={13} />
+        <div key="db-end" className="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border border-slate-800 text-slate-350 px-6 py-3 flex justify-between items-center text-xs font-bold my-4 rounded-lg shadow-sm animate-fadeIn">
+          <span className="flex items-center gap-2 text-gold-500 uppercase tracking-widest font-black text-[11px]">
+            <Clock size={14} className="animate-pulse" />
             {language === 'th' ? `วันสุดท้ายที่ถ่ายทำ (สิ้นสุดวันคิวที่ ${dayIndex})` : `Final Shoot Day (End of Day ${dayIndex})`}
           </span>
-          <span className="font-mono text-slate-400">
-            Total Pages: <strong className="text-white">{formatEighths(dayPagesSum)}</strong> • {dateStr}
+          <span className="font-mono text-slate-350 text-[11px] flex items-center gap-4">
+            <span>{language === 'th' ? 'หน้ากระดาษรวม:' : 'Total Pages:'} <strong className="text-white font-extrabold">{formatEighths(dayPagesSum)}</strong></span>
+            <span className="opacity-40">•</span>
+            <span className="text-gold-400">{dateStr}</span>
           </span>
         </div>
       );
@@ -562,27 +583,36 @@ export default function ShootingSchedule() {
 
   if (!project) {
     return (
-      <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-350 dark:border-obsidian-800 animate-fadeIn">
-        <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
+      <div className="glass-panel p-16 text-center rounded-2xl border border-dashed border-slate-350 dark:border-obsidian-800 max-w-xl mx-auto space-y-6 animate-fadeIn mt-8">
+        <div className="w-16 h-16 rounded-full bg-gold-500/10 text-gold-500 flex items-center justify-center mx-auto">
           <Film size={32} />
         </div>
-        <h3 className="text-lg font-bold font-serif">{language === 'th' ? 'กรุณาเลือกหรือสร้างโครงการเพื่อจัดทำตารางถ่ายทำ' : 'No Project Selected'}</h3>
+        <h3 className="text-lg font-bold font-serif text-slate-800 dark:text-slate-105">
+          {language === 'th' ? 'กรุณาเลือกโครงการ' : 'No Project Selected'}
+        </h3>
+        <p className="text-xs text-slate-450 leading-relaxed max-w-sm mx-auto">
+          {language === 'th' 
+            ? 'กรุณาเลือกหรือสร้างโครงการเพื่อจัดทำตารางและลำดับคิวถ่ายทำภาพยนตร์' 
+            : 'Please select an existing project or create a new one to access the shooting schedule board.'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-16">
+    <div className="space-y-6 animate-fadeIn pb-16 text-left">
       
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/30 dark:border-obsidian-850 pb-5 no-print">
         <div>
-          <h1 className="text-2xl font-extrabold font-serif tracking-tight flex items-center gap-2">
-            <Film className="text-gold-500 animate-pulse" />
+          <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
+            <Film className="text-gold-500 animate-pulse" size={24} />
             <span>{language === 'th' ? 'ตารางวางแผนถ่ายทำ (Stripboard Schedule)' : 'Shooting Schedule Stripboard'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Drag strips to order scenes, insert day breaks, and auto-calculate pages per shoot day.
+            {language === 'th' 
+              ? 'จัดเรียงลำดับฉากคิวถ่ายทำ แทรกวันหยุดกอง และคำนวณจำนวนหน้ากระดาษรวมในแต่ละวันอัตโนมัติ' 
+              : 'Drag strips to order scenes, insert day breaks, and auto-calculate pages per shoot day.'}
           </p>
         </div>
 
@@ -591,20 +621,23 @@ export default function ShootingSchedule() {
             <>
               <button
                 onClick={handleAutoSchedule}
-                className={`px-3 py-2 rounded-lg border text-xs font-bold transition-all ${
-                  theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 hover:bg-obsidian-800 text-slate-350' : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-650'
+                className={`px-3 py-2 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
+                  theme === 'dark' 
+                    ? 'bg-obsidian-900 border-obsidian-800 hover:bg-obsidian-800 text-slate-350 hover:text-white' 
+                    : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-655 hover:text-slate-900'
                 }`}
               >
-                Auto Day Breaks
+                <Sparkles size={13} className="text-gold-500" />
+                <span>{language === 'th' ? 'แบ่งวันถ่ายอัตโนมัติ' : 'Auto Day Breaks'}</span>
               </button>
 
               <button
                 onClick={handleSaveSchedule}
                 disabled={isLoading}
-                className="px-4 py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white font-bold text-xs rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 active:scale-98"
+                className="px-4 py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-white font-bold text-xs rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 active:scale-95"
               >
-                {isSaved ? <Check size={14} /> : <Save size={14} />}
-                <span>{isSaved ? 'Schedule Saved!' : 'Save Schedule'}</span>
+                {isSaved ? <Check size={14} className="animate-scaleIn" /> : <Save size={14} />}
+                <span>{isSaved ? (language === 'th' ? 'บันทึกตารางแล้ว!' : 'Schedule Saved!') : (language === 'th' ? 'บันทึกตารางถ่ายทำ' : 'Save Schedule')}</span>
               </button>
             </>
           )}
@@ -619,12 +652,14 @@ export default function ShootingSchedule() {
             className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
               activeTab === 'board'
                 ? 'border-gold-500 text-gold-500 font-extrabold'
-                : 'border-transparent text-slate-400 hover:text-slate-350'
+                : 'border-transparent text-slate-400 hover:text-slate-300'
             }`}
           >
             <span>{language === 'th' ? 'บอร์ดวางแผนคิว (Stripboard)' : 'Production Board'}</span>
-            <span className="px-1.5 py-0.5 rounded bg-gold-500/10 text-gold-500 text-[10px]">
-              {boardItems.filter(i => i.type === 'scene').length} scenes
+            <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+              activeTab === 'board' ? 'bg-gold-500/10 text-gold-500' : 'bg-slate-500/10 text-slate-400'
+            }`}>
+              {boardItems.filter(i => i.type === 'scene').length} {language === 'th' ? 'ฉาก' : 'scenes'}
             </span>
           </button>
 
@@ -636,9 +671,11 @@ export default function ShootingSchedule() {
                 : 'border-transparent text-slate-400 hover:text-slate-350'
             }`}
           >
-            <span>{language === 'th' ? 'ฉากรอคิว (Boneyard / Omitted)' : 'Omitted / Boneyard'}</span>
-            <span className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 text-[10px]">
-              {boneyardScenes.length} scenes
+            <span>{language === 'th' ? 'ฉากละทิ้ง (Boneyard / Omitted)' : 'Omitted / Boneyard'}</span>
+            <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+              activeTab === 'boneyard' ? 'bg-red-950/20 text-red-400' : 'bg-slate-800 text-slate-300'
+            }`}>
+              {boneyardScenes.length} {language === 'th' ? 'ฉาก' : 'scenes'}
             </span>
           </button>
         </div>
@@ -660,12 +697,36 @@ export default function ShootingSchedule() {
       )}
 
       {activeTab === 'board' && boardItems.length === 0 && !isLoading && (
-        <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-md mx-auto border border-dashed border-slate-350 dark:border-obsidian-800">
-          <Film className="w-8 h-8 text-slate-400 mx-auto" />
-          <h3 className="text-sm font-extrabold">{language === 'th' ? 'ไม่พบฉากที่พร้อมถ่ายทำ' : 'No scenes scheduled'}</h3>
-          <p className="text-xs text-slate-450 leading-relaxed">
-            Create scenes in Script Breakdown or import a script to start planning your shooting schedule.
-          </p>
+        <div className="glass-panel p-16 text-center rounded-2xl border border-dashed border-slate-350 dark:border-obsidian-800 max-w-xl mx-auto space-y-6 animate-fadeIn mt-8">
+          <div className="w-16 h-16 rounded-full bg-gold-500/10 text-gold-500 flex items-center justify-center mx-auto">
+            <Film size={32} className="animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold font-serif text-slate-800 dark:text-slate-105">
+              {language === 'th' ? 'ยังไม่มีฉากถ่ายทำในตาราง' : 'No Scenes Scheduled Yet'}
+            </h3>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+              {language === 'th' 
+                ? 'โปรเจกต์นี้ยังไม่มีฉากคิวถ่ายทำ โปรดเขียนบทภาพยนตร์ก่อน หรือแยกแยะฉากในหน้าแจกแจงบทถ่ายทำ เพื่อสร้างคิวแผ่นสคริปต์ลงในตารางวางแผนคิว' 
+                : 'This project does not have any scene strips scheduled yet. Write a screenplay first or define scenes in the breakdown page to populate your stripboard schedule.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <a 
+              href="#/script" 
+              className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 hover:border-gold-500/50 text-xs font-bold text-slate-650 dark:text-slate-300 dark:hover:text-white transition-all flex items-center gap-1.5"
+            >
+              <span>{language === 'th' ? 'ไปหน้าเขียนบทภาพยนตร์' : 'Go to Screenplay Editor'}</span>
+              <ChevronRight size={14} />
+            </a>
+            <a 
+              href="#/breakdown" 
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-gold-600 to-amber-500 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5"
+            >
+              <span>{language === 'th' ? 'ไปหน้าแจกแจงบทถ่ายทำ' : 'Go to Script Breakdown'}</span>
+              <ChevronRight size={14} />
+            </a>
+          </div>
         </div>
       )}
 
@@ -685,12 +746,14 @@ export default function ShootingSchedule() {
             {boneyardScenes.map((scene) => (
               <div 
                 key={scene.id} 
-                className={`p-4 rounded-xl border border-slate-200/50 dark:border-obsidian-850 flex flex-col justify-between gap-3 text-left ${
-                  theme === 'dark' ? 'bg-obsidian-950/40' : 'bg-slate-50/50'
+                className={`p-4 rounded-xl border border-dashed hover:border-solid hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-3 text-left ${
+                  theme === 'dark' 
+                    ? 'bg-obsidian-950/20 border-obsidian-800/80 text-slate-400 hover:bg-obsidian-900 hover:text-slate-200 hover:border-gold-500/30' 
+                    : 'bg-slate-50/30 border-slate-250 text-slate-500 hover:bg-slate-50 hover:text-slate-800 hover:border-gold-500/30'
                 }`}
               >
                 <div>
-                  <div className="flex justify-between items-center text-[10px]">
+                  <div className="flex justify-between items-center text-[9px] font-semibold">
                     <span className="font-mono font-bold text-gold-500">SCENE {scene.scene_number}</span>
                     <span className="opacity-75">{scene.int_ext} • {scene.day_night}</span>
                   </div>
@@ -703,7 +766,7 @@ export default function ShootingSchedule() {
                   {hasWriteAccess() && (
                     <button 
                       onClick={() => restoreFromBoneyard(scene.id)}
-                      className="px-2.5 py-1 rounded bg-gold-600 hover:bg-gold-500 text-white font-black text-[9px] transition-all uppercase"
+                      className="px-2.5 py-1 rounded bg-gold-600 hover:bg-gold-500 hover:scale-105 active:scale-95 text-white font-black text-[9px] transition-all uppercase"
                     >
                       Restore to Board
                     </button>

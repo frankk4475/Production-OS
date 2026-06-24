@@ -17,6 +17,24 @@
         }
       }
     </script>
+    <script>
+      // Detect if this is an OAuth popup callback
+      if (window.opener && window.location.hash.includes('access_token=')) {
+        try {
+          const hash = window.location.hash;
+          const stateMatch = hash.match(/state=([^&]*)/);
+          const state = stateMatch ? stateMatch[1] : '';
+          window.opener.postMessage({
+            type: 'GOOGLE_AUTH_CALLBACK',
+            hash: hash,
+            state: state
+          }, window.location.origin);
+          window.close();
+        } catch (e) {
+          console.error('Error posting message to opener:', e);
+        }
+      }
+    </script>
   </head>
   <body class="transition-colors duration-200">
     <div id="root"></div>

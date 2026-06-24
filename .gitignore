@@ -36,4 +36,5 @@ production_os_database_backup_*.json
 # Impeccable tool config and scratch scripts
 .impeccable/
 scratch_*.js
+audit.txt
 

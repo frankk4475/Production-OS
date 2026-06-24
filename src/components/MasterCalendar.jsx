@@ -14,7 +14,8 @@ import {
   X,
   Settings,
   RefreshCw,
-  Check
+  Check,
+  ExternalLink
 } from 'lucide-react';
 
 export default function MasterCalendar({ events, crew, setCurrentTab, setTabParams }) {
@@ -26,13 +27,15 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   const { user, hasWriteAccess } = useAuth();
   const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
+  const DEFAULT_CLIENT_ID = '1036495371661-bchgqg1c0r5q3gh8949mfl86t5262799.apps.googleusercontent.com';
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
-  const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('google_client_id') || '');
+  const [googleClientId, setGoogleClientId] = useState(() => localStorage.getItem('google_client_id') || DEFAULT_CLIENT_ID);
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const loadCalendars = async (token) => {
     try {
@@ -47,6 +50,20 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   };
 
   useEffect(() => {
+    const handleAuthMessage = (event) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data && event.data.type === 'GOOGLE_AUTH_CALLBACK' && event.data.state === 'project-calendar') {
+        const params = googleCalendar.parseHashParams(event.data.hash);
+        if (params) {
+          localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
+          localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
+          loadCalendars(params.accessToken);
+          setIsGoogleModalOpen(true);
+        }
+      }
+    };
+    window.addEventListener('message', handleAuthMessage);
+
     const params = googleCalendar.parseHashParams();
     if (params) {
       localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
@@ -61,6 +78,8 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
         loadCalendars(token);
       }
     }
+
+    return () => window.removeEventListener('message', handleAuthMessage);
   }, [user?.id]);
 
   const handleConnectGoogle = () => {
@@ -70,7 +89,21 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
     }
     localStorage.setItem('google_client_id', googleClientId);
     const redirectUri = window.location.origin + window.location.pathname;
-    window.location.href = googleCalendar.getAuthUrl(googleClientId, redirectUri, 'project-calendar');
+    const authUrl = googleCalendar.getAuthUrl(googleClientId, redirectUri, 'project-calendar');
+    
+    // Open in popup window
+    const width = 550;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    const popup = window.open(
+      authUrl,
+      'GoogleAuthPopup',
+      `width=${width},height=${height},top=${top},left=${left},status=no,resizable=yes,scrollbars=yes`
+    );
+    if (popup) {
+      popup.focus();
+    }
   };
 
   const handleDisconnectGoogle = () => {
@@ -752,7 +785,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       {isGoogleModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fadeIn">
           <div className={`w-full max-w-md rounded-xl shadow-2xl overflow-hidden border ${
-            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-105' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             <div className="px-5 py-4 border-b border-inherit flex items-center justify-between">
               <h3 className="text-sm font-bold font-serif flex items-center gap-1.5">
@@ -767,85 +800,110 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              {/* Google Client ID setup */}
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                  Google API Client ID
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 12345-abcde.apps.googleusercontent.com"
-                  value={googleClientId}
-                  onChange={(e) => setGoogleClientId(e.target.value)}
-                  className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                  }`}
-                />
-                <p className="text-[10px] text-slate-400 mt-1">
-                  {language === 'th' 
-                    ? 'ได้มาจาก Google Cloud Console (OAuth Client ID) โดยตั้งค่า Redirect URIs ให้ตรงกับแอดเดรสของหน้าเว็บนี้'
-                    : 'Obtained from Google Cloud Console. Set Authorized Redirect URIs to match this web app URL.'}
+            <div className="p-5 space-y-5 text-left">
+              
+              {/* Option 1: Open Google Calendar Directly (User Request: กดลิงก์แล้วเด้งไปหน้ากูเกิ้ลปฏิทินเลย) */}
+              <div className="p-4 rounded-xl bg-gold-500/5 border border-gold-500/10 space-y-2.5">
+                <h4 className="text-xs font-black text-gold-500 uppercase tracking-wider">
+                  {language === 'th' ? 'ทางเลือกที่ 1: เปิด Google Calendar โดยตรง' : 'Option 1: Open Google Calendar Directly'}
+                </h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {language === 'th'
+                    ? 'เปิดหน้าเว็บ Google Calendar เพื่อลงชื่อเข้าใช้งานของ Google และตรวจสอบหรือสร้างคิวตารางงานได้ทันทีบนอุปกรณ์ของคุณ'
+                    : 'Open the Google Calendar web app to sign in and view or manage your schedule immediately on your device.'}
                 </p>
+                <a
+                  href="https://calendar.google.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gold-600 hover:bg-gold-500 text-white text-[11px] font-bold rounded-lg shadow-sm transition-colors"
+                >
+                  <span>{language === 'th' ? 'ไปยัง Google Calendar' : 'Go to Google Calendar'}</span>
+                  <ExternalLink size={12} />
+                </a>
               </div>
 
-              {/* Status / Actions */}
-              <div className="pt-2 border-t border-inherit">
-                {isConnected ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-emerald-500 font-bold flex items-center gap-1">
-                        <Check size={14} />
-                        {language === 'th' ? 'เชื่อมต่อ Google Account แล้ว' : 'Connected to Google'}
-                      </span>
-                      <button
-                        onClick={handleDisconnectGoogle}
-                        className="text-[10px] font-bold text-red-500 hover:underline"
-                      >
-                        {language === 'th' ? 'ยกเลิกการเชื่อมต่อ' : 'Disconnect'}
-                      </button>
-                    </div>
-
-                    {/* Select Calendar */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                        {language === 'th' ? 'เลือกปฏิทินที่ใช้ซิงค์' : 'Select Sync Calendar'}
-                      </label>
-                      <select
-                        value={selectedCalendarId}
-                        onChange={(e) => handleSelectCalendar(e.target.value)}
-                        className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                          theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
-                        }`}
-                      >
-                        <option value="">-- Choose Calendar --</option>
-                        {googleCalendars.map(c => (
-                          <option key={c.id} value={c.id}>{c.summary}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Sync Button */}
-                    {selectedCalendarId && (
-                      <button
-                        onClick={handleSyncAll}
-                        disabled={isSyncing}
-                        className="w-full py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
-                        <span>{isSyncing ? syncStatusMsg : (language === 'th' ? 'เริ่มการซิงค์ตารางงานปฏิทิน' : 'Sync Calendar Events')}</span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleConnectGoogle}
-                    className="w-full py-2 bg-gold-500 hover:bg-gold-600 text-white font-bold text-xs rounded-lg shadow-md transition-all"
-                  >
-                    {language === 'th' ? 'เชื่อมต่อ Google Account' : 'Connect Google Account'}
-                  </button>
-                )}
+              {/* OR Divider */}
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200 dark:border-obsidian-850"></div>
+                <span className="flex-shrink mx-3 text-[10px] text-slate-400 font-bold uppercase">{language === 'th' ? 'หรือ' : 'OR'}</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-obsidian-850"></div>
               </div>
+
+              {/* Option 2: Automatic Google Calendar API Integration */}
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-black text-slate-455/dark:text-slate-300 uppercase tracking-wider mb-1">
+                    {language === 'th' ? 'ทางเลือกที่ 2: เชื่อมต่ออัตโนมัติด้วย API' : 'Option 2: Automatic Sync via API'}
+                  </h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed mb-3">
+                    {language === 'th'
+                      ? 'ซิงค์ข้อมูลเหตุการณ์และวันถ่ายทำทั้งหมดเข้ากับ Google Calendar ของกองถ่ายอัตโนมัติโดยตรง'
+                      : 'Synchronize shooting events and calls automatically into your Google Calendar.'}
+                  </p>
+
+
+                </div>
+
+                {/* Status / Actions */}
+                <div className="pt-3 border-t border-slate-250 dark:border-obsidian-800">
+                  {isConnected ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-emerald-500 font-bold flex items-center gap-1.5">
+                          <Check size={14} className="stroke-[3px]" />
+                          {language === 'th' ? 'เชื่อมต่อบัญชี Google แล้ว' : 'Connected to Google'}
+                        </span>
+                        <button
+                          onClick={handleDisconnectGoogle}
+                          className="text-[10px] font-bold text-red-500 hover:underline"
+                        >
+                          {language === 'th' ? 'ยกเลิกการเชื่อมต่อ' : 'Disconnect'}
+                        </button>
+                      </div>
+
+                      {/* Select Calendar */}
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase">
+                          {language === 'th' ? 'เลือกปฏิทินที่ใช้ซิงค์' : 'Select Sync Calendar'}
+                        </label>
+                        <select
+                          value={selectedCalendarId}
+                          onChange={(e) => handleSelectCalendar(e.target.value)}
+                          className={`w-full px-3 py-2 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                            theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                          }`}
+                        >
+                          <option value="">-- Choose Calendar --</option>
+                          {googleCalendars.map(c => (
+                            <option key={c.id} value={c.id}>{c.summary}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Sync Button */}
+                      {selectedCalendarId && (
+                        <button
+                          onClick={handleSyncAll}
+                          disabled={isSyncing}
+                          className="w-full py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 disabled:opacity-50 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                          <span>{isSyncing ? syncStatusMsg : (language === 'th' ? 'เริ่มการซิงค์ตารางงานปฏิทิน' : 'Sync Calendar Events')}</span>
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleConnectGoogle}
+                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 text-gold-500 hover:text-gold-400 border border-slate-800 font-bold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                    >
+                      <span>{language === 'th' ? 'ลงชื่อเข้าใช้งาน Google' : 'Connect Google Account'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>

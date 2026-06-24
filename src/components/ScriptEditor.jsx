@@ -15,7 +15,8 @@ import {
   HelpCircle,
   Menu,
   FileEdit,
-  RefreshCw
+  RefreshCw,
+  Printer
 } from 'lucide-react';
 
 const DEMO_SCRIPT = [
@@ -74,12 +75,12 @@ export default function ScriptEditor() {
 
   // Screenplay format definitions
   const blockTypes = {
-    heading: { label: 'Scene Heading', class: 'font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-4 border-l-4 border-slate-500 mt-6 mb-3', align: 'text-left' },
-    action: { label: 'Action / Narrative', class: 'font-mono text-xs md:text-sm text-slate-700 dark:text-slate-300 mt-3 mb-3', align: 'text-left' },
-    character: { label: 'Character', class: 'font-mono text-xs md:text-sm font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-center', align: 'text-center' },
-    parenthetical: { label: 'Parenthetical', class: 'font-mono text-xs md:text-sm text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-center', align: 'text-center' },
-    dialogue: { label: 'Dialogue', class: 'font-mono text-xs md:text-sm text-slate-800 dark:text-slate-200 mt-1.5 mb-2 mx-auto max-w-[80%] md:max-w-[60%] text-center', align: 'text-center font-medium' },
-    transition: { label: 'Transition', class: 'font-mono text-xs md:text-sm font-bold text-amber-600 dark:text-amber-500 uppercase mt-4 mb-4 text-right pr-4 border-r-4 border-amber-500', align: 'text-right' }
+    heading: { label: language === 'th' ? 'หัวข้อฉาก (Scene Heading)' : 'Scene Heading', class: 'font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-3 border-l-2 border-slate-500/50 mt-6 mb-3', align: 'text-left' },
+    action: { label: language === 'th' ? 'เหตุการณ์ / บทบรรยาย' : 'Action / Narrative', class: 'font-mono text-xs md:text-sm text-slate-700 dark:text-slate-300 mt-3 mb-3', align: 'text-left' },
+    character: { label: language === 'th' ? 'ตัวละคร (Character)' : 'Character', class: 'font-mono text-xs md:text-sm font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-center', align: 'text-center' },
+    parenthetical: { label: language === 'th' ? 'อารมณ์/ท่าทาง (Parenthetical)' : 'Parenthetical', class: 'font-mono text-xs md:text-sm text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-center', align: 'text-center' },
+    dialogue: { label: language === 'th' ? 'บทสนทนา (Dialogue)' : 'Dialogue', class: 'font-mono text-xs md:text-sm text-slate-800 dark:text-slate-200 mt-1.5 mb-2 mx-auto max-w-[80%] md:max-w-[60%] text-center', align: 'text-center font-medium' },
+    transition: { label: language === 'th' ? 'มุมกล้อง/คำเชื่อม (Transition)' : 'Transition', class: 'font-mono text-xs md:text-sm font-bold text-amber-600 dark:text-amber-500 uppercase mt-4 mb-4 text-right pr-2', align: 'text-right' }
   };
 
   // Keyboard navigation & element cycling
@@ -236,7 +237,7 @@ export default function ScriptEditor() {
         setIsSavedSuccessfully(false);
       }, 3000);
     } catch (err) {
-      alert("Failed to sync script: " + err.message);
+      alert(language === 'th' ? "ไม่สามารถบันทึกและซิงค์บทภาพยนตร์ได้: " + err.message : "Failed to sync script: " + err.message);
     }
   };
 
@@ -296,6 +297,94 @@ export default function ScriptEditor() {
   return (
     <div className="space-y-6 animate-fadeIn pb-20">
       
+      {/* Print-only Screenplay Mode */}
+      <div className="hidden print:block w-full text-black font-mono text-xs md:text-sm leading-relaxed mx-auto max-w-4xl" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+        {/* Header / Title details */}
+        <div className="text-center pb-8 mb-8 border-b border-black uppercase tracking-widest text-xs font-bold">
+          {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
+        </div>
+
+        <div className="space-y-4">
+          {blocks.map((block) => {
+            let blockStyle = { fontFamily: "'Courier New', Courier, monospace" };
+            switch (block.type) {
+              case 'heading':
+                blockStyle = {
+                  ...blockStyle,
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  marginTop: '2rem',
+                  marginBottom: '1rem',
+                  textAlign: 'left'
+                };
+                break;
+              case 'action':
+                blockStyle = {
+                  ...blockStyle,
+                  textAlign: 'left',
+                  marginTop: '1rem',
+                  marginBottom: '1rem'
+                };
+                break;
+              case 'character':
+                blockStyle = {
+                  ...blockStyle,
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  textAlign: 'left',
+                  marginLeft: '37.5%',
+                  marginTop: '1.5rem',
+                  marginBottom: '0.25rem'
+                };
+                break;
+              case 'parenthetical':
+                blockStyle = {
+                  ...blockStyle,
+                  fontStyle: 'italic',
+                  textAlign: 'left',
+                  marginLeft: '25%',
+                  width: '50%',
+                  marginTop: '0.25rem',
+                  marginBottom: '0.25rem'
+                };
+                break;
+              case 'dialogue':
+                blockStyle = {
+                  ...blockStyle,
+                  textAlign: 'left',
+                  marginLeft: '20%',
+                  width: '60%',
+                  marginTop: '0.25rem',
+                  marginBottom: '0.5rem'
+                };
+                break;
+              case 'transition':
+                blockStyle = {
+                  ...blockStyle,
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  textAlign: 'right',
+                  marginTop: '1.5rem',
+                  marginBottom: '1.5rem'
+                };
+                break;
+              default:
+                break;
+            }
+
+            return (
+              <div 
+                key={block.id} 
+                style={blockStyle} 
+                className="whitespace-pre-wrap break-inside-avoid"
+              >
+                {block.type === 'character' ? block.text.toUpperCase() : block.text}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Editor Controls Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
         <div>
@@ -304,7 +393,9 @@ export default function ScriptEditor() {
             <span>{language === 'th' ? 'ระบบเขียนบทภาพยนตร์' : 'Studio Screenplay Editor'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            StudioBinder-inspired screenplay format & dynamic breakdown syncing
+            {language === 'th' 
+              ? 'รูปแบบบทภาพยนตร์มาตรฐานสากล พร้อมระบบซิงก์ข้อมูลการแจกแจงบทถ่ายทำอัตโนมัติ' 
+              : 'StudioBinder-inspired screenplay format & dynamic breakdown syncing'}
           </p>
         </div>
 
@@ -329,6 +420,16 @@ export default function ScriptEditor() {
           >
             <Play size={13} className="text-emerald-500 fill-emerald-500" />
             <span>{language === 'th' ? 'โหลดบทตัวอย่าง' : 'Load Demo Script'}</span>
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              theme === 'dark' ? 'bg-obsidian-900 hover:bg-obsidian-800 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+            }`}
+          >
+            <Printer size={13} />
+            <span>{language === 'th' ? 'พิมพ์บทภาพยนตร์ / PDF' : 'Print Script / PDF'}</span>
           </button>
 
           {hasWriteAccess() && (
@@ -363,42 +464,42 @@ export default function ScriptEditor() {
         <div className="glass-panel p-4 rounded-xl border border-gold-500/20 text-xs space-y-3 animate-fadeIn no-print">
           <h3 className="font-bold text-gold-500 flex items-center gap-1.5">
             <Sparkles size={14} />
-            <span>Screenplay Formatter Shortcuts (WGA Standard)</span>
+            <span>{language === 'th' ? 'ปุ่มลัดการจัดรูปแบบบทภาพยนตร์ (มาตรฐาน WGA)' : 'Screenplay Formatter Shortcuts (WGA Standard)'}</span>
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-slate-400 leading-relaxed font-mono">
             <div>
-              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Enter</kbd> : Add logical next element</p>
+              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Enter</kbd> : {language === 'th' ? 'เพิ่มแถวถัดไปอัตโนมัติ' : 'Add logical next element'}</p>
             </div>
             <div>
-              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Tab</kbd> : Cycle format styles</p>
+              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Tab</kbd> : {language === 'th' ? 'เปลี่ยนรูปแบบย่อหน้า' : 'Cycle format styles'}</p>
             </div>
             <div>
-              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Backspace</kbd> : Delete empty line</p>
+              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">Backspace</kbd> : {language === 'th' ? 'ลบแถวว่าง' : 'Delete empty line'}</p>
             </div>
             <div>
-              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">↑ / ↓</kbd> : Navigate lines</p>
+              <p><kbd className="bg-slate-800 text-white px-1.5 py-0.5 rounded border border-slate-700">↑ / ↓</kbd> : {language === 'th' ? 'เลื่อนขึ้น / ลง' : 'Navigate lines'}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Workspace Grid: Side breakdown stats & Main Editor */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start no-print">
         
         {/* SIDE PANEL: Breakdown Sync Status */}
-        <div className="lg:col-span-1 space-y-6 no-print">
+        <div className="lg:col-span-1 space-y-6">
           <div className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-obsidian-800">
               <RefreshCw size={15} className="text-gold-500" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Breakdown Sync Status
+                {language === 'th' ? 'สถานะการซิงก์แจกแจงบท' : 'Breakdown Sync Status'}
               </h2>
             </div>
 
             {/* Scenes detected count */}
             <div className="space-y-1">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Scenes Detected:</span>
+                <span className="text-slate-400">{language === 'th' ? 'ฉากที่ตรวจพบ:' : 'Scenes Detected:'}</span>
                 <span className="font-bold text-gold-500 font-mono text-sm">{detectedScenes.length}</span>
               </div>
               <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1 mt-2">
@@ -410,7 +511,7 @@ export default function ScriptEditor() {
                 ))}
                 {detectedScenes.length === 0 && (
                   <p className="text-[10px] text-slate-500 italic text-center py-2">
-                    Write scene header e.g. INT. COFFEE SHOP - DAY
+                    {language === 'th' ? 'พิมพ์หัวข้อฉาก เช่น INT. COFFEE SHOP - DAY' : 'Write scene header e.g. INT. COFFEE SHOP - DAY'}
                   </p>
                 )}
               </div>
@@ -419,7 +520,7 @@ export default function ScriptEditor() {
             {/* Characters detected */}
             <div className="space-y-1 border-t border-slate-200 dark:border-obsidian-800 pt-3">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-slate-400">Characters Found:</span>
+                <span className="text-slate-400">{language === 'th' ? 'ตัวละครที่พบ:' : 'Characters Found:'}</span>
                 <span className="font-bold text-amber-500 font-mono text-sm">{detectedCharacters.length}</span>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -430,7 +531,7 @@ export default function ScriptEditor() {
                 ))}
                 {detectedCharacters.length === 0 && (
                   <p className="text-[10px] text-slate-500 italic text-center py-1 w-full">
-                    No character lines found.
+                    {language === 'th' ? 'ไม่พบข้อมูลบทสนทนาตัวละคร' : 'No character lines found.'}
                   </p>
                 )}
               </div>
@@ -440,9 +541,13 @@ export default function ScriptEditor() {
             <div className="p-3 rounded-lg bg-gold-500/5 border border-gold-500/10 text-[10px] text-slate-400 leading-relaxed space-y-1">
               <p className="font-bold text-gold-500 flex items-center gap-1">
                 <CheckCircle size={10} />
-                <span>How Breakdown Sync Works</span>
+                <span>{language === 'th' ? 'การซิงก์ข้อมูลทำงานอย่างไร?' : 'How Breakdown Sync Works'}</span>
               </p>
-              <p>Saving your script translates headings into Breakdown scenes. Action lines become descriptions, and characters are auto-mapped as cast members.</p>
+              <p>
+                {language === 'th' 
+                  ? 'เมื่อคุณบันทึกบท หัวข้อฉากจะถูกนำไปสร้างเป็นฉากถ่ายทำในหน้าแจกแจงบทโดยอัตโนมัติ ส่วนเนื้อความบรรยายจะกลายเป็นคำอธิบาย และตัวละครจะถูกสร้างเป็นรายชื่อนักแสดงในฉากนั้นทันที' 
+                  : 'Saving your script translates headings into Breakdown scenes. Action lines become descriptions, and characters are auto-mapped as cast members.'}
+              </p>
             </div>
           </div>
         </div>
@@ -458,7 +563,7 @@ export default function ScriptEditor() {
             
             {/* Screenplay virtual title marker (Optional visual header) */}
             <div className="text-center font-mono opacity-25 uppercase tracking-widest text-[10px] border-b pb-4 mb-8">
-              {project?.title?.[language] || 'STUDIO SCREENPLAY'} — PROJECT VIEW
+              {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'STUDIO SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
             </div>
 
             {/* Screenplay block lists */}
@@ -484,7 +589,7 @@ export default function ScriptEditor() {
                       <div className="relative group/menu">
                         <span 
                           className="p-1 rounded bg-obsidian-900 border border-obsidian-800 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer block"
-                          title="Change format type"
+                          title={language === 'th' ? 'เปลี่ยนรูปแบบแถว' : 'Change format type'}
                         >
                           <Menu size={12} />
                         </span>
@@ -508,12 +613,11 @@ export default function ScriptEditor() {
                         </div>
                       </div>
 
-                      {/* Delete Line */}
                       <button
                         onClick={() => deleteBlock(idx)}
                         disabled={blocks.length <= 1}
-                        className="p-1 rounded bg-obsidian-900 border border-obsidian-800 hover:bg-red-500 hover:text-white text-slate-400 transition-colors disabled:opacity-50"
-                        title="Delete line"
+                        className="p-1 rounded bg-obsidian-900 border border-obsidian-850 hover:bg-red-950/40 hover:text-red-400 text-slate-400 transition-colors disabled:opacity-50"
+                        title={language === 'th' ? 'ลบแถวนี้' : 'Delete line'}
                       >
                         <Trash2 size={12} />
                       </button>
@@ -542,7 +646,9 @@ export default function ScriptEditor() {
                       {/* Element Tag helper (e.g. Dialogue indicator label for visuals) */}
                       {isActive && (
                         <div className="text-[9px] font-sans font-bold text-gold-500 uppercase tracking-widest pl-4 select-none mb-0.5 no-print">
-                          {typeStyle.label} format • Press Tab to change type
+                          {language === 'th' 
+                            ? `รูปแบบ: ${typeStyle.label} • กด Tab เพื่อสลับรูปแบบ` 
+                            : `${typeStyle.label} format • Press Tab to change type`}
                         </div>
                       )}
                       
@@ -556,16 +662,16 @@ export default function ScriptEditor() {
                         rows={1}
                         placeholder={
                           block.type === 'heading' 
-                            ? 'INT. PLACE - DAY' 
+                            ? (language === 'th' ? 'ภายใน. สถานที่ - กลางวัน (เช่น INT. COFFEE SHOP - DAY)' : 'INT. PLACE - DAY')
                             : block.type === 'character' 
-                              ? 'CHARACTER NAME' 
+                              ? (language === 'th' ? 'ชื่อตัวละคร' : 'CHARACTER NAME')
                               : block.type === 'parenthetical'
-                                ? '(delivery details)'
+                                ? (language === 'th' ? '(รายละเอียดการแสดงอารมณ์น้ำเสียง)' : '(delivery details)')
                                 : block.type === 'dialogue'
-                                  ? 'Write dialogue lines...'
+                                  ? (language === 'th' ? 'พิมพ์บทสนทนาตรงนี้...' : 'Write dialogue lines...')
                                   : block.type === 'transition'
-                                    ? 'FADE OUT.'
-                                    : 'Describe the scene action...'
+                                    ? (language === 'th' ? 'ตัดฉากไปยัง (เช่น FADE OUT.)' : 'FADE OUT.')
+                                    : (language === 'th' ? 'พิมพ์บทบรรยายการเคลื่อนไหวหรือเหตุการณ์...' : 'Describe the scene action...')
                         }
                         className={`w-full bg-transparent border-0 outline-none focus:ring-0 resize-none font-mono text-xs md:text-sm leading-relaxed p-1 tracking-normal focus:bg-slate-100/5 dark:focus:bg-obsidian-950/20 rounded ${
                           typeStyle.class
@@ -585,42 +691,42 @@ export default function ScriptEditor() {
 
             {/* Quick append formatting tools at the very bottom (No Print) */}
             <div className="mt-8 border-t border-slate-200 dark:border-obsidian-800 pt-6 flex flex-wrap gap-2.5 items-center justify-center no-print">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Quick Add:</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">{language === 'th' ? 'เพิ่มแถวอย่างเร็ว:' : 'Quick Add:'}</span>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'heading')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Scene Heading
+                {language === 'th' ? '+ เพิ่มหัวข้อฉาก' : '+ Scene Heading'}
               </button>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'action')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Action
+                {language === 'th' ? '+ เพิ่มบทบรรยาย' : '+ Action'}
               </button>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'character')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Character
+                {language === 'th' ? '+ เพิ่มตัวละคร' : '+ Character'}
               </button>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'parenthetical')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Parenthetical
+                {language === 'th' ? '+ เพิ่มวงเล็บอารมณ์' : '+ Parenthetical'}
               </button>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'dialogue')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Dialogue
+                {language === 'th' ? '+ เพิ่มบทสนทนา' : '+ Dialogue'}
               </button>
               <button 
                 onClick={() => insertBlock(blocks.length - 1, 'transition')}
                 className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold font-mono transition-all"
               >
-                + Transition
+                {language === 'th' ? '+ เพิ่มคำเชื่อมฉาก' : '+ Transition'}
               </button>
             </div>
 
