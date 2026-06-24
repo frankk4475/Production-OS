@@ -448,7 +448,7 @@ export default function UserManager({ hideHeader = false }) {
                           <button
                             onClick={() => handleDeleteUser(u.id, u.email)}
                             disabled={isCurrent}
-                            className="p-1 rounded bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 disabled:opacity-20 transition-all cursor-pointer inline-flex"
+                            className="p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent disabled:opacity-20 transition-all cursor-pointer inline-flex"
                             title={isCurrent ? "Cannot delete yourself" : "Delete account"}
                           >
                             <Trash2 size={13} />
@@ -470,10 +470,10 @@ export default function UserManager({ hideHeader = false }) {
             </table>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[10px] text-slate-400 leading-relaxed flex gap-2">
+          <div className="p-3.5 rounded-xl bg-slate-100/80 dark:bg-obsidian-900/60 border border-amber-500/30 text-[10px] text-slate-700 dark:text-slate-300 leading-relaxed flex gap-2">
             <ShieldAlert size={16} className="text-amber-500 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-slate-200">{language === 'th' ? 'ข้อควรรู้เกี่ยวกับระดับสิทธิ์:' : 'Role Access Policy Info:'}</p>
+              <p className="font-bold text-slate-800 dark:text-slate-200">{language === 'th' ? 'ข้อควรรู้เกี่ยวกับระดับสิทธิ์:' : 'Role Access Policy Info:'}</p>
               <ul className="list-disc pl-4 space-y-0.5 mt-1 font-sans">
                 <li>{language === 'th' ? 'สิทธิ์ Producer, 1st AD, Director และ Production Manager สามารถเข้าถึง เขียน แก้ไข จัดการคิวงาน และจัดการรายชื่อบัญชีผู้ใช้งานได้ทั้งหมด' : 'Producer, 1st AD, Director, and Production Manager accounts hold editor permissions including user management.'}</li>
                 <li>{language === 'th' ? 'สิทธิ์ Crew และ Talent จะไม่สามารถแก้ไขข้อมูลการผลิตได้ โดยสามารถล็อกอินเข้ามาเพื่อดูคิวงานนัดหมาย และตารางเวลาปฏิบัติหน้าที่ส่วนตัวเท่านั้น' : 'Crew and Talent accounts are restricted to personal schedule viewer modes.'}</li>

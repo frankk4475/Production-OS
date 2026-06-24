@@ -17,7 +17,17 @@ export const ProjectProvider = ({ children }) => {
   const [shotList, setShotList] = useState([]);
   const [completedTasks, setCompletedTasks] = useState({});
   const [scriptBlocks, setScriptBlocks] = useState([]);
-  const [storyOutline, setStoryOutline] = useState({ plotlines: [], characters: [], beats: [] });
+  const [storyOutline, setStoryOutline] = useState({
+    plotlines: [],
+    characters: [],
+    beats: [],
+    logline: { th: '', en: '' },
+    tone: { th: '', en: '' },
+    theme: { th: '', en: '' },
+    genre: { th: '', en: '' },
+    writer: { th: '', en: '' },
+    contact: { th: '', en: '' }
+  });
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -62,7 +72,17 @@ export const ProjectProvider = ({ children }) => {
         setShotList([]);
         setCompletedTasks({});
         setScriptBlocks([]);
-        setStoryOutline({ plotlines: [], characters: [], beats: [] });
+        setStoryOutline({
+          plotlines: [],
+          characters: [],
+          beats: [],
+          logline: { th: '', en: '' },
+          tone: { th: '', en: '' },
+          theme: { th: '', en: '' },
+          genre: { th: '', en: '' },
+          writer: { th: '', en: '' },
+          contact: { th: '', en: '' }
+        });
         return;
       }
 
@@ -84,7 +104,17 @@ export const ProjectProvider = ({ children }) => {
         setShotList(shotListData);
         setCompletedTasks(tasksData);
         setScriptBlocks(scriptData || []);
-        setStoryOutline(outlineData || { plotlines: [], characters: [], beats: [] });
+        setStoryOutline(outlineData || {
+          plotlines: [],
+          characters: [],
+          beats: [],
+          logline: { th: '', en: '' },
+          tone: { th: '', en: '' },
+          theme: { th: '', en: '' },
+          genre: { th: '', en: '' },
+          writer: { th: '', en: '' },
+          contact: { th: '', en: '' }
+        });
       } catch (err) {
         console.error("Failed to load project details:", err);
         setError(err.message);

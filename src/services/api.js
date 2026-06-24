@@ -965,6 +965,7 @@ export const api = {
 
   // ================= STORY PLANNER / OUTLINE API =================
   async getStoryOutline(projectId) {
+    let rawOutline;
     if (isSupabaseConfigured) {
       const { data, error } = await supabase
         .from('story_outlines')
@@ -977,17 +978,46 @@ export const api = {
           console.error('Supabase error fetching outline, falling back:', error);
         }
         const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-        return outlines[projectId] || this.getDefaultStoryOutline();
+        rawOutline = outlines[projectId] || this.getDefaultStoryOutline();
+      } else {
+        rawOutline = data;
       }
-      return data || this.getDefaultStoryOutline();
     } else {
       await delay();
       const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-      return outlines[projectId] || this.getDefaultStoryOutline();
+      rawOutline = outlines[projectId] || this.getDefaultStoryOutline();
     }
+
+    if (rawOutline) {
+      const metaBeat = rawOutline.beats?.find(b => b.id === 'metadata');
+      return {
+        plotlines: rawOutline.plotlines || [],
+        characters: rawOutline.characters || [],
+        beats: (rawOutline.beats || []).filter(b => b.id !== 'metadata'),
+        logline: metaBeat?.logline || rawOutline.logline || { th: '', en: '' },
+        tone: metaBeat?.tone || rawOutline.tone || { th: '', en: '' },
+        theme: metaBeat?.theme || rawOutline.theme || { th: '', en: '' },
+        genre: metaBeat?.genre || rawOutline.genre || { th: '', en: '' },
+        writer: metaBeat?.writer || rawOutline.writer || { th: '', en: '' },
+        contact: metaBeat?.contact || rawOutline.contact || { th: '', en: '' }
+      };
+    }
+    return this.getDefaultStoryOutline();
   },
 
   async saveStoryOutline(projectId, outlineData) {
+    const metaBeat = {
+      id: 'metadata',
+      logline: outlineData.logline || { th: '', en: '' },
+      tone: outlineData.tone || { th: '', en: '' },
+      theme: outlineData.theme || { th: '', en: '' },
+      genre: outlineData.genre || { th: '', en: '' },
+      writer: outlineData.writer || { th: '', en: '' },
+      contact: outlineData.contact || { th: '', en: '' }
+    };
+    const cleanBeats = (outlineData.beats || []).filter(b => b.id !== 'metadata');
+    const finalBeats = [...cleanBeats, metaBeat];
+
     if (isSupabaseConfigured) {
       const { error } = await supabase
         .from('story_outlines')
@@ -995,14 +1025,17 @@ export const api = {
           project_id: projectId,
           plotlines: outlineData.plotlines,
           characters: outlineData.characters,
-          beats: outlineData.beats
+          beats: finalBeats
         });
       if (error) throw error;
       return outlineData;
     } else {
       await delay();
       const outlines = getDbData(STORAGE_KEYS.STORY_OUTLINE, {});
-      outlines[projectId] = outlineData;
+      outlines[projectId] = {
+        ...outlineData,
+        beats: finalBeats
+      };
       setDbData(STORAGE_KEYS.STORY_OUTLINE, outlines);
       return outlineData;
     }
@@ -1010,6 +1043,12 @@ export const api = {
 
   getDefaultStoryOutline() {
     return {
+      logline: { th: 'เรื่องราวของเด็กสาวผู้หลบหนีความล้มเหลวกลับคืนสู่บ้านเกิดและค้นพบบทเรียนของชีวิตผ่านผู้คนรอบข้าง', en: 'A story of a young woman escaping failure to her hometown and finding life lessons through the locals.' },
+      tone: { th: 'อบอุ่น ละมุนตา ผสานความเหงาและศิลปะพื้นถิ่น', en: 'Warm, cozy, mixed with loneliness and local arts.' },
+      theme: { th: 'การปล่อยวางอดีต การยอมรับความจริง และการเริ่มต้นใหม่', en: 'Letting go of the past, accepting reality, and starting anew.' },
+      genre: { th: 'ดราม่า / ชีวิตชนบท / การเติบโต (Coming-of-Age)', en: 'Drama / Rural Life / Coming-of-Age' },
+      writer: { th: 'ธนบดี กองศรี', en: 'Thanabodee Kongsri' },
+      contact: { th: 'thanabodee.k@gmail.com', en: 'thanabodee.k@gmail.com' },
       plotlines: [
         { 
           id: 'p1', 

@@ -17,7 +17,10 @@ import {
   Check, 
   RefreshCw,
   Workflow,
-  GitCommit
+  GitCommit,
+  Clapperboard,
+  Film,
+  User
 } from 'lucide-react';
 
 export default function StoryPlanner() {
@@ -100,6 +103,52 @@ export default function StoryPlanner() {
   const [editCharConflictTh, setEditCharConflictTh] = useState('');
   const [editCharConflictEn, setEditCharConflictEn] = useState('');
 
+  const [isEditCoverOpen, setIsEditCoverOpen] = useState(false);
+  const [editWriterTh, setEditWriterTh] = useState('');
+  const [editWriterEn, setEditWriterEn] = useState('');
+  const [editContactTh, setEditContactTh] = useState('');
+  const [editContactEn, setEditContactEn] = useState('');
+  const [editGenreTh, setEditGenreTh] = useState('');
+  const [editGenreEn, setEditGenreEn] = useState('');
+  const [editLoglineTh, setEditLoglineTh] = useState('');
+  const [editLoglineEn, setEditLoglineEn] = useState('');
+  const [editToneTh, setEditToneTh] = useState('');
+  const [editToneEn, setEditToneEn] = useState('');
+  const [editThemeTh, setEditThemeTh] = useState('');
+  const [editThemeEn, setEditThemeEn] = useState('');
+
+  const openEditCover = () => {
+    setEditWriterTh(localOutline.writer?.th || '');
+    setEditWriterEn(localOutline.writer?.en || '');
+    setEditContactTh(localOutline.contact?.th || '');
+    setEditContactEn(localOutline.contact?.en || '');
+    setEditGenreTh(localOutline.genre?.th || '');
+    setEditGenreEn(localOutline.genre?.en || '');
+    setEditLoglineTh(localOutline.logline?.th || '');
+    setEditLoglineEn(localOutline.logline?.en || '');
+    setEditToneTh(localOutline.tone?.th || '');
+    setEditToneEn(localOutline.tone?.en || '');
+    setEditThemeTh(localOutline.theme?.th || '');
+    setEditThemeEn(localOutline.theme?.en || '');
+    setIsEditCoverOpen(true);
+  };
+
+  const handleSaveCover = (e) => {
+    e.preventDefault();
+    const updated = {
+      ...localOutline,
+      writer: { th: editWriterTh, en: editWriterEn },
+      contact: { th: editContactTh, en: editContactEn },
+      genre: { th: editGenreTh, en: editGenreEn },
+      logline: { th: editLoglineTh, en: editLoglineEn },
+      tone: { th: editToneTh, en: editToneEn },
+      theme: { th: editThemeTh, en: editThemeEn }
+    };
+    setLocalOutline(updated);
+    setIsEditCoverOpen(false);
+    handleSave(updated);
+  };
+
   useEffect(() => {
     if (storyOutline) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -119,7 +168,7 @@ export default function StoryPlanner() {
 
   if (!project) {
     return (
-      <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-350 dark:border-obsidian-800 animate-fadeIn">
+      <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
         <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
           <BookOpen size={32} />
         </div>
@@ -622,13 +671,13 @@ export default function StoryPlanner() {
                               </button>
                               <button
                                 onClick={() => openEditBeat(beat)}
-                                className="p-1 rounded hover:bg-slate-850 text-slate-400 hover:text-white"
+                                className="p-1 rounded text-slate-500 hover:text-gold-500 dark:text-slate-400 dark:hover:text-gold-400 bg-transparent transition-colors"
                               >
                                 <Edit3 size={11} />
                               </button>
                               <button
                                 onClick={() => handleDeleteBeat(beat.id)}
-                                className="p-1 rounded hover:bg-red-950/20 text-slate-400 hover:text-red-400"
+                                className="p-1 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
                               >
                                 <Trash2 size={11} />
                               </button>
@@ -686,13 +735,13 @@ export default function StoryPlanner() {
                       <div className="flex items-center gap-1.5 no-print">
                         <button
                           onClick={() => openEditPlotline(plot)}
-                          className="p-1.5 rounded bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                          className="p-1.5 rounded text-slate-500 hover:text-gold-500 dark:text-slate-400 dark:hover:text-gold-400 bg-transparent transition-colors"
                         >
                           <Edit3 size={12} />
                         </button>
                         <button
                           onClick={() => handleDeletePlotline(plot.id)}
-                          className="p-1.5 rounded bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                          className="p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
                         >
                           <Trash2 size={12} />
                         </button>
@@ -765,13 +814,13 @@ export default function StoryPlanner() {
                     <div className="flex items-center gap-1.5 no-print">
                       <button
                         onClick={() => openEditCharacter(char)}
-                        className="p-1.5 rounded bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 rounded text-slate-500 hover:text-gold-500 dark:text-slate-400 dark:hover:text-gold-400 bg-transparent transition-colors"
                       >
                         <Edit3 size={12} />
                       </button>
                       <button
                         onClick={() => handleDeleteCharacter(char.id)}
-                        className="p-1.5 rounded bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                        className="p-1.5 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -810,74 +859,152 @@ export default function StoryPlanner() {
       {/* --- TAB CONTENT: TEXT TREATMENT OUTLINE --- */}
       {activeTab === 'outlineText' && (
         <div className="glass-panel p-6 md:p-8 rounded-xl border border-slate-200 dark:border-obsidian-850 space-y-6">
-          <div className="flex justify-between items-center border-b border-slate-200 dark:border-obsidian-800 pb-3 no-print">
+          <div className="flex justify-between items-center border-b border-slate-200 dark:border-obsidian-800 pb-4 no-print">
             <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-slate-200">
                 {language === 'th' ? 'เอกสารขยายบทละครย่อ (Outline Treatment Plan)' : 'Screenplay Outline & Treatment Summary'}
               </h2>
               <p className="text-[10px] text-slate-400 mt-1">
                 {language === 'th' 
-                  ? 'เอกสารสรุปองก์เรื่อง พล็อตย่อย และเป้าหมายการดำเนินเรื่องของตัวละครที่ระบบสร้างขึ้นอัตโนมัติ' 
-                  : 'Autogenerated formatted view of all Acts, story beats, and character goals.'}
+                  ? 'เอกสารสรุปโครงเรื่องย่อ บรรยากาศ แก่นเรื่องหลัก ตัวละคร และองก์เรื่อง' 
+                  : 'Cinematic layout of treatment overview, characters, and story timeline beats.'}
               </p>
             </div>
+            {hasWriteAccess() && (
+              <button
+                onClick={openEditCover}
+                className="px-3 py-1.5 rounded-lg border border-gold-500/30 bg-gold-500/5 hover:bg-gold-500/15 text-gold-500 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.03]"
+              >
+                <Edit3 size={12} />
+                <span>{language === 'th' ? 'แก้ไขรายละเอียดเอกสาร' : 'Edit Document Info'}</span>
+              </button>
+            )}
           </div>
 
           <div className="space-y-8 font-sans max-w-3xl mx-auto text-slate-800 dark:text-slate-200">
-            {/* Project Header */}
-            <div className="text-center space-y-2 border-b border-slate-800/50 pb-6">
-              <h1 className="text-xl md:text-2xl font-serif font-bold uppercase tracking-wider text-gold-500">
+            {/* Project Cover Page */}
+            <div className="text-center space-y-4 pb-8 border-b-2 border-slate-205 dark:border-slate-800/60 pt-4 relative animate-fadeIn">
+              <div className="inline-flex items-center gap-1 bg-gold-500/10 text-gold-500 dark:text-gold-400 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-xs">
+                <Clapperboard size={10} />
+                <span>{getString(localOutline.genre) || (language === 'th' ? 'ไม่ระบุแนวภาพยนตร์' : 'GENRE UNKNOWN')}</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-serif font-black uppercase tracking-wider text-slate-900 dark:text-white leading-tight">
                 {project?.title?.[language] || 'Untitled Treatment'}
               </h1>
-              <p className="text-xs text-slate-400">
-                {language === 'th' ? 'เอกสารโครงขยายและเส้นเรื่องสำหรับผลิต' : 'Creative Treatment Document'}
+              <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold font-mono">
+                {language === 'th' ? 'เอกสารขยายบทละครย่อทางการผลิต' : 'Official Screenplay Film Treatment'}
               </p>
-              <div className="flex justify-center gap-6 text-[11px] text-slate-400 mt-2 font-mono">
-                <span>{language === 'th' ? 'ผู้กำกับ' : 'Director'}: {project?.director?.[language] || '-'}</span>
-                <span>{language === 'th' ? 'ผู้อำนวยการสร้าง' : 'Producer'}: {project?.producer?.[language] || '-'}</span>
+              
+              {/* Cover Details Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6 text-xs text-left pt-6 max-w-2xl mx-auto border-t border-slate-200 dark:border-obsidian-900/60 mt-6">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'ผู้เขียนบท' : 'Written By'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200">{getString(localOutline.writer) || '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'ข้อมูลติดต่อ' : 'Contact Info'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200 truncate block">{getString(localOutline.contact) || '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'แนวภาพยนตร์' : 'Genre'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200">{getString(localOutline.genre) || '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'ผู้กำกับ' : 'Director'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200">{project?.director?.[language] || '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'ผู้อำนวยการสร้าง' : 'Producer'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200">{project?.producer?.[language] || '-'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 font-mono block">{language === 'th' ? 'ลูกค้า/หน่วยงาน' : 'Client'}</span>
+                  <span className="font-semibold text-slate-850 dark:text-slate-200">{project?.client || '-'}</span>
+                </div>
               </div>
             </div>
 
-            {/* Acts & Beats section */}
+            {/* 1. Logline Block */}
+            <div className="space-y-2.5">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-gold-500 font-mono flex items-center gap-1.5">
+                <BookOpen size={12} />
+                <span>{language === 'th' ? 'โครงเรื่องย่อ (LOGLINE)' : 'LOGLINE'}</span>
+              </h3>
+              <div className="relative pl-5 py-2.5 border-l-2 border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03] rounded-r-lg">
+                <span className="absolute left-2 top-0.5 text-3xl font-serif text-gold-500/25 leading-none">“</span>
+                <p className="text-sm font-medium font-serif italic leading-relaxed text-slate-800 dark:text-slate-200 text-wrap-balance">
+                  {getString(localOutline.logline) || (language === 'th' ? 'ยังไม่ได้ระบุโครงเรื่องย่อในระบบ' : 'No logline added yet.')}
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Tone & Theme Block */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+              <div className="space-y-2.5">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gold-500 font-mono flex items-center gap-1.5">
+                  <Film size={12} />
+                  <span>{language === 'th' ? 'โทนและบรรยากาศ (TONE & ATMOSPHERE)' : 'TONE & ATMOSPHERE'}</span>
+                </h3>
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans pl-4 border-l-2 border-gold-500/20">
+                  {getString(localOutline.tone) || (language === 'th' ? 'ยังไม่ได้ระบุโทนและบรรยากาศของภาพยนตร์' : 'No tone specified.')}
+                </p>
+              </div>
+              <div className="space-y-2.5">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-gold-500 font-mono flex items-center gap-1.5">
+                  <Compass size={12} />
+                  <span>{language === 'th' ? 'แก่นเรื่องหลัก (THEME / MESSAGE)' : 'THEME / CORE MESSAGE'}</span>
+                </h3>
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans pl-4 border-l-2 border-gold-500/20">
+                  {getString(localOutline.theme) || (language === 'th' ? 'ยังไม่ได้ระบุแก่นเรื่องหลักในระบบ' : 'No theme specified.')}
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Acts & Beats section */}
             {['Act I', 'Act II', 'Act III'].map((actName) => {
               const actBeats = getBeatsByAct(actName);
               const displayActName = actName === 'Act I' 
-                ? (language === 'th' ? 'องก์ I' : 'Act I')
+                ? (language === 'th' ? 'องก์ I (ACT I)' : 'ACT I: SETUP')
                 : actName === 'Act II'
-                ? (language === 'th' ? 'องก์ II' : 'Act II')
-                : (language === 'th' ? 'องก์ III' : 'Act III');
+                ? (language === 'th' ? 'องก์ II (ACT II)' : 'ACT II: CONFRONTATION')
+                : (language === 'th' ? 'องก์ III (ACT III)' : 'ACT III: RESOLUTION');
 
               return (
-                <div key={actName} className="space-y-4">
-                  <h3 className="text-sm font-bold font-serif text-amber-500 uppercase tracking-widest border-l-2 border-amber-500 pl-3">
+                <div key={actName} className="space-y-4 pt-4">
+                  <h3 className="text-xs font-black font-sans text-gold-500 uppercase tracking-widest border-l-2 border-gold-500 pl-3">
                     {displayActName}
                   </h3>
 
-                  <div className="space-y-4 pl-3">
+                  <div className="relative border-l border-slate-200 dark:border-obsidian-800/80 ml-3.5 pl-6 space-y-6">
                     {actBeats.map((beat, idx) => {
                       const plot = getPlotline(beat.plotlineId);
                       return (
-                        <div key={beat.id} className="space-y-1 bg-obsidian-950/20 p-3 rounded-lg border border-slate-800/30">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-slate-300">
-                              {idx + 1}. {getString(beat.title)}
-                            </span>
-                            <span className="text-[10px] font-mono text-slate-400">
-                              ({language === 'th' ? 'กลุ่มฉากเป้าหมาย' : 'Scenes'} {beat.sceneTarget || '?'})
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 leading-relaxed font-sans whitespace-pre-line mt-1">
-                            {getString(beat.description)}
-                          </p>
-                          <div className="flex items-center gap-1.5 pt-1.5">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: plot.color }} />
-                            <span className="text-[9px] font-mono text-slate-500">{getString(plot.name)}</span>
+                        <div key={beat.id} className="relative group">
+                          {/* Timeline node */}
+                          <span className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border border-slate-900 bg-gold-500 ring-4 ring-gold-500/10 transition-all group-hover:scale-125" />
+                          
+                          <div className="space-y-1.5 bg-slate-50 dark:bg-obsidian-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-obsidian-850 hover:border-gold-500/30 transition-all">
+                            <div className="flex justify-between items-start gap-4">
+                              <span className="font-bold text-xs text-slate-800 dark:text-slate-200 leading-snug">
+                                {idx + 1}. {getString(beat.title)}
+                              </span>
+                              <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-250 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
+                                {language === 'th' ? 'กลุ่มฉาก' : 'Scenes'} {beat.sceneTarget || '?'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line">
+                              {getString(beat.description)}
+                            </p>
+                            <div className="flex items-center gap-1.5 pt-1">
+                              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: plot.color }} />
+                              <span className="text-[9px] font-mono font-semibold text-slate-400 dark:text-slate-500">{getString(plot.name)}</span>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                     {actBeats.length === 0 && (
-                      <p className="text-xs text-slate-500 italic pl-4">
+                      <p className="text-xs text-slate-500 italic pl-2">
                         {language === 'th' ? 'ไม่มีรายละเอียดโครงขยายในองก์นี้' : 'No beats mapped for this act.'}
                       </p>
                     )}
@@ -886,21 +1013,40 @@ export default function StoryPlanner() {
               );
             })}
 
-            {/* Character list section */}
-            <div className="space-y-4 pt-4 border-t border-slate-850">
-              <h3 className="text-sm font-bold font-serif text-gold-500 uppercase tracking-widest border-l-2 border-gold-500 pl-3">
-                {language === 'th' ? 'สรุปเป้าหมายและการวิเคราะห์ตัวละคร' : 'Character Motivation Summary'}
+            {/* 4. Characters Summary Section */}
+            <div className="space-y-4 pt-6 border-t border-slate-200 dark:border-obsidian-900/60">
+              <h3 className="text-xs font-black uppercase tracking-widest text-gold-500 font-mono flex items-center gap-1.5">
+                <Users size={12} />
+                <span>{language === 'th' ? 'บทวิเคราะห์ความต้องการตัวละคร (CHARACTERS)' : 'CHARACTERS & MOTIVATION'}</span>
               </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {(localOutline.characters || []).map((char) => (
-                  <div key={char.id} className="text-xs space-y-1.5 p-3 rounded-lg bg-obsidian-950/20 border border-slate-800/30">
-                    <h4 className="font-bold text-slate-200">{getString(char.name)} <span className="font-normal text-slate-400 text-[10px]">({getString(char.role)})</span></h4>
-                    <p className="text-slate-400 leading-normal"><strong className="text-gold-500 font-semibold">{language === 'th' ? 'เป้าหมาย' : 'Goal'}:</strong> {getString(char.goal) || '-'}</p>
-                    <p className="text-slate-400 leading-normal"><strong className="text-red-500 font-semibold">{language === 'th' ? 'อุปสรรค' : 'Conflict'}:</strong> {getString(char.conflict) || '-'}</p>
-                    <p className="text-slate-400 leading-normal"><strong className="text-amber-500 font-semibold">{language === 'th' ? 'พัฒนาการ' : 'Arc'}:</strong> {getString(char.arc) || '-'}</p>
+                  <div key={char.id} className="text-xs space-y-2.5 p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200/60 dark:border-obsidian-850 shadow-sm flex flex-col justify-between hover:border-gold-500/30 transition-all">
+                    <div>
+                      <div className="flex justify-between items-center border-b border-slate-200 dark:border-obsidian-850 pb-2 mb-2">
+                        <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-1.5">
+                          <User size={13} className="text-gold-500" />
+                          {getString(char.name)}
+                        </h4>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono uppercase">
+                          {getString(char.role)}
+                        </span>
+                      </div>
+                      <div className="space-y-1.5 text-slate-600 dark:text-slate-300">
+                        <p className="leading-relaxed"><strong className="text-gold-600 dark:text-gold-500 font-semibold">{language === 'th' ? 'เป้าหมาย' : 'Goal'}:</strong> {getString(char.goal) || '-'}</p>
+                        <p className="leading-relaxed"><strong className="text-red-500 font-semibold">{language === 'th' ? 'อุปสรรค' : 'Conflict'}:</strong> {getString(char.conflict) || '-'}</p>
+                      </div>
+                    </div>
+                    <p className="leading-relaxed text-[11px] bg-slate-100/50 dark:bg-obsidian-900/60 p-2.5 rounded-lg border border-amber-500/30 mt-3 text-slate-600 dark:text-slate-300 font-sans">
+                      <strong className="text-amber-600 dark:text-amber-500 font-semibold">{language === 'th' ? 'พัฒนาการตัวละคร' : 'Character Arc'}:</strong> {getString(char.arc) || '-'}
+                    </p>
                   </div>
                 ))}
+                {(localOutline.characters || []).length === 0 && (
+                  <div className="col-span-2 py-6 text-center text-slate-500 italic">
+                    {language === 'th' ? 'ไม่มีตัวละครหลักแสดงในเอกสารสรุป' : 'No characters summary in this treatment.'}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1574,6 +1720,151 @@ export default function StoryPlanner() {
                   className="px-4 py-2 rounded bg-gradient-to-r from-gold-600 to-amber-500 hover:opacity-90 text-white font-bold transition-all"
                 >
                   {language === 'th' ? 'บันทึกแก้ไข' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- EDIT COVER MODAL --- */}
+      {isEditCoverOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+              {language === 'th' ? 'แก้ไขข้อมูลส่วนหน้าเอกสาร (Document Cover Settings)' : 'Edit Screenplay Outline Cover Info'}
+            </h3>
+            
+            <form onSubmit={handleSaveCover} className="space-y-3.5 text-xs text-left">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ผู้เขียนบท (ไทย)' : 'Writer (TH)'}</label>
+                  <input
+                    type="text"
+                    value={editWriterTh}
+                    onChange={(e) => setEditWriterTh(e.target.value)}
+                    placeholder="เช่น ธนบดี กองศรี"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ผู้เขียนบท (อังกฤษ)' : 'Writer (EN)'}</label>
+                  <input
+                    type="text"
+                    value={editWriterEn}
+                    onChange={(e) => setEditWriterEn(e.target.value)}
+                    placeholder="e.g. Thanabodee Kongsri"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ข้อมูลติดต่อ' : 'Contact Info'}</label>
+                  <input
+                    type="text"
+                    value={editContactTh}
+                    onChange={(e) => setEditContactTh(e.target.value)}
+                    placeholder="e.g. email@example.com"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'แนวภาพยนตร์ (Genre TH/EN)' : 'Genre (TH/EN)'}</label>
+                  <input
+                    type="text"
+                    value={editGenreTh}
+                    onChange={(e) => setEditGenreTh(e.target.value)}
+                    placeholder="e.g. ดราม่า / ชีวิตชนบท / Coming-of-Age"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+              </div>
+
+              {/* Logline */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'โครงเรื่องย่อภาษาไทย (Logline TH)' : 'Logline (TH)'}</label>
+                <textarea
+                  rows={2}
+                  value={editLoglineTh}
+                  onChange={(e) => setEditLoglineTh(e.target.value)}
+                  placeholder="เรื่องราวสรุปเส้นเรื่องหลักในหนึ่งประโยค..."
+                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'โครงเรื่องย่อภาษาอังกฤษ (Logline EN)' : 'Logline (EN)'}</label>
+                <textarea
+                  rows={2}
+                  value={editLoglineEn}
+                  onChange={(e) => setEditLoglineEn(e.target.value)}
+                  placeholder="One sentence logline of the main story conflict..."
+                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                />
+              </div>
+
+              {/* Tone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'โทนและบรรยากาศ (ไทย)' : 'Tone & Atmosphere (TH)'}</label>
+                  <input
+                    type="text"
+                    value={editToneTh}
+                    onChange={(e) => setEditToneTh(e.target.value)}
+                    placeholder="เช่น อบอุ่น สลัว เงียบเหงา"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'โทนและบรรยากาศ (อังกฤษ)' : 'Tone & Atmosphere (EN)'}</label>
+                  <input
+                    type="text"
+                    value={editToneEn}
+                    onChange={(e) => setEditToneEn(e.target.value)}
+                    placeholder="e.g. Warm, cozy, rural beauty"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+              </div>
+
+              {/* Theme */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'แก่นเรื่องหลัก (ไทย)' : 'Core Theme (TH)'}</label>
+                  <input
+                    type="text"
+                    value={editThemeTh}
+                    onChange={(e) => setEditThemeTh(e.target.value)}
+                    placeholder="เช่น การเริ่มต้นชีวิตใหม่"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'แก่นเรื่องหลัก (อังกฤษ)' : 'Core Theme (EN)'}</label>
+                  <input
+                    type="text"
+                    value={editThemeEn}
+                    onChange={(e) => setEditThemeEn(e.target.value)}
+                    placeholder="e.g. Letting go and moving forward"
+                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCoverOpen(false)}
+                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold cursor-pointer"
+                >
+                  {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded bg-gold-500 hover:bg-gold-600 text-white font-bold transition-all cursor-pointer"
+                >
+                  {language === 'th' ? 'บันทึกข้อมูล' : 'Save Cover Info'}
                 </button>
               </div>
             </form>
