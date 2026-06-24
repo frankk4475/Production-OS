@@ -27,20 +27,13 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   const { user, hasWriteAccess } = useAuth();
   const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(() => {
-    const shouldOpen = sessionStorage.getItem('google_project_sync_modal_open') === 'true';
-    if (shouldOpen) {
-      sessionStorage.removeItem('google_project_sync_modal_open');
-    }
-    return shouldOpen;
-  });
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
   const googleClientId = DEFAULT_CLIENT_ID;
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const loadCalendars = async (token) => {
     try {

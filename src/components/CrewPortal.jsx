@@ -1305,29 +1305,6 @@ export default function CrewPortal({ lockedCrewId }) {
                   </h3>
                   
                   <div className="glass-panel p-4 rounded-xl space-y-3 text-left">
-
-                    
-                    {personalIsConnected && (
-                      <div className="text-right">
-                        <button 
-                          type="button"
-                          onClick={() => setShowPersonalAdvanced(!showPersonalAdvanced)}
-                          className="text-[10px] font-bold text-gold-500 hover:text-gold-400 focus:outline-none transition-colors"
-                        >
-                          {showPersonalAdvanced 
-                            ? (language === 'th' ? '⚙️ ซ่อนข้อมูล Client ID' : '⚙️ Hide Client ID')
-                            : (language === 'th' ? '⚙️ แสดงข้อมูล Client ID' : '⚙️ Show Client ID')
-                          }
-                        </button>
-                        
-                        {showPersonalAdvanced && (
-                          <div className="mt-2 text-left p-2 rounded bg-slate-500/5 border border-slate-200 dark:border-obsidian-800/80 font-mono text-[10px] text-slate-400 truncate">
-                            ID: {personalClientId}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
                     {personalIsConnected ? (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-xs">
