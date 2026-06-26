@@ -200,7 +200,8 @@ export default function DocumentsHub({
     setSchedWardrobeNotes(activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || '');
     setSchedProductionNotes(activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || '');
     setSchedCrewAssigned([]);
-  }, [activeEventId, selectedSceneNum, activeScene, events, language, sceneDayMap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEventId, selectedSceneNum]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // Filter shots for active scene (supporting both database schema 'scene_id' and 'scene_number')
@@ -222,6 +223,19 @@ export default function DocumentsHub({
   // Resolve active event schedule details
   const currentEvent = (events || []).find(e => e.id === activeEventId) || null;
   const callSheetDate = currentEvent ? currentEvent.date : '';
+  const formattedCallSheetDate = (() => {
+    if (!callSheetDate) return '';
+    try {
+      return new Date(callSheetDate).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return callSheetDate;
+    }
+  })();
   const crewCallTime = currentEvent?.notes?.crew_call || '07:00 AM';
   const shootCallTime = currentEvent?.notes?.shooting_call || currentEvent?.time || '08:30 AM';
   const lunchTime = currentEvent?.notes?.lunch_time || '12:30 PM';
@@ -609,8 +623,8 @@ export default function DocumentsHub({
             <select
               value={selectedSceneNum}
               onChange={(e) => setSelectedSceneNum(e.target.value)}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
+                theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
               }`}
             >
               {scenes.map(s => (
@@ -665,8 +679,8 @@ export default function DocumentsHub({
               <select
                 value={activeEventId}
                 onChange={(e) => setActiveEventId(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none ${
-                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
+                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                 }`}
               >
                 {sceneEvents.map(e => (
@@ -708,52 +722,60 @@ export default function DocumentsHub({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Crew Call Time</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'เวลานัดหมายทีมงาน (Crew Call)' : 'Crew Call Time'}
+                  </label>
                   <input
                     type="text"
                     value={schedCrewCall}
                     onChange={(e) => setSchedCrewCall(e.target.value)}
                     placeholder="e.g. 07:00 AM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shooting Call Time</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'เวลาเริ่มถ่ายทำ (Shooting Call)' : 'Shooting Call Time'}
+                  </label>
                   <input
                     type="text"
                     value={schedShootCall}
                     onChange={(e) => setSchedShootCall(e.target.value)}
                     placeholder="e.g. 08:30 AM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lunch Time</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'เวลาพักรับประทานอาหาร (Lunch Time)' : 'Lunch Time'}
+                  </label>
                   <input
                     type="text"
                     value={schedLunchTime}
                     onChange={(e) => setSchedLunchTime(e.target.value)}
                     placeholder="e.g. 12:30 PM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Wrap Time</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'เวลาเลิกกอง (Wrap Time)' : 'Wrap Time'}
+                  </label>
                   <input
                     type="text"
                     value={schedWrapTime}
                     onChange={(e) => setSchedWrapTime(e.target.value)}
                     placeholder="e.g. 06:00 PM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
@@ -763,73 +785,85 @@ export default function DocumentsHub({
               {/* Department Notes */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camera & Grip Instructions</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'แผนกกล้อง & Grip (Camera & Grip)' : 'Camera & Grip Instructions'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedCameraNotes}
                     onChange={(e) => setSchedCameraNotes(e.target.value)}
                     placeholder="Lenses, setups, gear notes..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Art Department & Props</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'แผนกศิลปกรรม & Props (Art & Props)' : 'Art Department & Props'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedArtNotes}
                     onChange={(e) => setSchedArtNotes(e.target.value)}
                     placeholder="Props lists, scene setup..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lighting & Electric Requirements</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'แผนกแสง & ไฟ (Lighting & Electric)' : 'Lighting & Electric Requirements'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedLightingNotes}
                     onChange={(e) => setSchedLightingNotes(e.target.value)}
                     placeholder="Gaffer specs, generator needs, dimmers..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Sound & Audio Instructions</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'แผนกเสียง (Sound & Audio)' : 'Sound & Audio Instructions'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedSoundNotes}
                     onChange={(e) => setSchedSoundNotes(e.target.value)}
                     placeholder="Boom mic setup, radio frequencies..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Makeup & Wardrobe Notes</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'แผนกแต่งหน้า & เครื่องแต่งกาย (Makeup & Wardrobe)' : 'Makeup & Wardrobe Notes'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedWardrobeNotes}
                     onChange={(e) => setSchedWardrobeNotes(e.target.value)}
                     placeholder="Styling, costume presets..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Production & Direction Notes</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {language === 'th' ? 'ฝ่ายผลิต & กำกับการแสดง (Production & Direction)' : 'Production & Direction Notes'}
+                  </label>
                   <textarea
                     rows={2}
                     value={schedProductionNotes}
                     onChange={(e) => setSchedProductionNotes(e.target.value)}
                     placeholder="AD instructions, PA tasks, director cues..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
                       theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
@@ -943,7 +977,7 @@ export default function DocumentsHub({
                   <div className="text-right font-mono text-xs space-y-0.5">
                     <p>
                       <span className="text-slate-400">{language === 'th' ? 'วันถ่ายทำ (Shoot Date):' : 'Date:'}</span>{' '}
-                      {sceneDayMap[selectedSceneNum]?.dateStr || callSheetDate || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}
+                      {formattedCallSheetDate || sceneDayMap[selectedSceneNum]?.dateStr || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}
                     </p>
                     <p><span className="text-slate-400">Weather:</span> {weather} ({weatherWarnings[weather] ? 'Risk Checked' : 'Clear'})</p>
                   </div>
