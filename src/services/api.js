@@ -31,7 +31,8 @@ const STORAGE_KEYS = {
   COMPLETED_TASKS: 'prod_api_completed_tasks',
   SCRIPTS: 'prod_api_scripts',
   STORY_OUTLINE: 'prod_api_story_outline',
-  USERS: 'prod_api_users'
+  USERS: 'prod_api_users',
+  PRODUCTION_REPORTS: 'prod_api_production_reports'
 };
 
 export const api = {
@@ -1110,6 +1111,67 @@ export const api = {
     };
   },
 
+  // ================= PRODUCTION REPORTS API =================
+  async getProductionReports(projectId) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('production_reports')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (error) {
+        console.error('Supabase error fetching production reports, falling back:', error);
+        const allReports = getDbData(STORAGE_KEYS.PRODUCTION_REPORTS, {});
+        return allReports[projectId] || [];
+      }
+      return (data || []).map(r => ({
+        id: r.id,
+        type: r.type,
+        created_at: r.created_at,
+        ...r.data
+      }));
+    } else {
+      await delay();
+      const allReports = getDbData(STORAGE_KEYS.PRODUCTION_REPORTS, {});
+      return allReports[projectId] || [];
+    }
+  },
+
+  async saveProductionReports(projectId, reports) {
+    const allReports = getDbData(STORAGE_KEYS.PRODUCTION_REPORTS, {});
+    allReports[projectId] = reports;
+    setDbData(STORAGE_KEYS.PRODUCTION_REPORTS, allReports);
+
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('production_reports')
+          .delete()
+          .eq('project_id', projectId);
+
+        if (reports.length > 0) {
+          const dbRows = reports.map(r => {
+            const { id, type, created_at, ...rest } = r;
+            return {
+              id: id || `rep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              project_id: projectId,
+              type: type || 'camera',
+              created_at: created_at || new Date().toISOString(),
+              data: rest
+            };
+          });
+          const { error } = await supabase
+            .from('production_reports')
+            .insert(dbRows);
+          if (error) throw error;
+        }
+      } catch (err) {
+        console.error('Supabase error saving production reports:', err);
+      }
+    }
+    return reports;
+  },
+
   // ================= SYSTEM USERS API =================
   async getUsers() {
     if (isSupabaseConfigured) {
@@ -1178,6 +1240,7 @@ export const api = {
       await supabase.from('completed_tasks').delete().neq('project_id', '');
       await supabase.from('scripts').delete().neq('project_id', '');
       await supabase.from('story_outlines').delete().neq('project_id', '');
+      await supabase.from('production_reports').delete().neq('project_id', '');
       await supabase.from('shot_list').delete().neq('project_id', '');
       await supabase.from('events').delete().neq('project_id', '');
       await supabase.from('scenes').delete().neq('project_id', '');
@@ -1300,6 +1363,28 @@ export const api = {
           if (error) throw error;
         }
       }
+
+      // 10. Insert Production Reports
+      if (importedData.productionReports) {
+        const reportRows = [];
+        Object.keys(importedData.productionReports).forEach(projId => {
+          const reports = importedData.productionReports[projId] || [];
+          reports.forEach(r => {
+            const { id, type, created_at, ...rest } = r;
+            reportRows.push({
+              id: id || `rep-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              project_id: projId,
+              type: type || 'camera',
+              created_at: created_at || new Date().toISOString(),
+              data: rest
+            });
+          });
+        });
+        if (reportRows.length > 0) {
+          const { error } = await supabase.from('production_reports').insert(reportRows);
+          if (error) throw error;
+        }
+      }
       return true;
     } else {
       await delay();
@@ -1311,6 +1396,7 @@ export const api = {
       if (importedData.completedTasks) localStorage.setItem('prod_api_completed_tasks', JSON.stringify(importedData.completedTasks));
       if (importedData.scripts) localStorage.setItem('prod_api_scripts', JSON.stringify(importedData.scripts));
       if (importedData.storyOutline) localStorage.setItem('prod_api_story_outline', JSON.stringify(importedData.storyOutline));
+      if (importedData.productionReports) localStorage.setItem('prod_api_production_reports', JSON.stringify(importedData.productionReports));
       return true;
     }
   },
@@ -1320,6 +1406,7 @@ export const api = {
       await supabase.from('completed_tasks').delete().neq('project_id', '');
       await supabase.from('scripts').delete().neq('project_id', '');
       await supabase.from('story_outlines').delete().neq('project_id', '');
+      await supabase.from('production_reports').delete().neq('project_id', '');
       await supabase.from('shot_list').delete().neq('project_id', '');
       await supabase.from('events').delete().neq('project_id', '');
       await supabase.from('scenes').delete().neq('project_id', '');
@@ -1336,6 +1423,7 @@ export const api = {
       localStorage.removeItem('prod_api_completed_tasks');
       localStorage.removeItem('prod_api_scripts');
       localStorage.removeItem('prod_api_story_outline');
+      localStorage.removeItem('prod_api_production_reports');
       localStorage.removeItem('prod_current_project_id');
       return true;
     }

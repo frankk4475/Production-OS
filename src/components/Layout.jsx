@@ -21,7 +21,8 @@ import {
   Layers,
   PenTool,
   BookOpen,
-  Shield
+  Shield,
+  Clapperboard
 } from 'lucide-react';
 
 const getRoleLabel = (roleName, language) => {
@@ -138,6 +139,7 @@ export default function Layout({
         { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
         { id: 'crew', label: t('nav.crewPortal'), icon: Users },
         { id: 'docs', label: t('nav.documentsHub'), icon: FolderKanban },
+        { id: 'production', label: t('nav.production'), icon: Clapperboard }
       ];
 
   const menuItems = [...baseMenuItems];

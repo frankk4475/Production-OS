@@ -28,6 +28,7 @@ export const ProjectProvider = ({ children }) => {
     writer: { th: '', en: '' },
     contact: { th: '', en: '' }
   });
+  const [productionReports, setProductionReports] = useState([]);
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -83,6 +84,7 @@ export const ProjectProvider = ({ children }) => {
           writer: { th: '', en: '' },
           contact: { th: '', en: '' }
         });
+        setProductionReports([]);
         return;
       }
 
@@ -90,13 +92,14 @@ export const ProjectProvider = ({ children }) => {
         setIsLoading(true);
         localStorage.setItem(getProjectKey('prod_current_project_id'), currentProjectId);
 
-        const [scenesData, eventsData, shotListData, tasksData, scriptData, outlineData] = await Promise.all([
+        const [scenesData, eventsData, shotListData, tasksData, scriptData, outlineData, reportsData] = await Promise.all([
           api.getScenes(currentProjectId),
           api.getEvents(currentProjectId),
           api.getShotList(currentProjectId),
           api.getCompletedTasks(currentProjectId),
           api.getScript(currentProjectId),
-          api.getStoryOutline(currentProjectId)
+          api.getStoryOutline(currentProjectId),
+          api.getProductionReports(currentProjectId)
         ]);
 
         setScenes(scenesData);
@@ -115,6 +118,7 @@ export const ProjectProvider = ({ children }) => {
           writer: { th: '', en: '' },
           contact: { th: '', en: '' }
         });
+        setProductionReports(reportsData || []);
       } catch (err) {
         console.error("Failed to load project details:", err);
         setError(err.message);
@@ -443,6 +447,7 @@ export const ProjectProvider = ({ children }) => {
       completedTasks: localStorage.getItem('prod_api_completed_tasks') ? JSON.parse(localStorage.getItem('prod_api_completed_tasks')) : {},
       scripts: localStorage.getItem('prod_api_scripts') ? JSON.parse(localStorage.getItem('prod_api_scripts')) : {},
       storyOutline: localStorage.getItem('prod_api_story_outline') ? JSON.parse(localStorage.getItem('prod_api_story_outline')) : {},
+      productionReports: localStorage.getItem('prod_api_production_reports') ? JSON.parse(localStorage.getItem('prod_api_production_reports')) : {},
       exportVersion: 'production-6.0',
       exportedAt: new Date().toISOString()
     };
@@ -521,6 +526,22 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  const saveProductionReports = async (reports) => {
+    if (!currentProjectId) return;
+    try {
+      setIsLoading(true);
+      const saved = await api.saveProductionReports(currentProjectId, reports);
+      setProductionReports(saved);
+      return saved;
+    } catch (err) {
+      console.error("Failed to save production reports:", err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ProjectContext.Provider value={{
       projects,
@@ -536,6 +557,8 @@ export const ProjectProvider = ({ children }) => {
       saveScriptBlocks,
       storyOutline,
       saveStoryOutline,
+      productionReports,
+      saveProductionReports,
       isLoading,
       error,
       setProjects,

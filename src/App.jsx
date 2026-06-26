@@ -13,6 +13,7 @@ import LoginPage from './components/LoginPage';
 import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
 import ShootingSchedule from './components/ShootingSchedule';
+import ProductionHub from './components/ProductionHub';
 
 function MainApp() {
   const { user, isCrewOrTalent } = useAuth();
@@ -46,7 +47,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets', 'calendar'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -59,7 +60,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets', 'calendar'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {
@@ -192,6 +193,10 @@ function MainApp() {
             events={activeEvents}
             setEvents={setEvents}
           />
+        );
+      case 'production':
+        return (
+          <ProductionHub key={currentProjectId} />
         );
       default:
         return <div>Tab not found</div>;
