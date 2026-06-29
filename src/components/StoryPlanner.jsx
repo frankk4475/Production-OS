@@ -627,7 +627,7 @@ export default function StoryPlanner() {
                       return (
                         <div 
                           key={beat.id} 
-                          className="p-3.5 rounded-lg bg-slate-900/60 dark:bg-obsidian-900 border border-slate-700/20 hover:border-gold-500/20 transition-all space-y-2 relative group/card shadow-sm"
+                          className="p-3.5 rounded-lg bg-slate-50/50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800/80 hover:bg-slate-100/60 dark:hover:bg-obsidian-850/40 hover:border-gold-500/30 dark:hover:border-gold-500/20 transition-all space-y-2 relative group/card shadow-xs"
                           style={{ borderLeftColor: plot.color, borderLeftWidth: '3.5px' }}
                         >
                           <div className="flex items-start justify-between gap-1">
@@ -635,7 +635,7 @@ export default function StoryPlanner() {
                               <span className="text-[9px] font-mono text-slate-500 block">
                                 {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE TARGET:'} {beat.sceneTarget || '-'}
                               </span>
-                              <h4 className="text-xs font-bold text-slate-200 leading-tight mt-0.5">
+                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">
                                 {getString(beat.title)}
                               </h4>
                             </div>
@@ -648,24 +648,24 @@ export default function StoryPlanner() {
                             </span>
                           </div>
 
-                          <p className="text-[10.5px] text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
+                          <p className="text-[10.5px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
                             {getString(beat.description)}
                           </p>
 
                           {/* Controls (Up / Down / Edit / Delete) */}
                           {hasWriteAccess() && (
-                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-800/40 opacity-0 group-hover/card:opacity-100 transition-opacity no-print">
+                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/40 opacity-0 group-hover/card:opacity-100 transition-opacity no-print">
                               <button
                                 onClick={() => moveBeatOrder(absoluteIndex, 'up')}
                                 disabled={absoluteIndex === 0}
-                                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                                className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white disabled:opacity-30"
                               >
                                 <ArrowUp size={11} />
                               </button>
                               <button
                                 onClick={() => moveBeatOrder(absoluteIndex, 'down')}
                                 disabled={absoluteIndex === localOutline.beats.length - 1}
-                                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                                className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white disabled:opacity-30"
                               >
                                 <ArrowDown size={11} />
                               </button>
@@ -748,11 +748,11 @@ export default function StoryPlanner() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-3 leading-relaxed whitespace-pre-line">
+                  <p className="text-xs text-slate-650 dark:text-slate-400 mt-3 leading-relaxed whitespace-pre-line">
                     {getString(plot.description) || (language === 'th' ? 'ไม่มีรายละเอียดเพิ่มเติม' : 'No description provided.')}
                   </p>
                 </div>
-                <div className="pt-3 border-t border-slate-800/40 flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-800/40 flex justify-between items-center text-[10px] text-slate-500 font-mono">
                   <span>ID: {plot.id}</span>
                   <span 
                     className="px-2 py-0.5 rounded text-white font-sans text-[9px] font-bold" 
@@ -799,14 +799,14 @@ export default function StoryPlanner() {
                 key={char.id} 
                 className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-850/80 space-y-4"
               >
-                <div className="flex items-center justify-between border-b border-slate-800/40 pb-3">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/40 pb-3">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded bg-amber-500/10 text-amber-500 font-bold text-sm">
                       👤
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-200">{getString(char.name)}</h3>
-                      <span className="text-[10px] font-mono text-slate-400">{getString(char.role) || (language === 'th' ? 'ไม่ระบุบทบาท' : 'Unspecified Role')}</span>
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">{getString(char.name)}</h3>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{getString(char.role) || (language === 'th' ? 'ไม่ระบุบทบาท' : 'Unspecified Role')}</span>
                     </div>
                   </div>
 
@@ -831,15 +831,15 @@ export default function StoryPlanner() {
                 <div className="grid grid-cols-1 gap-3.5 text-xs">
                   <div>
                     <span className="font-bold text-amber-500 block mb-0.5">🎯 {language === 'th' ? 'เป้าหมายหลัก / ความต้องการ (Goal / Motivation)' : 'Goal / Need'}</span>
-                    <p className="text-slate-300 leading-relaxed font-sans">{getString(char.goal) || '-'}</p>
+                    <p className="text-slate-650 dark:text-slate-300 leading-relaxed font-sans">{getString(char.goal) || '-'}</p>
                   </div>
                   <div>
                     <span className="font-bold text-red-500 block mb-0.5">⚠️ {language === 'th' ? 'อุปสรรค / ปมความขัดแย้ง (Conflict / Obstacle)' : 'Conflict / Obstacle'}</span>
-                    <p className="text-slate-300 leading-relaxed font-sans">{getString(char.conflict) || '-'}</p>
+                    <p className="text-slate-650 dark:text-slate-300 leading-relaxed font-sans">{getString(char.conflict) || '-'}</p>
                   </div>
                   <div>
                     <span className="font-bold text-gold-500 block mb-0.5">📈 {language === 'th' ? 'วิวัฒนาการของตัวละคร (Character Arc / Growth)' : 'Growth Arc / Path'}</span>
-                    <p className="text-slate-300 leading-relaxed font-sans">{getString(char.arc) || '-'}</p>
+                    <p className="text-slate-650 dark:text-slate-300 leading-relaxed font-sans">{getString(char.arc) || '-'}</p>
                   </div>
                 </div>
               </div>
@@ -981,14 +981,14 @@ export default function StoryPlanner() {
                       return (
                         <div key={beat.id} className="relative group">
                           {/* Timeline node */}
-                          <span className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border border-slate-900 bg-gold-500 ring-4 ring-gold-500/10 transition-all group-hover:scale-125" />
+                          <span className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 bg-gold-500 ring-4 ring-gold-500/10 transition-all group-hover:scale-125" />
                           
                           <div className="space-y-1.5 bg-slate-50 dark:bg-obsidian-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-obsidian-850 hover:border-gold-500/30 transition-all">
                             <div className="flex justify-between items-start gap-4">
                               <span className="font-bold text-xs text-slate-800 dark:text-slate-200 leading-snug">
                                 {idx + 1}. {getString(beat.title)}
                               </span>
-                              <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-250 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
+                              <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
                                 {language === 'th' ? 'กลุ่มฉาก' : 'Scenes'} {beat.sceneTarget || '?'}
                               </span>
                             </div>
@@ -1058,7 +1058,7 @@ export default function StoryPlanner() {
       {isAddBeatOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มโครงเรื่อง / บีตใหม่' : 'Create New Beat Card'}
             </h3>
             
@@ -1071,7 +1071,7 @@ export default function StoryPlanner() {
                   value={newBeat.titleTh}
                   onChange={(e) => setNewBeat({ ...newBeat, titleTh: e.target.value })}
                   placeholder={language === 'th' ? 'เช่น ลีโอส่งมอบฐานข้อมูลลับให้แนท' : 'e.g. Leo delivers secret data to Nat'}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1083,7 +1083,7 @@ export default function StoryPlanner() {
                   value={newBeat.titleEn}
                   onChange={(e) => setNewBeat({ ...newBeat, titleEn: e.target.value })}
                   placeholder="e.g. Leo hands over database to Nat"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1093,7 +1093,7 @@ export default function StoryPlanner() {
                   <select
                     value={newBeat.act}
                     onChange={(e) => setNewBeat({ ...newBeat, act: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   >
                     <option value="Act I">{language === 'th' ? 'องก์ I (เริ่มเรื่อง)' : 'Act I (Setup)'}</option>
                     <option value="Act II">{language === 'th' ? 'องก์ II (เผชิญหน้า)' : 'Act II (Confrontation)'}</option>
@@ -1107,7 +1107,7 @@ export default function StoryPlanner() {
                     value={newBeat.sceneTarget}
                     onChange={(e) => setNewBeat({ ...newBeat, sceneTarget: e.target.value })}
                     placeholder="e.g. 1-4 or 12"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1117,7 +1117,7 @@ export default function StoryPlanner() {
                 <select
                   value={newBeat.plotlineId}
                   onChange={(e) => setNewBeat({ ...newBeat, plotlineId: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 >
                   <option value="">-- {language === 'th' ? 'เลือกเส้นเรื่อง' : 'Select Plotline'} --</option>
                   {(localOutline.plotlines || []).map(p => (
@@ -1133,7 +1133,7 @@ export default function StoryPlanner() {
                   value={newBeat.descriptionTh}
                   onChange={(e) => setNewBeat({ ...newBeat, descriptionTh: e.target.value })}
                   placeholder="เช่น แนทรีบวิ่งหนีออกจากคาเฟ่หลบซ่อนตัวในโกดัง ลีโอถูกรถปริศนาขวางทางทำให้พ่ายแพ้"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1144,15 +1144,15 @@ export default function StoryPlanner() {
                   value={newBeat.descriptionEn}
                   onChange={(e) => setNewBeat({ ...newBeat, descriptionEn: e.target.value })}
                   placeholder="e.g. Nat runs out of the café and hides in a warehouse. Leo is blocked by a black sedan."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsAddBeatOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1172,7 +1172,7 @@ export default function StoryPlanner() {
       {isEditBeatOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขการ์ดโครงเรื่อง' : 'Edit Beat Card'}
             </h3>
             
@@ -1184,7 +1184,7 @@ export default function StoryPlanner() {
                   required
                   value={editBeatTitleTh}
                   onChange={(e) => setEditBeatTitleTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1195,7 +1195,7 @@ export default function StoryPlanner() {
                   required
                   value={editBeatTitleEn}
                   onChange={(e) => setEditBeatTitleEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1205,7 +1205,7 @@ export default function StoryPlanner() {
                   <select
                     value={editBeatAct}
                     onChange={(e) => setEditBeatAct(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   >
                     <option value="Act I">{language === 'th' ? 'องก์ I (เริ่มเรื่อง)' : 'Act I (Setup)'}</option>
                     <option value="Act II">{language === 'th' ? 'องก์ II (เผชิญหน้า)' : 'Act II (Confrontation)'}</option>
@@ -1218,7 +1218,7 @@ export default function StoryPlanner() {
                     type="text"
                     value={editBeatSceneTarget}
                     onChange={(e) => setEditBeatSceneTarget(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1228,7 +1228,7 @@ export default function StoryPlanner() {
                 <select
                   value={editBeatPlotlineId}
                   onChange={(e) => setEditBeatPlotlineId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 >
                   <option value="">-- {language === 'th' ? 'เลือกเส้นเรื่อง' : 'Select Plotline'} --</option>
                   {(localOutline.plotlines || []).map(p => (
@@ -1243,7 +1243,7 @@ export default function StoryPlanner() {
                   rows={3}
                   value={editBeatDescriptionTh}
                   onChange={(e) => setEditBeatDescriptionTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1253,15 +1253,15 @@ export default function StoryPlanner() {
                   rows={3}
                   value={editBeatDescriptionEn}
                   onChange={(e) => setEditBeatDescriptionEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsEditBeatOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1281,7 +1281,7 @@ export default function StoryPlanner() {
       {isAddPlotlineOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-sm w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มเส้นเรื่องย่อยใหม่' : 'Create Story Plotline'}
             </h3>
             
@@ -1294,7 +1294,7 @@ export default function StoryPlanner() {
                   value={newPlotline.nameTh}
                   onChange={(e) => setNewPlotline({ ...newPlotline, nameTh: e.target.value })}
                   placeholder="เช่น เส้นเรื่องรองการทรยศของลีโอ"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1306,7 +1306,7 @@ export default function StoryPlanner() {
                   value={newPlotline.nameEn}
                   onChange={(e) => setNewPlotline({ ...newPlotline, nameEn: e.target.value })}
                   placeholder="e.g. Subplot: Leo's Betrayal"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1315,7 +1315,7 @@ export default function StoryPlanner() {
                 <select
                   value={newPlotline.color}
                   onChange={(e) => setNewPlotline({ ...newPlotline, color: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100 text-slate-300 font-mono"
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100 font-mono"
                 >
                   {colorOptions.map(c => (
                     <option key={c.value} value={c.value}>{c.label}</option>
@@ -1330,7 +1330,7 @@ export default function StoryPlanner() {
                   value={newPlotline.descriptionTh}
                   onChange={(e) => setNewPlotline({ ...newPlotline, descriptionTh: e.target.value })}
                   placeholder="ระบุความขัดแย้งของปมย่อยหรือสิ่งที่จะคลี่คลาย..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1341,15 +1341,15 @@ export default function StoryPlanner() {
                   value={newPlotline.descriptionEn}
                   onChange={(e) => setNewPlotline({ ...newPlotline, descriptionEn: e.target.value })}
                   placeholder="Details on subplot conflict and how it builds..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsAddPlotlineOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1369,7 +1369,7 @@ export default function StoryPlanner() {
       {isEditPlotlineOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-sm w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขรายละเอียดเส้นเรื่อง' : 'Edit Story Plotline'}
             </h3>
             
@@ -1381,7 +1381,7 @@ export default function StoryPlanner() {
                   required
                   value={editPlotlineNameTh}
                   onChange={(e) => setEditPlotlineNameTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1392,7 +1392,7 @@ export default function StoryPlanner() {
                   required
                   value={editPlotlineNameEn}
                   onChange={(e) => setEditPlotlineNameEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1415,7 +1415,7 @@ export default function StoryPlanner() {
                   rows={3}
                   value={editPlotlineDescriptionTh}
                   onChange={(e) => setEditPlotlineDescriptionTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1425,15 +1425,15 @@ export default function StoryPlanner() {
                   rows={3}
                   value={editPlotlineDescriptionEn}
                   onChange={(e) => setEditPlotlineDescriptionEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsEditPlotlineOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1453,7 +1453,7 @@ export default function StoryPlanner() {
       {isAddCharOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มข้อมูลวิเคราะห์ตัวละคร' : 'Add Character Arc Profiler'}
             </h3>
             
@@ -1467,7 +1467,7 @@ export default function StoryPlanner() {
                     value={newChar.nameTh}
                     onChange={(e) => setNewChar({ ...newChar, nameTh: e.target.value })}
                     placeholder="เช่น ลีโอ"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1478,7 +1478,7 @@ export default function StoryPlanner() {
                     value={newChar.nameEn}
                     onChange={(e) => setNewChar({ ...newChar, nameEn: e.target.value })}
                     placeholder="e.g. Leo"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1491,7 +1491,7 @@ export default function StoryPlanner() {
                     value={newChar.roleTh}
                     onChange={(e) => setNewChar({ ...newChar, roleTh: e.target.value })}
                     placeholder="เช่น ผู้แนะนำ / สายลับติดต่อ"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1501,7 +1501,7 @@ export default function StoryPlanner() {
                     value={newChar.roleEn}
                     onChange={(e) => setNewChar({ ...newChar, roleEn: e.target.value })}
                     placeholder="e.g. Mentor / Contact Agent"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1513,7 +1513,7 @@ export default function StoryPlanner() {
                   value={newChar.goalTh}
                   onChange={(e) => setNewChar({ ...newChar, goalTh: e.target.value })}
                   placeholder="ต้องการส่งซองเอกสารหลักฐานให้ทันเวลา..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1524,7 +1524,7 @@ export default function StoryPlanner() {
                   value={newChar.goalEn}
                   onChange={(e) => setNewChar({ ...newChar, goalEn: e.target.value })}
                   placeholder="Wants to safely hand over database documents on time..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1536,7 +1536,7 @@ export default function StoryPlanner() {
                     value={newChar.conflictTh}
                     onChange={(e) => setNewChar({ ...newChar, conflictTh: e.target.value })}
                     placeholder="ถูกไล่ล่าโดยทางการเกลี้ยกล่อม"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1546,7 +1546,7 @@ export default function StoryPlanner() {
                     value={newChar.conflictEn}
                     onChange={(e) => setNewChar({ ...newChar, conflictEn: e.target.value })}
                     placeholder="Stalked by governmental enforcement agents"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1558,7 +1558,7 @@ export default function StoryPlanner() {
                   value={newChar.arcTh}
                   onChange={(e) => setNewChar({ ...newChar, arcTh: e.target.value })}
                   placeholder="จากคนขี้ขลาด เรียนรู้อาศัยความเชื่อใจกลายเป็นคนเสียสละสู้เพื่อความจริง"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1569,15 +1569,15 @@ export default function StoryPlanner() {
                   value={newChar.arcEn}
                   onChange={(e) => setNewChar({ ...newChar, arcEn: e.target.value })}
                   placeholder="From code nerd, learns to stand strong and fight for the ultimate truth"
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsAddCharOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1597,7 +1597,7 @@ export default function StoryPlanner() {
       {isEditCharOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขข้อมูลวิเคราะห์ตัวละคร' : 'Edit Character Arc'}
             </h3>
             
@@ -1610,7 +1610,7 @@ export default function StoryPlanner() {
                     required
                     value={editCharNameTh}
                     onChange={(e) => setEditCharNameTh(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1620,7 +1620,7 @@ export default function StoryPlanner() {
                     required
                     value={editCharNameEn}
                     onChange={(e) => setEditCharNameEn(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1632,7 +1632,7 @@ export default function StoryPlanner() {
                     type="text"
                     value={editCharRoleTh}
                     onChange={(e) => setEditCharRoleTh(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1641,7 +1641,7 @@ export default function StoryPlanner() {
                     type="text"
                     value={editCharRoleEn}
                     onChange={(e) => setEditCharRoleEn(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1652,7 +1652,7 @@ export default function StoryPlanner() {
                   type="text"
                   value={editCharGoalTh}
                   onChange={(e) => setEditCharGoalTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1662,7 +1662,7 @@ export default function StoryPlanner() {
                   type="text"
                   value={editCharGoalEn}
                   onChange={(e) => setEditCharGoalEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1673,7 +1673,7 @@ export default function StoryPlanner() {
                     type="text"
                     value={editCharConflictTh}
                     onChange={(e) => setEditCharConflictTh(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1682,7 +1682,7 @@ export default function StoryPlanner() {
                     type="text"
                     value={editCharConflictEn}
                     onChange={(e) => setEditCharConflictEn(e.target.value)}
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1693,7 +1693,7 @@ export default function StoryPlanner() {
                   rows={2}
                   value={editCharArcTh}
                   onChange={(e) => setEditCharArcTh(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1703,15 +1703,15 @@ export default function StoryPlanner() {
                   rows={2}
                   value={editCharArcEn}
                   onChange={(e) => setEditCharArcEn(e.target.value)}
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsEditCharOpen(false)}
-                  className="px-3.5 py-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-all font-bold"
+                  className="px-3.5 py-2 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all font-bold"
                 >
                   {language === 'th' ? 'ยกเลิก' : 'Cancel'}
                 </button>
@@ -1731,7 +1731,7 @@ export default function StoryPlanner() {
       {isEditCoverOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="glass-panel p-6 rounded-xl border border-slate-200 dark:border-obsidian-800 max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100">
-            <h3 className="text-sm font-bold font-serif border-b border-slate-800/50 pb-2">
+            <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขข้อมูลส่วนหน้าเอกสาร (Document Cover Settings)' : 'Edit Screenplay Outline Cover Info'}
             </h3>
             
@@ -1744,7 +1744,7 @@ export default function StoryPlanner() {
                     value={editWriterTh}
                     onChange={(e) => setEditWriterTh(e.target.value)}
                     placeholder="เช่น ธนบดี กองศรี"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1754,7 +1754,7 @@ export default function StoryPlanner() {
                     value={editWriterEn}
                     onChange={(e) => setEditWriterEn(e.target.value)}
                     placeholder="e.g. Thanabodee Kongsri"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1767,7 +1767,7 @@ export default function StoryPlanner() {
                     value={editContactTh}
                     onChange={(e) => setEditContactTh(e.target.value)}
                     placeholder="e.g. email@example.com"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1777,7 +1777,7 @@ export default function StoryPlanner() {
                     value={editGenreTh}
                     onChange={(e) => setEditGenreTh(e.target.value)}
                     placeholder="e.g. ดราม่า / ชีวิตชนบท / Coming-of-Age"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1790,7 +1790,7 @@ export default function StoryPlanner() {
                   value={editLoglineTh}
                   onChange={(e) => setEditLoglineTh(e.target.value)}
                   placeholder="เรื่องราวสรุปเส้นเรื่องหลักในหนึ่งประโยค..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
               <div className="space-y-1">
@@ -1800,7 +1800,7 @@ export default function StoryPlanner() {
                   value={editLoglineEn}
                   onChange={(e) => setEditLoglineEn(e.target.value)}
                   placeholder="One sentence logline of the main story conflict..."
-                  className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                 />
               </div>
 
@@ -1813,7 +1813,7 @@ export default function StoryPlanner() {
                     value={editToneTh}
                     onChange={(e) => setEditToneTh(e.target.value)}
                     placeholder="เช่น อบอุ่น สลัว เงียบเหงา"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1823,7 +1823,7 @@ export default function StoryPlanner() {
                     value={editToneEn}
                     onChange={(e) => setEditToneEn(e.target.value)}
                     placeholder="e.g. Warm, cozy, rural beauty"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1837,7 +1837,7 @@ export default function StoryPlanner() {
                     value={editThemeTh}
                     onChange={(e) => setEditThemeTh(e.target.value)}
                     placeholder="เช่น การเริ่มต้นชีวิตใหม่"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1847,12 +1847,12 @@ export default function StoryPlanner() {
                     value={editThemeEn}
                     onChange={(e) => setEditThemeEn(e.target.value)}
                     placeholder="e.g. Letting go and moving forward"
-                    className="w-full bg-slate-950/40 border border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-100"
+                    className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800/60 rounded p-2 focus:border-gold-500 focus:outline-none text-slate-800 dark:text-slate-100"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-850">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800/40">
                 <button
                   type="button"
                   onClick={() => setIsEditCoverOpen(false)}
