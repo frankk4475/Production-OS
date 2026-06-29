@@ -627,12 +627,12 @@ export default function StoryPlanner() {
                       return (
                         <div 
                           key={beat.id} 
-                          className="p-3.5 rounded-lg bg-slate-50/50 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800/80 hover:bg-slate-100/60 dark:hover:bg-obsidian-850/40 hover:border-gold-500/30 dark:hover:border-gold-500/20 transition-all space-y-2 relative group/card shadow-xs"
+                          className="p-3.5 rounded-lg bg-slate-50/50 dark:bg-obsidian-800/60 border border-slate-200 dark:border-obsidian-800 hover:bg-slate-100/60 dark:hover:bg-obsidian-800 hover:border-gold-500/30 dark:hover:border-gold-500/20 transition-all space-y-2 relative group/card shadow-xs"
                           style={{ borderLeftColor: plot.color, borderLeftWidth: '3.5px' }}
                         >
                           <div className="flex items-start justify-between gap-1">
                             <div>
-                              <span className="text-[9px] font-mono text-slate-500 block">
+                              <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 block">
                                 {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE TARGET:'} {beat.sceneTarget || '-'}
                               </span>
                               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">
@@ -648,7 +648,7 @@ export default function StoryPlanner() {
                             </span>
                           </div>
 
-                          <p className="text-[10.5px] text-slate-600 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
+                          <p className="text-[10.5px] text-slate-600 dark:text-slate-350 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
                             {getString(beat.description)}
                           </p>
 
