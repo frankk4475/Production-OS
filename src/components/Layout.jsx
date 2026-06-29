@@ -65,6 +65,7 @@ export default function Layout({
     currentProjectId,
     setCurrentProjectId,
     currentProject: project,
+    onlineUsers,
     handleAddProject
   } = useProject();
 
@@ -344,6 +345,17 @@ export default function Layout({
           {/* Header Right: Lang, Theme & Info */}
           <div className="flex items-center gap-2 sm:gap-3">
             
+            {/* Global Real-time active status */}
+            {onlineUsers && onlineUsers.length > 0 && (
+              <div 
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider select-none animate-pulse"
+                title={`${onlineUsers.length} active users working on this project`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span>{onlineUsers.length} {language === 'th' ? 'ผู้ใช้ร่วม' : 'Users'}</span>
+              </div>
+            )}
+
             {/* Language Switcher */}
             <button
               onClick={() => setLanguage(language === 'th' ? 'en' : 'th')}

@@ -45,6 +45,7 @@ export default function ScriptEditor() {
   const {
     currentProject: project,
     scriptBlocks,
+    onlineUsers,
     saveScriptBlocks,
     isLoading
   } = useProject();
@@ -58,15 +59,31 @@ export default function ScriptEditor() {
   // Load project script blocks when loaded from context
   useEffect(() => {
     if (scriptBlocks && scriptBlocks.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBlocks(scriptBlocks);
+      setBlocks(prevBlocks => {
+        if (prevBlocks.length === 0 || activeBlockIndex === null) {
+          return scriptBlocks;
+        }
+        
+        const activeBlockId = prevBlocks[activeBlockIndex]?.id;
+        
+        return scriptBlocks.map(newBlock => {
+          if (newBlock.id === activeBlockId) {
+            return {
+              ...newBlock,
+              text: prevBlocks[activeBlockIndex].text,
+              type: prevBlocks[activeBlockIndex].type
+            };
+          }
+          return newBlock;
+        });
+      });
     } else {
       setBlocks([
         { id: `b-${Date.now()}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },
         { id: `b-${Date.now()}-2`, type: 'action', text: 'Write screenplay action here...' }
       ]);
     }
-  }, [scriptBlocks]);
+  }, [scriptBlocks, activeBlockIndex]);
 
   // Sync refs array size
   useEffect(() => {
@@ -392,11 +409,39 @@ export default function ScriptEditor() {
             <FileEdit size={24} className="text-gold-500 animate-pulse" />
             <span>{language === 'th' ? 'ระบบเขียนบทภาพยนตร์' : 'Studio Screenplay Editor'}</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {language === 'th' 
-              ? 'รูปแบบบทภาพยนตร์มาตรฐานสากล พร้อมระบบซิงก์ข้อมูลการแจกแจงบทถ่ายทำอัตโนมัติ' 
-              : 'StudioBinder-inspired screenplay format & dynamic breakdown syncing'}
-          </p>
+          <div className="flex flex-wrap items-center gap-3 mt-1.5">
+            <p className="text-xs text-slate-400">
+              {language === 'th' 
+                ? 'รูปแบบบทภาพยนตร์มาตรฐานสากล พร้อมระบบซิงก์ข้อมูลการแจกแจงบทถ่ายทำอัตโนมัติ' 
+                : 'StudioBinder-inspired screenplay format & dynamic breakdown syncing'}
+            </p>
+            
+            {/* Real-time Indicator */}
+            <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/5 px-2 py-0.5 rounded-full border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider shrink-0 select-none animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>{language === 'th' ? 'เรียลไทม์' : 'Real-time'}</span>
+            </div>
+
+            {/* Online Collaborators */}
+            {onlineUsers && onlineUsers.length > 0 && (
+              <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                <span className="text-[10px] text-slate-400 font-bold">
+                  ● {onlineUsers.length} {language === 'th' ? 'คนกำลังใช้งาน' : 'Online'}
+                </span>
+                <div className="flex -space-x-1.5 overflow-hidden">
+                  {onlineUsers.map((collab) => (
+                    <div 
+                      key={collab.user_id}
+                      className="w-5 h-5 rounded-full bg-gradient-to-tr from-gold-600 to-amber-500 border border-white dark:border-obsidian-950 flex items-center justify-center text-[8px] font-black text-white cursor-help shadow-xs"
+                      title={`${collab.name} (Online since ${new Date(collab.online_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`}
+                    >
+                      {collab.name.substring(0, 2).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

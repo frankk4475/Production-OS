@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { googleCalendar } from '../services/googleCalendar';
 import { useAuth } from './AuthContext';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 const ProjectContext = createContext();
 
@@ -17,6 +18,7 @@ export const ProjectProvider = ({ children }) => {
   const [shotList, setShotList] = useState([]);
   const [completedTasks, setCompletedTasks] = useState({});
   const [scriptBlocks, setScriptBlocks] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [storyOutline, setStoryOutline] = useState({
     plotlines: [],
     characters: [],
@@ -128,6 +130,111 @@ export const ProjectProvider = ({ children }) => {
     };
     loadProjectData();
   }, [currentProjectId]);
+
+  // Real-time Database Updates and Presence Collaboration System
+  useEffect(() => {
+    if (!currentProjectId || !isSupabaseConfigured) return;
+
+    // 1. Subscribe to Postgres Database Changes for Realtime Collaboration
+    const dbChannel = supabase
+      .channel(`project-db-changes-${currentProjectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'scripts', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Script Update:', payload);
+          const data = await api.getScript(currentProjectId);
+          setScriptBlocks(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'scenes', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Scenes Update:', payload);
+          const data = await api.getScenes(currentProjectId);
+          setScenes(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Events Update:', payload);
+          const data = await api.getEvents(currentProjectId);
+          setEvents(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'story_outlines', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Story Outline Update:', payload);
+          const data = await api.getStoryOutline(currentProjectId);
+          setStoryOutline(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'shot_list', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Shot List Update:', payload);
+          const data = await api.getShotList(currentProjectId);
+          setShotList(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'completed_tasks', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Completed Tasks Update:', payload);
+          const data = await api.getCompletedTasks(currentProjectId);
+          setCompletedTasks(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'production_reports', filter: `project_id=eq.${currentProjectId}` },
+        async (payload) => {
+          console.log('Realtime Production Reports Update:', payload);
+          const data = await api.getProductionReports(currentProjectId);
+          setProductionReports(data);
+        }
+      )
+      .subscribe();
+
+    // 2. Track Collaborators Presence on this Project
+    const presenceChannel = supabase.channel(`presence-${currentProjectId}`);
+    const currentLanguage = localStorage.getItem('language') || 'th';
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const activeUsersList = [];
+        Object.keys(state).forEach(key => {
+          state[key].forEach(presence => {
+            // Deduplicate online users by user_id to prevent duplicates
+            if (!activeUsersList.some(u => u.user_id === presence.user_id)) {
+              activeUsersList.push(presence);
+            }
+          });
+        });
+        setOnlineUsers(activeUsersList);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: user?.id || 'anonymous-' + Math.random().toString(36).substring(2, 9),
+            name: user?.email ? user.email.split('@')[0] : (currentLanguage === 'th' ? 'ผู้ใช้นิรนาม' : 'Anonymous'),
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(dbChannel);
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [currentProjectId, user?.id]);
 
   // Derived current active project
   const currentProject = projects.find(p => p.id === currentProjectId) || null;
@@ -554,6 +661,7 @@ export const ProjectProvider = ({ children }) => {
       activeCompletedTasks: completedTasks,
       weather: currentProject?.current_weather || 'Sunny',
       scriptBlocks,
+      onlineUsers,
       saveScriptBlocks,
       storyOutline,
       saveStoryOutline,
