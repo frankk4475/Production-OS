@@ -596,24 +596,26 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
-  const saveScriptBlocks = async (blocks) => {
+  const saveScriptBlocks = async (blocks, skipSyncBreakdown = false) => {
     if (!currentProjectId) return;
     try {
-      setIsLoading(true);
-      const saved = await api.saveScript(currentProjectId, blocks);
+      const saved = await api.saveScript(currentProjectId, blocks, skipSyncBreakdown);
       setScriptBlocks(saved);
       
-      // Reload scenes because saving script updates the breakdown scenes!
-      const scenesData = await api.getScenes(currentProjectId);
-      setScenes(scenesData);
+      // Reload scenes asynchronously in the background to prevent blocking UI
+      if (!skipSyncBreakdown) {
+        api.getScenes(currentProjectId).then(scenesData => {
+          setScenes(scenesData);
+        }).catch(err => {
+          console.error("Failed to refresh scenes in background:", err);
+        });
+      }
       
       return saved;
     } catch (err) {
       console.error("Failed to save script:", err);
       setError(err.message);
       throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 

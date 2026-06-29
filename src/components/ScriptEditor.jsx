@@ -63,7 +63,7 @@ export default function ScriptEditor() {
   const saveImmediately = async (blocksToSave) => {
     setSaveStatus('saving');
     try {
-      await saveScriptBlocks(blocksToSave);
+      await saveScriptBlocks(blocksToSave, false); // Perform full scene breakdown sync on structural changes/blur
       localChangeRef.current = false;
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -95,7 +95,7 @@ export default function ScriptEditor() {
     setSaveStatus('saving');
     const timer = setTimeout(async () => {
       try {
-        await saveScriptBlocks(blocks);
+        await saveScriptBlocks(blocks, true); // Skip heavy breakdown sync while typing to keep it extremely fast
         localChangeRef.current = false;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);

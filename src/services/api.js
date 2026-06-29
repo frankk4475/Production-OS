@@ -777,15 +777,19 @@ export const api = {
     }
   },
 
-  async saveScript(projectId, blocks) {
+  async saveScript(projectId, blocks, skipSyncBreakdown = false) {
     if (isSupabaseConfigured) {
       const { error } = await supabase
         .from('scripts')
         .upsert({ project_id: projectId, blocks });
       if (error) throw error;
       
-      // Auto-sync script to script breakdown scenes
-      await this.syncScriptToBreakdown(projectId, blocks);
+      // Auto-sync script to script breakdown scenes in the background
+      if (!skipSyncBreakdown) {
+        this.syncScriptToBreakdown(projectId, blocks).catch(err => {
+          console.error("Background sync breakdown failed:", err);
+        });
+      }
       return blocks;
     } else {
       await delay();
@@ -793,8 +797,12 @@ export const api = {
       scripts[projectId] = blocks;
       setDbData(STORAGE_KEYS.SCRIPTS, scripts);
       
-      // Auto-sync script to script breakdown scenes
-      await this.syncScriptToBreakdown(projectId, blocks);
+      // Auto-sync script to script breakdown scenes in the background
+      if (!skipSyncBreakdown) {
+        this.syncScriptToBreakdown(projectId, blocks).catch(err => {
+          console.error("Background sync breakdown failed:", err);
+        });
+      }
       return blocks;
     }
   },
