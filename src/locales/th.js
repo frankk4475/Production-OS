@@ -67,6 +67,7 @@ export const th = {
     assignedCrew: "ทีมงานที่ได้รับมอบหมาย",
     shootLocation: "สถานที่นัดหมาย",
     scheduledTime: "ช่วงเวลา",
+    googleDay: "ปฏิทิน Google (Google Calendar)",
     close: "ปิดหน้าต่าง"
   },
   crew: {

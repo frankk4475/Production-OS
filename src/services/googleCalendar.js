@@ -59,6 +59,24 @@ export const googleCalendar = {
     return data.items || [];
   },
 
+  // Fetch events from a selected Google Calendar
+  async fetchEvents(accessToken, calendarId) {
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?singleEvents=true&maxResults=250`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error?.message || 'Failed to fetch Google Calendar events');
+    }
+    
+    const data = await response.json();
+    return data.items || [];
+  },
+
   // Helper to format Date for Google Calendar (All-day event needs YYYY-MM-DD end date to be next day)
   formatDateRange(dateStr) {
     const dateObj = new Date(dateStr);

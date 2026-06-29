@@ -30,6 +30,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
+  const [googleEvents, setGoogleEvents] = useState([]);
   const googleClientId = DEFAULT_CLIENT_ID;
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -47,6 +48,16 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
     }
   };
 
+  const loadGoogleEvents = async (token, calendarId) => {
+    if (!token || !calendarId) return;
+    try {
+      const items = await googleCalendar.fetchEvents(token, calendarId);
+      setGoogleEvents(items);
+    } catch (err) {
+      console.error("Failed to fetch Google Calendar events:", err);
+    }
+  };
+
   useEffect(() => {
     const handleAuthMessage = (event) => {
       if (event.origin !== window.location.origin) return;
@@ -56,6 +67,10 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
           localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
           localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
           loadCalendars(params.accessToken);
+          const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+          if (calId) {
+            loadGoogleEvents(params.accessToken, calId);
+          }
           setIsGoogleModalOpen(true);
         }
       }
@@ -68,12 +83,20 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
       window.location.hash = '#/calendar';
       loadCalendars(params.accessToken);
+      const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+      if (calId) {
+        loadGoogleEvents(params.accessToken, calId);
+      }
       setIsGoogleModalOpen(true);
     } else {
       const token = localStorage.getItem(getProjectKey('google_project_access_token'));
       const expiresAt = localStorage.getItem(getProjectKey('google_project_token_expires_at'));
+      const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
       if (token && expiresAt && Number(expiresAt) > Date.now()) {
         loadCalendars(token);
+        if (calId) {
+          loadGoogleEvents(token, calId);
+        }
       }
     }
 
@@ -110,12 +133,17 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
     localStorage.removeItem(getProjectKey('google_project_calendar_id'));
     setGoogleCalendars([]);
     setSelectedCalendarId('');
+    setGoogleEvents([]);
     setIsConnected(false);
   };
 
   const handleSelectCalendar = (calId) => {
     setSelectedCalendarId(calId);
     localStorage.setItem(getProjectKey('google_project_calendar_id'), calId);
+    const token = localStorage.getItem(getProjectKey('google_project_access_token'));
+    if (token && calId) {
+      loadGoogleEvents(token, calId);
+    }
   };
 
   const handleSyncAll = async () => {
@@ -161,6 +189,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       }
       
       localStorage.setItem(`synced_google_events_${selectedCalendarId}`, JSON.stringify(syncedEvents));
+      await loadGoogleEvents(token, selectedCalendarId);
       alert(language === 'th' ? 'ซิงค์ข้อมูลกับ Google Calendar เรียบร้อยแล้ว!' : 'Google Calendar sync completed successfully!');
     } catch (err) {
       alert("Sync failed: " + err.message);
@@ -274,6 +303,38 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   // Helper to filter events by date
   const getEventsForDate = (dateStr) => {
     const matchedEvents = events.filter(e => e.date === dateStr);
+    
+    const matchedGoogleEvents = googleEvents.map(gEvt => {
+      let dateVal = '';
+      if (gEvt.start?.date) {
+        dateVal = gEvt.start.date;
+      } else if (gEvt.start?.dateTime) {
+        dateVal = gEvt.start.dateTime.split('T')[0];
+      }
+      return {
+        ...gEvt,
+        computedDate: dateVal
+      };
+    }).filter(e => e.computedDate === dateStr).map(gEvt => {
+      return {
+        id: gEvt.id,
+        title: {
+          th: gEvt.summary || '(ไม่มีชื่อเรื่อง)',
+          en: gEvt.summary || '(No Title)'
+        },
+        date: gEvt.computedDate,
+        time: gEvt.start?.dateTime 
+          ? new Date(gEvt.start.dateTime).toLocaleTimeString(language === 'th' ? 'th-TH' : 'en-US', {hour: '2-digit', minute:'2-digit'})
+          : (language === 'th' ? 'ทั้งวัน' : 'All Day'),
+        location: {
+          th: gEvt.location || '',
+          en: gEvt.location || ''
+        },
+        type: 'google',
+        notes: gEvt.description || ''
+      };
+    });
+
     const blockedEvents = [];
     
     (crew || []).forEach(c => {
@@ -303,7 +364,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       }
     });
     
-    return [...matchedEvents, ...blockedEvents];
+    return [...matchedEvents, ...matchedGoogleEvents, ...blockedEvents];
   };
 
   // Crew name resolver helper
@@ -455,13 +516,17 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                               ? theme === 'dark'
                                 ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/15'
                                 : 'bg-red-50 border-red-200 text-red-800 hover:bg-red-100'
-                              : theme === 'dark'
-                                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
-                                : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
+                              : evt.type === 'google'
+                                ? theme === 'dark'
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/15'
+                                  : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                                : theme === 'dark'
+                                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:bg-blue-500/15'
+                                  : 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100'
                         }`}
                       >
                         <span className="mr-1">
-                          {evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : '🛠️'}
+                          {evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : evt.type === 'google' ? '📅' : '🛠️'}
                         </span>
                         {evt.title[language] || evt.title.en}
                       </button>
@@ -512,13 +577,17 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                             ? theme === 'dark'
                               ? 'bg-red-500/5 border-red-500/20 text-red-350'
                               : 'bg-red-50 border-red-200 text-red-800'
-                            : theme === 'dark'
-                              ? 'bg-blue-500/5 border-blue-500/20 text-blue-300'
-                              : 'bg-blue-50 border-blue-200 text-blue-800'
+                            : evt.type === 'google'
+                              ? theme === 'dark'
+                                ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-350'
+                                : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                              : theme === 'dark'
+                                ? 'bg-blue-500/5 border-blue-500/20 text-blue-300'
+                                : 'bg-blue-50 border-blue-200 text-blue-800'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 mb-1.5 font-bold">
-                        <span>{evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : '🛠️'}</span>
+                        <span>{evt.type === 'shoot' ? '🎥' : evt.type === 'blocked' ? '❌' : evt.type === 'google' ? '📅' : '🛠️'}</span>
                         <span className="uppercase tracking-widest text-[9px] px-1 rounded bg-current/10">
                           {evt.type === 'blocked' ? (language === 'th' ? 'ติดธุระ' : 'Busy') : t(`calendar.${evt.type}Day`)}
                         </span>
@@ -575,7 +644,9 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                     ? theme === 'dark' ? 'bg-gold-500/5 border-gold-500/25 text-gold-300' : 'bg-gold-50 border-gold-200 text-gold-800'
                     : evt.type === 'blocked'
                       ? theme === 'dark' ? 'bg-red-500/5 border-red-500/25 text-red-300' : 'bg-red-50 border-red-200 text-red-800'
-                      : theme === 'dark' ? 'bg-blue-500/5 border-blue-500/25 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800'
+                      : evt.type === 'google'
+                        ? theme === 'dark' ? 'bg-emerald-500/5 border-emerald-500/25 text-emerald-350' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        : theme === 'dark' ? 'bg-blue-500/5 border-blue-500/25 text-blue-300' : 'bg-blue-50 border-blue-200 text-blue-800'
                 }`}
               >
                 <div className="space-y-2">
@@ -599,6 +670,13 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                       title={`${evt.crew_member?.name?.[language]} - ${evt.crew_member?.role}`}
                     >
                       {evt.crew_member?.name?.en?.split(' ').map(n => n[0]).join('') || '??'}
+                    </div>
+                  ) : evt.type === 'google' ? (
+                    <div 
+                      className="w-8 h-8 rounded-full border border-obsidian-950 bg-emerald-600 flex items-center justify-center text-[10px] font-bold text-white shadow-sm"
+                      title="Google Calendar"
+                    >
+                      G
                     </div>
                   ) : (evt.crew_assigned || []).map((crewId, idx) => {
                     const cInfo = getCrewInfo(crewId);
@@ -638,7 +716,9 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                   ? 'bg-gold-500/10 text-gold-500'
                   : selectedEvent.type === 'blocked'
                     ? 'bg-red-500/10 text-red-500'
-                    : 'bg-blue-500/10 text-blue-500'
+                    : selectedEvent.type === 'google'
+                      ? 'bg-emerald-500/10 text-emerald-500'
+                      : 'bg-blue-500/10 text-blue-500'
               }`}>
                 {selectedEvent.type === 'blocked' ? (language === 'th' ? 'ติดธุระ' : 'Busy') : t(`calendar.${selectedEvent.type}Day`)}
               </span>
@@ -704,6 +784,48 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                             : 'Member marked this day as busy in their roster workspace, blocking schedule bookings for this date.')}
                     </p>
                   </div>
+                </div>
+              ) : selectedEvent.type === 'google' ? (
+                /* Google Event Details */
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className={`p-3 rounded-lg border ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                        <Clock size={10} className="text-emerald-500" />
+                        <span>{language === 'th' ? 'เวลา' : 'Time'}</span>
+                      </p>
+                      <p className="text-sm font-bold">{selectedEvent.time}</p>
+                    </div>
+
+                    {selectedEvent.location?.th && (
+                      <div className={`p-3 rounded-lg border ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1 flex items-center gap-1">
+                          <MapPin size={10} className="text-emerald-500" />
+                          <span>{language === 'th' ? 'สถานที่' : 'Location'}</span>
+                        </p>
+                        <p className="text-sm font-bold truncate" title={selectedEvent.location[language] || selectedEvent.location.en}>
+                          {selectedEvent.location[language] || selectedEvent.location.en}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedEvent.notes && (
+                    <div className={`p-3 rounded-lg border ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-1">
+                        {language === 'th' ? 'รายละเอียดเพิ่มเติม' : 'Description'}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap font-medium">
+                        {selectedEvent.notes}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Regular Event Details */

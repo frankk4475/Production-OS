@@ -67,6 +67,7 @@ export const en = {
     assignedCrew: "Assigned Crew",
     shootLocation: "Shoot Location",
     scheduledTime: "Time Slot",
+    googleDay: "Google Calendar",
     close: "Close"
   },
   crew: {
