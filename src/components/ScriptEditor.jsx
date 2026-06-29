@@ -54,11 +54,15 @@ export default function ScriptEditor() {
   const [activeBlockIndex, setActiveBlockIndex] = useState(null);
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  
+  const localChangeRef = useRef(false);
   const blockRefs = useRef([]);
 
   // Load project script blocks when loaded from context
   useEffect(() => {
     if (scriptBlocks && scriptBlocks.length > 0) {
+      localChangeRef.current = false;
       setBlocks(prevBlocks => {
         if (prevBlocks.length === 0 || activeBlockIndex === null) {
           return scriptBlocks;
@@ -78,12 +82,33 @@ export default function ScriptEditor() {
         });
       });
     } else {
+      localChangeRef.current = false;
       setBlocks([
         { id: `b-${Date.now()}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },
         { id: `b-${Date.now()}-2`, type: 'action', text: 'Write screenplay action here...' }
       ]);
     }
   }, [scriptBlocks, activeBlockIndex]);
+
+  // Debounced Auto-save System
+  useEffect(() => {
+    if (!localChangeRef.current) return;
+    
+    setSaveStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        await saveScriptBlocks(blocks);
+        localChangeRef.current = false;
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+        setSaveStatus('error');
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [blocks]);
 
   // Sync refs array size
   useEffect(() => {
@@ -117,6 +142,7 @@ export default function ScriptEditor() {
         newBlocks[index].text = newBlocks[index].text.toUpperCase();
       }
 
+      localChangeRef.current = true;
       setBlocks(newBlocks);
     }
 
@@ -141,6 +167,7 @@ export default function ScriptEditor() {
 
       const newBlocks = [...blocks];
       newBlocks.splice(index + 1, 0, newBlock);
+      localChangeRef.current = true;
       setBlocks(newBlocks);
 
       // Focus the newly added block in the next render cycle
@@ -154,6 +181,7 @@ export default function ScriptEditor() {
     if (e.key === 'Backspace' && blocks[index].text === '' && blocks.length > 1) {
       e.preventDefault();
       const newBlocks = blocks.filter((_, i) => i !== index);
+      localChangeRef.current = true;
       setBlocks(newBlocks);
 
       // Focus previous block
@@ -180,6 +208,7 @@ export default function ScriptEditor() {
   const handleTextChange = (index, value) => {
     const newBlocks = [...blocks];
     newBlocks[index].text = blocks[index].type === 'character' ? value.toUpperCase() : value;
+    localChangeRef.current = true;
     setBlocks(newBlocks);
   };
 
@@ -190,6 +219,7 @@ export default function ScriptEditor() {
     if (type === 'character') {
       newBlocks[index].text = newBlocks[index].text.toUpperCase();
     }
+    localChangeRef.current = true;
     setBlocks(newBlocks);
   };
 
@@ -202,6 +232,7 @@ export default function ScriptEditor() {
     };
     const newBlocks = [...blocks];
     newBlocks.splice(index + 1, 0, newBlock);
+    localChangeRef.current = true;
     setBlocks(newBlocks);
 
     setTimeout(() => {
@@ -215,6 +246,7 @@ export default function ScriptEditor() {
   const deleteBlock = (index) => {
     if (blocks.length <= 1) return;
     const newBlocks = blocks.filter((_, i) => i !== index);
+    localChangeRef.current = true;
     setBlocks(newBlocks);
     
     const targetIndex = index > 0 ? index - 1 : 0;
@@ -236,6 +268,7 @@ export default function ScriptEditor() {
     newBlocks[index] = newBlocks[targetIndex];
     newBlocks[targetIndex] = temp;
 
+    localChangeRef.current = true;
     setBlocks(newBlocks);
     setTimeout(() => {
       if (blockRefs.current[targetIndex]) {
@@ -244,16 +277,34 @@ export default function ScriptEditor() {
     }, 50);
   };
 
-  // Save & Sync Action
+  // Immediate save on input blur
+  const handleBlur = async () => {
+    setActiveBlockIndex(null);
+    if (!localChangeRef.current) return;
+    
+    try {
+      setSaveStatus('saving');
+      await saveScriptBlocks(blocks);
+      localChangeRef.current = false;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error("Auto-save on blur failed:", err);
+      setSaveStatus('error');
+    }
+  };
+
+  // Save & Sync Action (Manual Trigger fallback)
   const handleSaveAndSync = async () => {
     if (!project) return;
     try {
+      setSaveStatus('saving');
       await saveScriptBlocks(blocks);
-      setIsSavedSuccessfully(true);
-      setTimeout(() => {
-        setIsSavedSuccessfully(false);
-      }, 3000);
+      localChangeRef.current = false;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
+      setSaveStatus('error');
       alert(language === 'th' ? "ไม่สามารถบันทึกและซิงค์บทภาพยนตร์ได้: " + err.message : "Failed to sync script: " + err.message);
     }
   };
@@ -478,28 +529,24 @@ export default function ScriptEditor() {
           </button>
 
           {hasWriteAccess() && (
-            <button
-              onClick={handleSaveAndSync}
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white shadow-sm hover:shadow-md transition-all shrink-0 active:scale-[0.98]"
-            >
-              {isSavedSuccessfully ? (
-                <>
-                  <CheckCircle size={14} className="animate-scaleIn" />
-                  <span>{language === 'th' ? 'บันทึกและซิงค์แล้ว!' : 'Saved & Synced!'}</span>
-                </>
-              ) : isLoading ? (
-                <>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 bg-slate-50 dark:bg-obsidian-950/40 text-xs font-semibold shrink-0 select-none">
+              {saveStatus === 'saving' || isLoading ? (
+                <span className="flex items-center gap-1.5 text-amber-500 animate-pulse">
                   <RefreshCw size={14} className="animate-spin" />
-                  <span>{language === 'th' ? 'กำลังซิงค์...' : 'Syncing...'}</span>
-                </>
+                  <span>{language === 'th' ? 'กำลังบันทึกอัตโนมัติ...' : 'Auto-saving...'}</span>
+                </span>
+              ) : saveStatus === 'error' ? (
+                <span className="flex items-center gap-1.5 text-red-500">
+                  <X size={14} className="stroke-[3px]" />
+                  <span>{language === 'th' ? 'บันทึกไม่สำเร็จ!' : 'Save failed!'}</span>
+                </span>
               ) : (
-                <>
-                  <Save size={14} />
-                  <span>{language === 'th' ? 'บันทึกและซิงค์บท' : 'Save & Sync to Breakdown'}</span>
-                </>
+                <span className="flex items-center gap-1.5 text-emerald-500">
+                  <CheckCircle size={14} />
+                  <span>{language === 'th' ? 'บันทึกบทอัตโนมัติแล้ว' : 'Saved automatically'}</span>
+                </span>
               )}
-            </button>
+            </div>
           )}
         </div>
       </div>
@@ -703,7 +750,7 @@ export default function ScriptEditor() {
                         onChange={(e) => handleTextChange(idx, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, idx)}
                         onFocus={() => setActiveBlockIndex(idx)}
-                        onBlur={() => setActiveBlockIndex(null)}
+                        onBlur={handleBlur}
                         rows={1}
                         placeholder={
                           block.type === 'heading' 
