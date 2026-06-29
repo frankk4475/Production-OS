@@ -59,38 +59,36 @@ export default function ScriptEditor() {
   const localChangeRef = useRef(false);
   const blockRefs = useRef([]);
 
+  // Immediate save helper to prevent race conditions during structural edits
+  const saveImmediately = async (blocksToSave) => {
+    setSaveStatus('saving');
+    try {
+      await saveScriptBlocks(blocksToSave);
+      localChangeRef.current = false;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error("Immediate save failed:", err);
+      setSaveStatus('error');
+    }
+  };
+
   // Load project script blocks when loaded from context
   useEffect(() => {
+    // If the local user has unsaved changes, DO NOT overwrite with remote scriptBlocks!
+    if (localChangeRef.current) return;
+
     if (scriptBlocks && scriptBlocks.length > 0) {
-      localChangeRef.current = false;
-      setBlocks(prevBlocks => {
-        if (prevBlocks.length === 0 || activeBlockIndex === null) {
-          return scriptBlocks;
-        }
-        
-        const activeBlockId = prevBlocks[activeBlockIndex]?.id;
-        
-        return scriptBlocks.map(newBlock => {
-          if (newBlock.id === activeBlockId) {
-            return {
-              ...newBlock,
-              text: prevBlocks[activeBlockIndex].text,
-              type: prevBlocks[activeBlockIndex].type
-            };
-          }
-          return newBlock;
-        });
-      });
+      setBlocks(scriptBlocks);
     } else {
-      localChangeRef.current = false;
       setBlocks([
         { id: `b-${Date.now()}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },
         { id: `b-${Date.now()}-2`, type: 'action', text: 'Write screenplay action here...' }
       ]);
     }
-  }, [scriptBlocks, activeBlockIndex]);
+  }, [scriptBlocks]);
 
-  // Debounced Auto-save System
+  // Debounced Auto-save System (Typing)
   useEffect(() => {
     if (!localChangeRef.current) return;
     
@@ -105,7 +103,7 @@ export default function ScriptEditor() {
         console.error("Auto-save failed:", err);
         setSaveStatus('error');
       }
-    }, 1500);
+    }, 500); // Fast 500ms debounce delay for typing!
 
     return () => clearTimeout(timer);
   }, [blocks]);
@@ -144,6 +142,7 @@ export default function ScriptEditor() {
 
       localChangeRef.current = true;
       setBlocks(newBlocks);
+      saveImmediately(newBlocks);
     }
 
     if (e.key === 'Enter') {
@@ -169,6 +168,7 @@ export default function ScriptEditor() {
       newBlocks.splice(index + 1, 0, newBlock);
       localChangeRef.current = true;
       setBlocks(newBlocks);
+      saveImmediately(newBlocks);
 
       // Focus the newly added block in the next render cycle
       setTimeout(() => {
@@ -183,6 +183,7 @@ export default function ScriptEditor() {
       const newBlocks = blocks.filter((_, i) => i !== index);
       localChangeRef.current = true;
       setBlocks(newBlocks);
+      saveImmediately(newBlocks);
 
       // Focus previous block
       const targetIndex = index > 0 ? index - 1 : 0;
@@ -221,6 +222,7 @@ export default function ScriptEditor() {
     }
     localChangeRef.current = true;
     setBlocks(newBlocks);
+    saveImmediately(newBlocks);
   };
 
   // Insert block
@@ -234,6 +236,7 @@ export default function ScriptEditor() {
     newBlocks.splice(index + 1, 0, newBlock);
     localChangeRef.current = true;
     setBlocks(newBlocks);
+    saveImmediately(newBlocks);
 
     setTimeout(() => {
       if (blockRefs.current[index + 1]) {
@@ -248,6 +251,7 @@ export default function ScriptEditor() {
     const newBlocks = blocks.filter((_, i) => i !== index);
     localChangeRef.current = true;
     setBlocks(newBlocks);
+    saveImmediately(newBlocks);
     
     const targetIndex = index > 0 ? index - 1 : 0;
     setTimeout(() => {
@@ -270,6 +274,7 @@ export default function ScriptEditor() {
 
     localChangeRef.current = true;
     setBlocks(newBlocks);
+    saveImmediately(newBlocks);
     setTimeout(() => {
       if (blockRefs.current[targetIndex]) {
         blockRefs.current[targetIndex].focus();
@@ -281,32 +286,13 @@ export default function ScriptEditor() {
   const handleBlur = async () => {
     setActiveBlockIndex(null);
     if (!localChangeRef.current) return;
-    
-    try {
-      setSaveStatus('saving');
-      await saveScriptBlocks(blocks);
-      localChangeRef.current = false;
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch (err) {
-      console.error("Auto-save on blur failed:", err);
-      setSaveStatus('error');
-    }
+    saveImmediately(blocks);
   };
 
   // Save & Sync Action (Manual Trigger fallback)
   const handleSaveAndSync = async () => {
     if (!project) return;
-    try {
-      setSaveStatus('saving');
-      await saveScriptBlocks(blocks);
-      localChangeRef.current = false;
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } catch (err) {
-      setSaveStatus('error');
-      alert(language === 'th' ? "ไม่สามารถบันทึกและซิงค์บทภาพยนตร์ได้: " + err.message : "Failed to sync script: " + err.message);
-    }
+    saveImmediately(blocks);
   };
 
   // Load StudioBinder style demo script
