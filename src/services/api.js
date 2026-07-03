@@ -1052,10 +1052,22 @@ export const api = {
 
   getDefaultStoryOutline() {
     return {
-      logline: { th: 'เรื่องราวของเด็กสาวผู้หลบหนีความล้มเหลวกลับคืนสู่บ้านเกิดและค้นพบบทเรียนของชีวิตผ่านผู้คนรอบข้าง', en: 'A story of a young woman escaping failure to her hometown and finding life lessons through the locals.' },
-      tone: { th: 'อบอุ่น ละมุนตา ผสานความเหงาและศิลปะพื้นถิ่น', en: 'Warm, cozy, mixed with loneliness and local arts.' },
-      theme: { th: 'การปล่อยวางอดีต การยอมรับความจริง และการเริ่มต้นใหม่', en: 'Letting go of the past, accepting reality, and starting anew.' },
-      genre: { th: 'ดราม่า / ชีวิตชนบท / การเติบโต (Coming-of-Age)', en: 'Drama / Rural Life / Coming-of-Age' },
+      logline: {
+        th: 'เรื่องราวของหญิงสาวผู้หมดไฟที่เดินทางกลับมาพิษณุโลกเพื่อตามหาคนรักเก่า แต่สุดท้ายเธอกลับได้พบความจริงและได้รับการโอบกอดเยียวยาจิตใจจากเมืองเกิดและผู้คนรอบข้าง',
+        en: 'A story of a burnt-out young woman who returns to Phitsanulok to search for her ex-lover, only to find the truth and receive a warm, healing embrace from her hometown and the people around her.'
+      },
+      tone: {
+        th: 'อบอุ่น ละมุนตา ผสานความเหงาและศิลปะวัฒนธรรม วิวแม่น้ำน่าน สถานีรถไฟ และชุมชนดั้งเดิมของพิษณุโลก',
+        en: 'Warm, cozy, mixed with loneliness, scenic views of Nan River, historic train station, and local Phitsanulok communities.'
+      },
+      theme: {
+        th: 'การเรียนรู้วิธีปล่อยวางอดีต การเปิดใจยอมรับความจริง และการยอมรับความรักจากเมืองเกิดในการเยียวยาจิตใจ',
+        en: 'Learning to let go of the past, accepting the truth, and allowing hometown love to heal the soul.'
+      },
+      genre: {
+        th: 'โรแมนติก / ดราม่า / การเยียวยา (Healing)',
+        en: 'Romantic / Drama / Healing'
+      },
       writer: { th: 'ธนบดี กองศรี', en: 'Thanabodee Kongsri' },
       contact: { th: 'thanabodee.k@gmail.com', en: 'thanabodee.k@gmail.com' },
       plotlines: [
@@ -1063,57 +1075,89 @@ export const api = {
           id: 'p1', 
           name: { th: 'เส้นเรื่องหลัก (A-Plot)', en: 'Main Plot (A-Plot)' }, 
           color: '#ef4444', 
-          description: { th: 'การเดินทางและเป้าหมายหลักของตัวละครเอก', en: 'The main journey and goal of the protagonist.' } 
+          description: { th: 'การเดินทาง การตามหาคนรักเก่า และการเติบโตภายในของนางเอก', en: 'The journey, searching for the ex-lover, and internal growth of the protagonist.' } 
         },
         { 
           id: 'p2', 
           name: { th: 'เส้นเรื่องรอง (B-Plot)', en: 'Subplot B' }, 
           color: '#3b82f6', 
-          description: { th: 'ความสัมพันธ์หรือความขัดแย้งรองที่เกื้อหนุนเนื้อเรื่องหลัก', en: 'The relationship or secondary conflict supporting the main plot.' } 
+          description: { th: 'ความผูกพันกับบ้านเกิดและสถานที่เยียวยาใจในพิษณุโลก', en: 'The relationship with her hometown and healing places in Phitsanulok.' } 
         }
       ],
       characters: [
         { 
           id: 'c1', 
-          name: { th: 'แนท', en: 'Nat' }, 
-          role: { th: 'ตัวเอก (Protagonist)', en: 'Protagonist' }, 
-          goal: { th: 'ส่งมอบซองเอกสารข้อมูลสำคัญอย่างปลอดภัย', en: 'Deliver the envelope containing critical data safely.' }, 
-          conflict: { th: 'ถูกสะกดรอยตามและตามล่าโดยกลุ่มกองกำลังมืด', en: 'Being followed and hunted by dark corporate forces.' }, 
-          arc: { th: 'จากเด็กสาวที่ขี้ขลาดและหวาดกลัว เรียนรู้ที่จะเผชิญหน้าและกลายเป็นคนกล้าหาญ', en: 'From a fearful and timid girl, she learns to stand her ground and becomes courageous.' } 
+          name: { th: 'พลอย', en: 'Ploy' }, 
+          role: { th: 'ตัวเอก (Protagonist) / หญิงสาวหมดไฟจากกรุงเทพฯ', en: 'Protagonist / Burnt-out copywriter from Bangkok' }, 
+          goal: { th: 'อยากหนีความวุ่นวายจากงานและอยากเจอคนรักเก่าเพื่อหาคำอธิบาย', en: 'Wants to escape work chaos and find her ex-lover for an explanation.' }, 
+          conflict: { th: 'ความเหนื่อยล้าทางจิตใจ การจมปลักอยู่กับความทรงจำเก่า และการยึดติดกับคำตอบของอดีต', en: 'Mental fatigue, dwelling on past memories, and clinging to answers from the past.' }, 
+          arc: { th: 'การเรียนรู้วิธีปล่อยวางความเครียด เปิดใจยอมรับ และให้เมืองเกิดช่วยโอบกอดเยียวยาใจ', en: 'Learning to let go of stress, opening her heart, and letting her hometown embrace and heal her.' } 
         },
         { 
           id: 'c2', 
-          name: { th: 'ลีโอ', en: 'Leo' }, 
-          role: { th: 'ผู้แนะนำ/ผู้ติดต่อ (Mentor)', en: 'Mentor / Contact' }, 
-          goal: { th: 'ช่วยปกป้องแนทและกู้คืนฐานข้อมูลลับของบริษัท', en: 'Protect Nat and retrieve the company\'s secret database.' }, 
-          conflict: { th: 'ถูกจับตามองโดยทางการและมีแผลในใจจากอดีต', en: 'Watched closely by authorities and haunted by past failures.' }, 
-          arc: { th: 'การยอมเสียสละตนเองเพื่อไถ่บาปในอดีตและช่วยให้แนทรอดพ้น', en: 'Sacrificing himself to redeem his past and ensure Nat\'s safety.' } 
+          name: { th: 'ทศ', en: 'Tots' }, 
+          role: { th: 'พระเอก / ชายหนุ่มคนรักเก่าผู้ปักหลักสร้างชีวิตในบ้านเกิด', en: 'Male Lead / Stable ex-lover building his life in hometown' }, 
+          goal: { th: 'ต้องการสร้างพื้นที่โอบรับความทรงจำและดูแลรักษาสภาพแวดล้อมที่มั่นคงเพื่อรอเธอกลับมา', en: 'Wants to build a stable space that keeps memories alive and waits for her return.' }, 
+          conflict: { th: 'การต้องปิดบังความจริงในตอนแรกเพื่อไม่ให้พลอยรู้สึกผิดหวังหรือกังวล', en: 'Having to hide the truth at first to prevent Ploy from feeling disappointed or anxious.' }, 
+          arc: { th: 'ชายหนุ่มผู้มั่นคง รักบ้านเกิด และเป็นคนกุม "ความจริง" (The Truth) ที่จะเป็นกุญแจปลดล็อกปมชีวิตของนางเอก', en: 'A stable man who loves his hometown and holds "The Truth" which serves as the key to unlocking Ploys life conflict.' } 
         }
       ],
       beats: [
         { 
           id: 'b1', 
-          title: { th: 'ปูเรื่องราว (Setup)', en: 'The Setup' }, 
+          title: { th: 'ภาพเปิดเรื่องและปูเรื่อง (Setup)', en: 'Opening Image & Set-up' }, 
           act: 'Act I', 
           plotlineId: 'p1', 
-          description: { th: 'แนะนำให้รู้จัก แนท หญิงสาวที่กำลังรอคอยสายลับอย่างลนลานอยู่ในร้านกาแฟท่ามกลางพายุฝน', en: 'Introduce Nat, a nervous girl waiting for her contact in a rain-slicked coffee shop.' }, 
-          sceneTarget: '1-3' 
+          description: { th: 'ฉากนางเอก (พลอย) หมดสภาพ ท่ามกลางบรรยากาศออฟฟิศที่อึดอัด คอนทราสต์จัดในกรุงเทพฯ สะท้อนถึงความเหนื่อยล้าทางจิตใจขั้นสุด', en: 'Ploy is seen exhausted and burnt out inside a cramped, high-contrast Bangkok office, reflecting her extreme mental fatigue.' }, 
+          sceneTarget: '1-2' 
         },
         { 
           id: 'b2', 
-          title: { th: 'การส่งมอบเอกสาร (Handover)', en: 'The Handover' }, 
+          title: { th: 'เหตุการณ์จุดชนวน (Catalyst)', en: 'Catalyst' }, 
           act: 'Act I', 
           plotlineId: 'p1', 
-          description: { th: 'ลีโอมาถึงร้านกาแฟเพื่อรับซองข้อมูลจากแนท เขาเตือนเธอว่าตอนนี้พวกเขากำลังถูกตามล่าอยู่', en: 'Leo arrives at the café to receive the data envelope from Nat. He warns her that they are being watched.' }, 
-          sceneTarget: '4-7' 
+          description: { th: 'เหตุการณ์จุดชนวน เช่น การจ้องมองรูปถ่ายเก่าๆ หรือข้อความเก่าๆ ท่ามกลางความโดดเดี่ยว จนเธอตัดสินใจจองตั๋วกลับพิษณุโลก', en: 'A triggering event, such as staring at old photos or messages in loneliness, leading Ploy to book a train ticket back to Phitsanulok.' }, 
+          sceneTarget: '3-4' 
         },
         { 
           id: 'b3', 
-          title: { th: 'การหลบหนีและรถต้องสงสัย (Shadowed Exit)', en: 'Shadowed Exit' }, 
-          act: 'Act I', 
+          title: { th: 'ก้าวข้ามสู่สอง (Break into Two)', en: 'Break into Two' }, 
+          act: 'Act II', 
+          plotlineId: 'p1', 
+          description: { th: 'ภาพนางเอกก้าวเท้าเหยียบสถานีรถไฟ/ขนส่งพิษณุโลก มู้ดแอนด์โทนเปลี่ยนเป็นความเงียบสงบ เริ่มภารกิจออกตามหาเขา', en: 'Ploy steps off the train onto the Phitsanulok station platform. The mood shifts to quiet and calm as she begins her search.' }, 
+          sceneTarget: '5-6' 
+        },
+        { 
+          id: 'b4', 
+          title: { th: 'จุดกึ่งกลาง (Midpoint)', en: 'Midpoint' }, 
+          act: 'Act II', 
           plotlineId: 'p2', 
-          description: { th: 'ลีโอเดินแยกตัวออกไปทางตรอกด้านหลังร้าน ทันใดนั้นมีรถเก๋งซีดานสีดำปริศนาแล่นสะกดรอยตามเขาไป', en: 'Leo leaves through the back alley. Suddenly, a mysterious black sedan follows him into the dark.' }, 
-          sceneTarget: '8-10' 
+          description: { th: 'ฉากเดินทางตามรอยความทรงจำ (โชว์สถานที่ท่องเที่ยว/ชุมชนในเขตเทศบาลนครพิษณุโลก) เธอเจอเบาะแสสั้นๆ เช่น ของฝากหรือคำบอกเล่าจากคนในพื้นที่ ทำให้มีความหวัง', en: 'A journey through memory lane, showcasing local landmarks in Phitsanulok. She finds brief clues, like local souvenirs or stories, restoring her hope.' }, 
+          sceneTarget: '7-10' 
+        },
+        { 
+          id: 'b5', 
+          title: { th: 'สิ้นหวังสุดขีด (All Is Lost)', en: 'All Is Lost' }, 
+          act: 'Act III', 
+          plotlineId: 'p1', 
+          description: { th: 'นางเอกไปถึงจุดที่คิดว่าจะเจอเขาแต่กลับว่างเปล่า เธอนั่งร้องไห้ดิ่งสุดขีด รู้สึกว่าการมาครั้งนี้พังทลาย (Dark Night of the Soul)', en: 'Ploy reaches the place she expected to find him, only to find it empty. She breaks down crying, feeling that this trip was a complete failure.' }, 
+          sceneTarget: '11-12' 
+        },
+        { 
+          id: 'b6', 
+          title: { th: 'คลี่คลายเหตุการณ์ (Finale)', en: 'Finale' }, 
+          act: 'Act III', 
+          plotlineId: 'p1', 
+          description: { th: 'ฉากเปิดเผยความจริง (อาจเป็นการเจอหน้ากัน หรือเธอได้อ่านข้อความ/จดหมายที่เขาฝากทิ้งไว้) เฉลยปมว่าที่เขาเลือกอยู่ที่นี่ เพราะอยากให้เมืองนี้คอยโอบกอดเธอในวันที่ล้า', en: 'The truth is revealed (either meeting face-to-face or reading a letter he left behind), explaining that he chose Phitsanulok to be a sanctuary for her.' }, 
+          sceneTarget: '13-14' 
+        },
+        { 
+          id: 'b7', 
+          title: { th: 'ภาพปิดเรื่อง (Final Image)', en: 'Final Image' }, 
+          act: 'Act III', 
+          plotlineId: 'p2', 
+          description: { th: 'ภาพนางเอกนั่งยิ้มรับแสงแดดอบอุ่นที่ริมน้ำหรือโบราณสถานในพิษณุโลก แววตาเต็มไปด้วยพลังชีวิตที่กลับมาอีกครั้ง คู่ขนานและตรงข้ามกับภาพเปิดเรื่องอย่างสิ้นเชิง', en: 'Ploy sits smiling under the warm sunlight by the river or temple ruins in Phitsanulok, her eyes full of life, in total contrast to the opening.' }, 
+          sceneTarget: '15' 
         }
       ]
     };

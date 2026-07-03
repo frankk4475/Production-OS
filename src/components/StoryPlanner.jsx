@@ -35,7 +35,7 @@ export default function StoryPlanner() {
     isLoading
   } = useProject();
 
-  const [activeTab, setActiveTab] = useState('beats'); // beats, plotlines, characters, outlineText
+  const [activeTab, setActiveTab] = useState('outlineText'); // beats, plotlines, characters, outlineText
   const [localOutline, setLocalOutline] = useState({ plotlines: [], characters: [], beats: [] });
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -491,6 +491,65 @@ export default function StoryPlanner() {
         </div>
       </div>
 
+      {/* 3-Step Scripting Roadmap Guide */}
+      <div className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-800 bg-slate-50/50 dark:bg-obsidian-950/25 space-y-3.5 no-print shadow-sm">
+        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-obsidian-800 pb-2">
+          <span className="text-lg">🛠️</span>
+          <h2 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wider font-serif">
+            {language === 'th' ? 'แผนที่นำทาง: 3 ขั้นตอนการวางโครงเรื่องตามทฤษฎีการเขียนบทที่ดีและไวที่สุด' : 'Roadmap: 3 Steps for Fast & Effective Story Plotting'}
+          </h2>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          {language === 'th'
+            ? 'ห้ามข้ามไปเขียนบทพูด (Screenplay) ทันทีเด็ดขาด! ให้เริ่มไล่เรียงกรอกข้อมูลในระบบตาม 3 ขั้นตอนนี้ก่อน เพื่อช่วยปูทางให้การเขียนทรีตเมนต์และบทหนังสั้นของคุณลื่นไหลเหมือนมีแผนที่นำทาง:'
+            : 'Never jump straight to the screenplay script! Complete these first 3 steps in order to map out a clear direction for your short film story:'}
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <button 
+            onClick={() => setActiveTab('outlineText')}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'outlineText' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+          >
+            <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
+              <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">1</span>
+              <span>{language === 'th' ? 'ตั้งค่าแก่นและข้อมูลพื้นฐาน' : 'Core & Basic Setup'}</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-sans">
+              {language === 'th'
+                ? 'แท็บ "โครงขยายบทละครแบบข้อความ": ใส่ Logline เพื่อล็อกเป้าหมายหลักของหนัง และเลือกแนวภาพยนตร์เป็น "โรแมนติก / ดราม่า / การเยียวยา (Healing)"'
+                : 'Tab "Outline & Treatment Text": Input Logline to lock the film goal, and set Genre to "Romantic / Drama / Healing".'}
+            </p>
+          </button>
+          <button 
+            onClick={() => setActiveTab('characters')}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'characters' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+          >
+            <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
+              <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">2</span>
+              <span>{language === 'th' ? 'ล็อกพัฒนาการและปมตัวละคร' : 'Character Arcs'}</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-sans">
+              {language === 'th'
+                ? 'แท็บ "พัฒนาการและปมตัวละคร": คลิก "+ เพิ่มข้อมูลตัวละคร" เพื่อสร้างโปรไฟล์หลัก นางเอก (พลอย) และพระเอก (ทศ) พร้อมปม Want & Need'
+                : 'Tab "Character Arcs": Click "+ Add Character" to define Wants (Goals) & Needs (Arcs) for Ploy (Lead) and Tots (Ex-lover).'}
+            </p>
+          </button>
+          <button 
+            onClick={() => setActiveTab('beats')}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'beats' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+          >
+            <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
+              <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">3</span>
+              <span>{language === 'th' ? 'วางการ์ดเหตุการณ์หลัก' : 'Plot Core Beats'}</span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed font-sans">
+              {language === 'th'
+                ? 'แท็บ "บอร์ดวางโครงเรื่องย่อย": คลิก "+ เพิ่มบีด/โครงเรื่องย่อย" เพื่อร้อยเรียงเหตุการณ์ตาม 7 Core Beats ก่อนขยับไปแตกฉากรายตอน'
+                : 'Tab "Beat Board": Click "+ Add Beat" to map out 7 Core Beats to visualize the narrative flow before writing scenes.'}
+            </p>
+          </button>
+        </div>
+      </div>
+
       {/* Visual Plotline Rhythm Timeline (Visualizer) */}
       <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800/80">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
@@ -537,6 +596,28 @@ export default function StoryPlanner() {
       {/* Navigation Tabs */}
       <div className="flex border-b border-slate-200 dark:border-obsidian-800 gap-1 overflow-x-auto no-print">
         <button
+          onClick={() => setActiveTab('outlineText')}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'outlineText'
+              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BookOpen size={16} />
+          <span>{language === 'th' ? 'ขั้นตอนที่ 1: โครงขยายบทละครแบบข้อความ' : 'Step 1: Outline & Treatment'}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('characters')}
+          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'characters'
+              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
+              : 'border-transparent text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Users size={16} />
+          <span>{language === 'th' ? 'ขั้นตอนที่ 2: พัฒนาการและปมตัวละคร' : 'Step 2: Character Arcs'}</span>
+        </button>
+        <button
           onClick={() => setActiveTab('beats')}
           className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
             activeTab === 'beats'
@@ -545,7 +626,7 @@ export default function StoryPlanner() {
           }`}
         >
           <Layers size={16} />
-          <span>{language === 'th' ? 'บอร์ดวางโครงเรื่องย่อย' : 'Beat Board'}</span>
+          <span>{language === 'th' ? 'ขั้นตอนที่ 3: บอร์ดวางโครงเรื่องย่อย' : 'Step 3: Beat Board'}</span>
         </button>
         <button
           onClick={() => setActiveTab('plotlines')}
@@ -557,28 +638,6 @@ export default function StoryPlanner() {
         >
           <GitCommit size={16} />
           <span>{language === 'th' ? 'เส้นเรื่องและพล็อตย่อย' : 'Plotlines & Story Arcs'}</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('characters')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'characters'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Users size={16} />
-          <span>{language === 'th' ? 'พัฒนาการและปมตัวละคร' : 'Character Arcs'}</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('outlineText')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'outlineText'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <BookOpen size={16} />
-          <span>{language === 'th' ? 'โครงขยายบทละครแบบข้อความ' : 'Outline & Treatment Text'}</span>
         </button>
       </div>
 
