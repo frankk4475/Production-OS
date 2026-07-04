@@ -789,38 +789,41 @@ export default function StoryPlanner() {
                           onDragEnter={handleDragEnter}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDropOnCard(e, beat.id, actName)}
-                          className="p-3.5 rounded-xl bg-white/70 dark:bg-obsidian-900/40 border border-slate-200/80 dark:border-obsidian-800/80 hover:bg-white/95 dark:hover:bg-obsidian-900/80 hover:shadow-lg hover:shadow-gold-500/[0.03] dark:hover:shadow-gold-500/[0.02] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 cursor-pointer space-y-2.5 relative group/card shadow-xs border-2 border-transparent"
+                          className="p-4 rounded-xl bg-white/70 dark:bg-obsidian-900/40 border border-slate-200/80 dark:border-obsidian-800/80 hover:bg-white/95 dark:hover:bg-obsidian-900/80 hover:shadow-lg hover:shadow-gold-500/[0.03] dark:hover:shadow-gold-500/[0.02] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 cursor-pointer space-y-3 relative group/card shadow-xs border-2 border-transparent"
                           style={{ borderLeftColor: plot.color, borderLeftWidth: '3.5px' }}
                         >
-                          <div className="flex items-start justify-between gap-1.5">
-                            <div>
-                              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 block tracking-wider uppercase font-semibold">
-                                {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE TARGET:'} {beat.sceneTarget || '-'}
-                              </span>
-                              <h4 className="text-xs font-black text-slate-800 dark:text-slate-255 leading-snug mt-1 group-hover/card:text-gold-500 dark:group-hover/card:text-gold-400 transition-colors duration-200 font-sans">
-                                {getString(beat.title)}
-                              </h4>
-                            </div>
+                          {/* Title (Full width row) */}
+                          <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 leading-snug group-hover/card:text-gold-500 dark:group-hover/card:text-gold-400 transition-colors duration-200 font-sans pr-6">
+                            {getString(beat.title)}
+                          </h4>
+
+                          {/* Description */}
+                          <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-3">
+                            {getString(beat.description)}
+                          </p>
+
+                          {/* Metadata Footer (Target Scene + Plotline badge) */}
+                          <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-100 dark:border-obsidian-800/40 text-[9px] font-mono no-print">
+                            <span className="text-slate-400 dark:text-slate-500 tracking-wider uppercase font-semibold shrink-0">
+                              {language === 'th' ? 'กลุ่มฉาก:' : 'SCENE:'} {beat.sceneTarget || '-'}
+                            </span>
                             
                             <span 
-                              className="text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 transition-all font-mono"
+                              className="font-bold px-2 py-0.5 rounded border transition-all truncate max-w-[150px]"
                               style={{ 
                                 backgroundColor: plot.color + "15", 
                                 color: plot.color, 
                                 borderColor: plot.color + "30" 
                               }}
+                              title={getString(plot.name)}
                             >
                               {getString(plot.name)}
                             </span>
                           </div>
 
-                          <p className="text-[10.5px] text-slate-650 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-3">
-                            {getString(beat.description)}
-                          </p>
-
-                          {/* Controls (Up / Down / Edit / Delete) */}
+                          {/* Hover Controls (Absolute positioned top-right toolbar) */}
                           {hasWriteAccess() && (
-                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 no-print">
+                            <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/95 dark:bg-obsidian-900/95 backdrop-blur-xs p-1 rounded-lg border border-slate-200/80 dark:border-obsidian-800 shadow-sm opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 no-print z-10">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
