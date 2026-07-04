@@ -20,7 +20,8 @@ import {
   GitCommit,
   Clapperboard,
   Film,
-  User
+  User,
+  X
 } from 'lucide-react';
 
 export default function StoryPlanner() {
@@ -56,6 +57,7 @@ export default function StoryPlanner() {
   const [isEditPlotlineOpen, setIsEditPlotlineOpen] = useState(false);
   const [isAddCharOpen, setIsAddCharOpen] = useState(false);
   const [isEditCharOpen, setIsEditCharOpen] = useState(false);
+  const [viewingBeat, setViewingBeat] = useState(null);
 
   // --- ADD FORM STATES ---
   const [newBeat, setNewBeat] = useState({ 
@@ -562,7 +564,8 @@ export default function StoryPlanner() {
             return (
               <div key={beat.id} className="flex items-center shrink-0">
                 <div 
-                  className="group relative px-3 py-2 rounded-lg border border-slate-700/30 flex flex-col items-center gap-1 cursor-default transition-all hover:scale-105"
+                  onClick={() => setViewingBeat(beat)}
+                  className="group relative px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-obsidian-800 bg-white/40 dark:bg-obsidian-900/40 backdrop-blur-xs flex flex-col items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 hover:border-gold-500/30 hover:shadow-md hover:shadow-gold-500/[0.02]"
                   style={{ borderLeftColor: plot.color, borderLeftWidth: '4px' }}
                 >
                   <span className="text-[10px] font-mono text-slate-400">#{idx + 1}</span>
@@ -651,9 +654,9 @@ export default function StoryPlanner() {
             {hasWriteAccess() && (
               <button
                 onClick={() => setIsAddBeatOpen(true)}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-gold-600/20 text-gold-400 border border-gold-600/30 hover:bg-gold-600/30 transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gold-600/25 text-gold-400 border border-gold-600/30 hover:bg-gold-600/40 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-gold-500/[0.05]"
               >
-                <Plus size={14} />
+                <Plus size={14} className="text-gold-400" />
                 <span>{language === 'th' ? 'เพิ่มบีต/โครงเรื่องย่อย' : 'Add Beat Card'}</span>
               </button>
             )}
@@ -671,72 +674,89 @@ export default function StoryPlanner() {
                 : (language === 'th' ? 'องก์ III (คลี่คลาย / Resolution)' : 'Act III (Resolution)');
 
               return (
-                <div key={actName} className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-850 space-y-4">
-                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-obsidian-800 pb-2">
-                    <span className="text-xs font-bold uppercase tracking-widest text-gold-500">{displayActName}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 font-mono text-slate-400">
+                <div key={actName} className="glass-panel p-5 rounded-2xl border border-slate-200/60 dark:border-obsidian-850/80 bg-slate-500/[0.02] dark:bg-obsidian-900/10 space-y-4 shadow-sm">
+                  <div className="flex justify-between items-center border-b border-slate-200/80 dark:border-obsidian-800 pb-2.5">
+                    <span className="text-xs font-black uppercase tracking-widest text-gold-500 font-sans border-l-2 border-gold-500 pl-2">{displayActName}</span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-obsidian-900/60 text-slate-500 dark:text-slate-400 border border-slate-200/40 dark:border-obsidian-800/80 font-mono font-bold">
                       {actBeats.length} {language === 'th' ? 'เหตุการณ์' : 'beats'}
                     </span>
                   </div>
 
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                  <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1.5 scrollbar-thin">
                     {actBeats.map((beat) => {
                       const plot = getPlotline(beat.plotlineId);
                       const absoluteIndex = localOutline.beats.findIndex(b => b.id === beat.id);
                       return (
                         <div 
                           key={beat.id} 
-                          className="p-3.5 rounded-lg bg-slate-50/50 dark:bg-obsidian-800/60 border border-slate-200 dark:border-obsidian-800 hover:bg-slate-100/60 dark:hover:bg-obsidian-800 hover:border-gold-500/30 dark:hover:border-gold-500/20 transition-all space-y-2 relative group/card shadow-xs"
+                          onClick={() => setViewingBeat(beat)}
+                          className="p-3.5 rounded-xl bg-white/70 dark:bg-obsidian-900/40 border border-slate-200/80 dark:border-obsidian-800/80 hover:bg-white/95 dark:hover:bg-obsidian-900/80 hover:shadow-lg hover:shadow-gold-500/[0.03] dark:hover:shadow-gold-500/[0.02] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 cursor-pointer space-y-2.5 relative group/card shadow-xs"
                           style={{ borderLeftColor: plot.color, borderLeftWidth: '3.5px' }}
                         >
-                          <div className="flex items-start justify-between gap-1">
+                          <div className="flex items-start justify-between gap-1.5">
                             <div>
-                              <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 block">
+                              <span className="text-[9px] font-mono text-slate-400 dark:text-slate-500 block tracking-wider uppercase font-semibold">
                                 {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE TARGET:'} {beat.sceneTarget || '-'}
                               </span>
-                              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight mt-0.5">
+                              <h4 className="text-xs font-black text-slate-800 dark:text-slate-255 leading-snug mt-1 group-hover/card:text-gold-500 dark:group-hover/card:text-gold-400 transition-colors duration-200 font-sans">
                                 {getString(beat.title)}
                               </h4>
                             </div>
                             
                             <span 
-                              className="text-[9px] font-semibold px-2 py-0.5 rounded text-white shrink-0"
-                              style={{ backgroundColor: plot.color }}
+                              className="text-[9px] font-bold px-2 py-0.5 rounded border shrink-0 transition-all font-mono"
+                              style={{ 
+                                backgroundColor: plot.color + "15", 
+                                color: plot.color, 
+                                borderColor: plot.color + "30" 
+                              }}
                             >
                               {getString(plot.name)}
                             </span>
                           </div>
 
-                          <p className="text-[10.5px] text-slate-600 dark:text-slate-350 leading-relaxed font-sans whitespace-pre-line line-clamp-4">
+                          <p className="text-[10.5px] text-slate-650 dark:text-slate-400 leading-relaxed font-sans whitespace-pre-line line-clamp-3">
                             {getString(beat.description)}
                           </p>
 
                           {/* Controls (Up / Down / Edit / Delete) */}
                           {hasWriteAccess() && (
-                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800/40 opacity-0 group-hover/card:opacity-100 transition-opacity no-print">
+                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 no-print">
                               <button
-                                onClick={() => moveBeatOrder(absoluteIndex, 'up')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveBeatOrder(absoluteIndex, 'up');
+                                }}
                                 disabled={absoluteIndex === 0}
-                                className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white disabled:opacity-30"
+                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white disabled:opacity-30 transition-all cursor-pointer"
                               >
                                 <ArrowUp size={11} />
                               </button>
                               <button
-                                onClick={() => moveBeatOrder(absoluteIndex, 'down')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  moveBeatOrder(absoluteIndex, 'down');
+                                }}
                                 disabled={absoluteIndex === localOutline.beats.length - 1}
-                                className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white disabled:opacity-30"
+                                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white disabled:opacity-30 transition-all cursor-pointer"
                               >
                                 <ArrowDown size={11} />
                               </button>
                               <button
-                                onClick={() => openEditBeat(beat)}
-                                className="p-1 rounded text-slate-500 hover:text-gold-500 dark:text-slate-400 dark:hover:text-gold-400 bg-transparent transition-colors"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditBeat(beat);
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-gold-500 dark:text-slate-500 dark:hover:text-gold-450 bg-transparent transition-colors cursor-pointer"
                               >
                                 <Edit3 size={11} />
                               </button>
                               <button
-                                onClick={() => handleDeleteBeat(beat.id)}
-                                className="p-1 rounded text-slate-500 hover:text-red-600 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBeat(beat.id);
+                                }}
+                                className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-500/10 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-500/20 bg-transparent transition-all cursor-pointer"
                               >
                                 <Trash2 size={11} />
                               </button>
@@ -747,7 +767,7 @@ export default function StoryPlanner() {
                     })}
 
                     {actBeats.length === 0 && (
-                      <div className="py-8 text-center border border-dashed border-slate-800/40 rounded-lg text-[10px] text-slate-500 italic">
+                      <div className="py-8 text-center border border-dashed border-slate-300 dark:border-slate-800/60 rounded-xl text-[10px] text-slate-500 italic bg-slate-50/20 dark:bg-obsidian-900/10">
                         {language === 'th' ? 'ไม่มีบีตเรื่องย่อยในองก์นี้' : 'No beats in this act.'}
                       </div>
                     )}
@@ -1927,6 +1947,145 @@ export default function StoryPlanner() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+
+      {/* --- VIEW BEAT DETAIL MODAL --- */}
+      {viewingBeat && (
+        <div 
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-200"
+          onClick={() => setViewingBeat(null)}
+        >
+          <div 
+            className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-5 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top Close Button */}
+            <button 
+              onClick={() => setViewingBeat(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white transition-all cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            {/* Act / Scene info header */}
+            <div className="flex flex-wrap items-center gap-2 pr-6">
+              <span className="text-[10px] font-black uppercase tracking-wider text-gold-500 font-sans border-l-2 border-gold-500 pl-2">
+                {viewingBeat.act === 'Act I' 
+                  ? (language === 'th' ? 'องก์ I (ปูเรื่อง / SETUP)' : 'ACT I: SETUP')
+                  : viewingBeat.act === 'Act II'
+                  ? (language === 'th' ? 'องก์ II (เผชิญหน้า / CONFRONTATION)' : 'ACT II: CONFRONTATION')
+                  : (language === 'th' ? 'องก์ III (คลี่คลาย / RESOLUTION)' : 'ACT III: RESOLUTION')}
+              </span>
+              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/40 dark:border-slate-850">
+                {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE RANGE:'} {viewingBeat.sceneTarget || '-'}
+              </span>
+            </div>
+
+            {/* Plotline Badge */}
+            {(() => {
+              const plot = getPlotline(viewingBeat.plotlineId);
+              return plot ? (
+                <div className="pt-1">
+                  <span 
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 font-mono"
+                    style={{ 
+                      backgroundColor: plot.color + "15", 
+                      color: plot.color, 
+                      borderColor: plot.color + "30" 
+                    }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: plot.color }} />
+                    {getString(plot.name)}
+                  </span>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Titles */}
+            <div className="space-y-1">
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 leading-snug font-sans">
+                {viewingBeat.title?.th || (typeof viewingBeat.title === 'string' ? viewingBeat.title : '')}
+              </h3>
+              {(viewingBeat.title?.en && viewingBeat.title.en !== (viewingBeat.title?.th || viewingBeat.title)) && (
+                <h4 className="text-sm font-semibold text-slate-400 dark:text-slate-500 italic font-sans">
+                  {viewingBeat.title.en}
+                </h4>
+              )}
+            </div>
+
+            {/* Descriptions */}
+            <div className="space-y-4 pt-1 max-h-[300px] overflow-y-auto pr-1">
+              {/* Thai description */}
+              {(() => {
+                const descTh = viewingBeat.description?.th || (typeof viewingBeat.description === 'string' ? viewingBeat.description : '');
+                return descTh ? (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider block font-sans">
+                      {language === 'th' ? 'รายละเอียดภาษาไทย (TH)' : 'THAI DETAILS'}
+                    </span>
+                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-line font-sans bg-slate-50 dark:bg-obsidian-950/40 p-3.5 rounded-xl border border-slate-200/50 dark:border-obsidian-850">
+                      {descTh}
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+
+              {/* English description */}
+              {(() => {
+                const descEn = viewingBeat.description?.en;
+                return descEn && descEn !== (viewingBeat.description?.th || viewingBeat.description) ? (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider block font-sans">
+                      {language === 'th' ? 'รายละเอียดภาษาอังกฤษ (EN)' : 'ENGLISH DETAILS'}
+                    </span>
+                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-line font-sans bg-slate-50 dark:bg-obsidian-950/40 p-3.5 rounded-xl border border-slate-200/50 dark:border-obsidian-850">
+                      {descEn}
+                    </p>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            {/* Modal Actions Footer */}
+            <div className="flex justify-end items-center gap-2 pt-4 border-t border-slate-200 dark:border-slate-800/40 no-print">
+              <button
+                type="button"
+                onClick={() => setViewingBeat(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-obsidian-800 dark:hover:bg-obsidian-700 text-slate-700 dark:text-slate-200 font-bold transition-all text-xs cursor-pointer"
+              >
+                {language === 'th' ? 'ปิด' : 'Close'}
+              </button>
+              
+              {hasWriteAccess() && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openEditBeat(viewingBeat);
+                      setViewingBeat(null);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold-600/20 text-gold-400 border border-gold-600/30 hover:bg-gold-600/30 font-bold transition-all text-xs cursor-pointer"
+                  >
+                    <Edit3 size={12} />
+                    <span>{language === 'th' ? 'แก้ไข' : 'Edit'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDeleteBeat(viewingBeat.id);
+                      setViewingBeat(null);
+                    }}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-red-500 hover:bg-red-500/10 font-bold transition-all text-xs cursor-pointer"
+                  >
+                    <Trash2 size={12} />
+                    <span>{language === 'th' ? 'ลบ' : 'Delete'}</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
