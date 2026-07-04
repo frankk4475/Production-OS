@@ -2109,7 +2109,7 @@ export default function StoryPlanner() {
                 {viewingBeat.title?.th || (typeof viewingBeat.title === 'string' ? viewingBeat.title : '')}
               </h3>
               {(viewingBeat.title?.en && viewingBeat.title.en !== (viewingBeat.title?.th || viewingBeat.title)) && (
-                <h4 className="text-sm font-semibold text-slate-400 dark:text-slate-500 italic font-sans">
+                <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 italic font-sans">
                   {viewingBeat.title.en}
                 </h4>
               )}
@@ -2122,10 +2122,10 @@ export default function StoryPlanner() {
                 const descTh = viewingBeat.description?.th || (typeof viewingBeat.description === 'string' ? viewingBeat.description : '');
                 return descTh ? (
                   <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider block font-sans">
+                    <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-350 tracking-wider block font-sans">
                       {language === 'th' ? 'รายละเอียดภาษาไทย (TH)' : 'THAI DETAILS'}
                     </span>
-                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-line font-sans bg-slate-50 dark:bg-obsidian-950/40 p-3.5 rounded-xl border border-slate-200/50 dark:border-obsidian-850">
+                    <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-sans bg-slate-100/50 dark:bg-obsidian-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 shadow-inner">
                       {descTh}
                     </p>
                   </div>
@@ -2137,10 +2137,10 @@ export default function StoryPlanner() {
                 const descEn = viewingBeat.description?.en;
                 return descEn && descEn !== (viewingBeat.description?.th || viewingBeat.description) ? (
                   <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider block font-sans">
+                    <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-350 tracking-wider block font-sans">
                       {language === 'th' ? 'รายละเอียดภาษาอังกฤษ (EN)' : 'ENGLISH DETAILS'}
                     </span>
-                    <p className="text-xs text-slate-700 dark:text-slate-350 leading-relaxed whitespace-pre-line font-sans bg-slate-50 dark:bg-obsidian-950/40 p-3.5 rounded-xl border border-slate-200/50 dark:border-obsidian-850">
+                    <p className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line font-sans bg-slate-100/50 dark:bg-obsidian-900/60 p-3.5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 shadow-inner">
                       {descEn}
                     </p>
                   </div>
@@ -2166,7 +2166,7 @@ export default function StoryPlanner() {
                       openEditBeat(viewingBeat);
                       setViewingBeat(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold-600/20 text-gold-400 border border-gold-600/30 hover:bg-gold-600/30 font-bold transition-all text-xs cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-white font-bold transition-all text-xs cursor-pointer shadow-sm dark:bg-gold-600/25 dark:text-gold-400 dark:border dark:border-gold-600/30 dark:hover:bg-gold-600/35 dark:shadow-none"
                   >
                     <Edit3 size={12} />
                     <span>{language === 'th' ? 'แก้ไข' : 'Edit'}</span>
@@ -2177,7 +2177,7 @@ export default function StoryPlanner() {
                       handleDeleteBeat(viewingBeat.id);
                       setViewingBeat(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-red-500 hover:bg-red-500/10 font-bold transition-all text-xs cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-red-600 hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 font-bold transition-all text-xs cursor-pointer"
                   >
                     <Trash2 size={12} />
                     <span>{language === 'th' ? 'ลบ' : 'Delete'}</span>

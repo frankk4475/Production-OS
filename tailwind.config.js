@@ -8,6 +8,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        slate: {
+          250: '#d8e0e9',
+          305: '#c0cbd9',
+          350: '#abb8c9',
+          450: '#7c8ba1',
+          650: '#3d4e66',
+          750: '#29384d',
+          850: '#172333',
+        },
         obsidian: {
           50: '#f6f6f6',
           100: '#e7e7e7',

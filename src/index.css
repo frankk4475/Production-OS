@@ -75,6 +75,48 @@
       opacity: 0 !important;
     }
 
+    /* Force everything inside body to have a white background and black text, overriding dark mode classes */
+    html,
+    body,
+    #root,
+    .app,
+    div,
+    section,
+    article,
+    main,
+    p,
+    span,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td,
+    a,
+    label {
+      background-color: #ffffff !important;
+      background: #ffffff !important;
+      color: #000000 !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    /* Keep specific structural layout containers transparent so the white background is uniform */
+    .flex-1,
+    .main-content,
+    .print-container,
+    main {
+      background: transparent !important;
+      background-color: transparent !important;
+    }
+
     /* Reset global canvas background and force high-contrast print colors */
     html, body {
       background: #ffffff !important;
