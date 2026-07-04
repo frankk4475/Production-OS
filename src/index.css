@@ -134,7 +134,7 @@
     /* Configure A4 portrait page sizing and sheet margins */
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm;
+      margin: 20mm 20mm 20mm 20mm;
     }
 
     /* Expand main layout wrapper to consume full print width */

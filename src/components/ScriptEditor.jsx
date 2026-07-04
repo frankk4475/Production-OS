@@ -352,7 +352,7 @@ export default function ScriptEditor() {
     <div className="space-y-6 animate-fadeIn pb-20">
       
       {/* Print-only Screenplay Mode */}
-      <div className="hidden print:block w-full text-black font-mono text-xs md:text-sm leading-relaxed mx-auto max-w-4xl" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+      <div className="hidden print:block w-full text-black font-mono leading-relaxed mx-auto" style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12pt' }}>
         {/* Header / Title details */}
         <div className="text-center pb-8 mb-8 border-b border-black uppercase tracking-widest text-xs font-bold">
           {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
