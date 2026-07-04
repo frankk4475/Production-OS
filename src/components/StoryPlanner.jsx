@@ -58,6 +58,7 @@ export default function StoryPlanner() {
   const [isAddCharOpen, setIsAddCharOpen] = useState(false);
   const [isEditCharOpen, setIsEditCharOpen] = useState(false);
   const [viewingBeat, setViewingBeat] = useState(null);
+  const [draggedBeatId, setDraggedBeatId] = useState(null);
 
   // --- ADD FORM STATES ---
   const [newBeat, setNewBeat] = useState({ 
@@ -447,6 +448,91 @@ export default function StoryPlanner() {
     return (localOutline.beats || []).filter(b => b.act === actName);
   };
 
+  // --- DRAG AND DROP HANDLERS ---
+  const handleDragStart = (e, beatId) => {
+    if (!hasWriteAccess()) return;
+    setDraggedBeatId(beatId);
+    e.dataTransfer.setData('text/plain', beatId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('opacity-40');
+  };
+
+  const handleDragEnd = (e) => {
+    setDraggedBeatId(null);
+    e.currentTarget.classList.remove('opacity-40');
+  };
+
+  const handleDragEnter = (e) => {
+    if (!hasWriteAccess()) return;
+    e.preventDefault();
+    e.currentTarget.classList.add('bg-gold-500/10', 'border-gold-500/40', 'dark:border-gold-500/30');
+  };
+
+  const handleDragLeave = (e) => {
+    e.currentTarget.classList.remove('bg-gold-500/10', 'border-gold-500/40', 'dark:border-gold-500/30');
+  };
+
+  const handleDropOnColumn = (e, actName) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('bg-gold-500/10', 'border-gold-500/40', 'dark:border-gold-500/30');
+    
+    if (!hasWriteAccess()) return;
+    const beatId = e.dataTransfer.getData('text/plain') || draggedBeatId;
+    if (!beatId) return;
+
+    const beatIndex = localOutline.beats.findIndex(b => b.id === beatId);
+    if (beatIndex === -1) return;
+
+    const draggedBeat = localOutline.beats[beatIndex];
+    
+    if (draggedBeat.act !== actName) {
+      const updatedBeats = [...localOutline.beats];
+      updatedBeats[beatIndex] = { ...draggedBeat, act: actName };
+      
+      const beatToMove = updatedBeats[beatIndex];
+      updatedBeats.splice(beatIndex, 1);
+      
+      let insertIndex = updatedBeats.length;
+      for (let i = updatedBeats.length - 1; i >= 0; i--) {
+        if (updatedBeats[i].act === actName) {
+          insertIndex = i + 1;
+          break;
+        }
+      }
+      updatedBeats.splice(insertIndex, 0, beatToMove);
+
+      const updated = { ...localOutline, beats: updatedBeats };
+      setLocalOutline(updated);
+      handleSave(updated);
+    }
+  };
+
+  const handleDropOnCard = (e, targetBeatId, actName) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('bg-gold-500/10', 'border-gold-500/40', 'dark:border-gold-500/30');
+
+    if (!hasWriteAccess()) return;
+    const beatId = e.dataTransfer.getData('text/plain') || draggedBeatId;
+    if (!beatId || beatId === targetBeatId) return;
+
+    const sourceIndex = localOutline.beats.findIndex(b => b.id === beatId);
+    const targetIndex = localOutline.beats.findIndex(b => b.id === targetBeatId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const updatedBeats = [...localOutline.beats];
+    const draggedBeat = { ...updatedBeats[sourceIndex], act: actName };
+
+    updatedBeats.splice(sourceIndex, 1);
+
+    const newTargetIndex = updatedBeats.findIndex(b => b.id === targetBeatId);
+    updatedBeats.splice(newTargetIndex, 0, draggedBeat);
+
+    const updated = { ...localOutline, beats: updatedBeats };
+    setLocalOutline(updated);
+    handleSave(updated);
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn pb-20">
       
@@ -682,7 +768,13 @@ export default function StoryPlanner() {
                     </span>
                   </div>
 
-                  <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1.5 scrollbar-thin">
+                  <div 
+                    onDragOver={(e) => hasWriteAccess() && e.preventDefault()}
+                    onDragEnter={handleDragEnter}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDropOnColumn(e, actName)}
+                    className="space-y-3 min-h-[180px] max-h-[520px] overflow-y-auto pr-1.5 scrollbar-thin rounded-xl transition-all duration-200 border-2 border-transparent"
+                  >
                     {actBeats.map((beat) => {
                       const plot = getPlotline(beat.plotlineId);
                       const absoluteIndex = localOutline.beats.findIndex(b => b.id === beat.id);
@@ -690,7 +782,14 @@ export default function StoryPlanner() {
                         <div 
                           key={beat.id} 
                           onClick={() => setViewingBeat(beat)}
-                          className="p-3.5 rounded-xl bg-white/70 dark:bg-obsidian-900/40 border border-slate-200/80 dark:border-obsidian-800/80 hover:bg-white/95 dark:hover:bg-obsidian-900/80 hover:shadow-lg hover:shadow-gold-500/[0.03] dark:hover:shadow-gold-500/[0.02] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 cursor-pointer space-y-2.5 relative group/card shadow-xs"
+                          draggable={hasWriteAccess()}
+                          onDragStart={(e) => handleDragStart(e, beat.id)}
+                          onDragEnd={handleDragEnd}
+                          onDragOver={(e) => hasWriteAccess() && e.preventDefault()}
+                          onDragEnter={handleDragEnter}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDropOnCard(e, beat.id, actName)}
+                          className="p-3.5 rounded-xl bg-white/70 dark:bg-obsidian-900/40 border border-slate-200/80 dark:border-obsidian-800/80 hover:bg-white/95 dark:hover:bg-obsidian-900/80 hover:shadow-lg hover:shadow-gold-500/[0.03] dark:hover:shadow-gold-500/[0.02] hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 cursor-pointer space-y-2.5 relative group/card shadow-xs border-2 border-transparent"
                           style={{ borderLeftColor: plot.color, borderLeftWidth: '3.5px' }}
                         >
                           <div className="flex items-start justify-between gap-1.5">
