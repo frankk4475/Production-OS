@@ -113,6 +113,20 @@ export default function ScriptEditor() {
     blockRefs.current = blockRefs.current.slice(0, blocks.length);
   }, [blocks]);
 
+  // Auto-resize textarea heights to prevent clipping of multi-line text
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      blocks.forEach((_, idx) => {
+        const textarea = blockRefs.current[idx];
+        if (textarea) {
+          textarea.style.height = 'auto';
+          textarea.style.height = textarea.scrollHeight + 'px';
+        }
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [blocks]);
+
   // Screenplay format definitions
   const blockTypes = {
     heading: { label: language === 'th' ? 'หัวข้อฉาก (Scene Heading)' : 'Scene Heading', class: 'font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-3 border-l-2 border-slate-500/50 mt-6 mb-3', align: 'text-left' },
@@ -211,6 +225,13 @@ export default function ScriptEditor() {
     newBlocks[index].text = blocks[index].type === 'character' ? value.toUpperCase() : value;
     localChangeRef.current = true;
     setBlocks(newBlocks);
+    
+    // Auto-resize textarea height instantly
+    const textarea = blockRefs.current[index];
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
   };
 
   // Block type changes via mouse click dropdown
@@ -354,7 +375,7 @@ export default function ScriptEditor() {
       {/* Print-only Screenplay Mode */}
       <div className="hidden print:block w-full text-black font-mono leading-relaxed mx-auto" style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12pt' }}>
         {/* Header / Title details */}
-        <div className="text-center pb-8 mb-8 border-b border-black uppercase tracking-widest text-xs font-bold">
+        <div className="text-center pb-8 mb-8 uppercase tracking-widest text-xs font-bold">
           {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
         </div>
 
@@ -640,7 +661,7 @@ export default function ScriptEditor() {
           }`}>
             
             {/* Screenplay virtual title marker (Optional visual header) */}
-            <div className="text-center font-mono opacity-25 uppercase tracking-widest text-[10px] border-b pb-4 mb-8">
+            <div className="text-center font-mono opacity-25 uppercase tracking-widest text-[10px] pb-4 mb-8">
               {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'STUDIO SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
             </div>
 
@@ -757,7 +778,7 @@ export default function ScriptEditor() {
                         style={{
                           height: 'auto',
                           minHeight: '2rem',
-                          fontFamily: "'Courier New', Courier, monospace border-none focus:outline-none"
+                          fontFamily: "'Courier New', Courier, monospace"
                         }}
                       />
                     </div>
