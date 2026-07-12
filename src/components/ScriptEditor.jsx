@@ -370,11 +370,13 @@ export default function ScriptEditor() {
     let currentPage = [];
     let currentLines = 0;
     
-    // An A4 page at 12pt has space for roughly 45-50 lines (including margins).
-    // We set it to 46 lines to safely fit print layouts and avoid text overflowing or blank space jumps.
-    const maxLinesPerPage = 46; 
+    // Total spacing-inclusive lines inside the printable height of A4.
+    // We set it to 40 lines as the safety limit to allow for margins, paddings, and footnotes.
+    const maxLinesPerPage = 40; 
 
-    blocks.forEach((block) => {
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      
       let charLimit = 60;
       if (block.type === 'dialogue') charLimit = 35;
       else if (block.type === 'parenthetical') charLimit = 30;
@@ -383,21 +385,59 @@ export default function ScriptEditor() {
       const text = block.text || '';
       const paragraphs = text.split('\n');
       let blockLines = 0;
-      
       paragraphs.forEach((p) => {
         const visualLen = getVisualLength(p);
         const lineCount = Math.max(1, Math.ceil(visualLen / charLimit));
         blockLines += lineCount;
       });
 
-      let spacingLines = 1;
-      if (block.type === 'heading') spacingLines = 2;
-      else if (block.type === 'character') spacingLines = 1.5; 
-      else if (block.type === 'dialogue') spacingLines = 0.5;
+      // Spacing lines based on margin height equivalents
+      let spacingLines = 1.0;
+      if (block.type === 'heading') spacingLines = 2.0;       
+      else if (block.type === 'action') spacingLines = 1.5;     
+      else if (block.type === 'character') spacingLines = 1.2;  
+      else if (block.type === 'parenthetical') spacingLines = 0.2; 
+      else if (block.type === 'dialogue') spacingLines = 0.5;   
+      else if (block.type === 'transition') spacingLines = 2.0; 
 
       const totalBlockLines = blockLines + spacingLines;
 
-      if (currentLines + totalBlockLines > maxLinesPerPage && currentPage.length > 0) {
+      // Orphan Prevention Look-Ahead:
+      // If this block is a Heading or Character name, check if the NEXT block (if any) fits on the current page.
+      // If the next block doesn't fit, we trigger the page break BEFORE this Heading/Character block so they stay together!
+      let nextBlockExceeds = false;
+      if ((block.type === 'heading' || block.type === 'character') && i + 1 < blocks.length) {
+        const nextBlock = blocks[i + 1];
+        let nextCharLimit = 60;
+        if (nextBlock.type === 'dialogue') nextCharLimit = 35;
+        else if (nextBlock.type === 'parenthetical') nextCharLimit = 30;
+        else if (nextBlock.type === 'character') nextCharLimit = 40;
+
+        const nextText = nextBlock.text || '';
+        const nextParagraphs = nextText.split('\n');
+        let nextBlockLines = 0;
+        nextParagraphs.forEach((p) => {
+          const visualLen = getVisualLength(p);
+          const lineCount = Math.max(1, Math.ceil(visualLen / nextCharLimit));
+          nextBlockLines += lineCount;
+        });
+
+        let nextSpacingLines = 1.0;
+        if (nextBlock.type === 'heading') nextSpacingLines = 2.0;
+        else if (nextBlock.type === 'action') nextSpacingLines = 1.5; 
+        else if (nextBlock.type === 'character') nextSpacingLines = 1.2; 
+        else if (nextBlock.type === 'parenthetical') nextSpacingLines = 0.2; 
+        else if (nextBlock.type === 'dialogue') nextSpacingLines = 0.5;
+        else if (nextBlock.type === 'transition') nextSpacingLines = 2.0;
+
+        const nextTotalLines = nextBlockLines + nextSpacingLines;
+
+        if (currentLines + totalBlockLines + nextTotalLines > maxLinesPerPage) {
+          nextBlockExceeds = true;
+        }
+      }
+
+      if ((currentLines + totalBlockLines > maxLinesPerPage || nextBlockExceeds) && currentPage.length > 0) {
         pages.push(currentPage);
         currentPage = [block];
         currentLines = totalBlockLines;
@@ -405,7 +445,7 @@ export default function ScriptEditor() {
         currentPage.push(block);
         currentLines += totalBlockLines;
       }
-    });
+    }
 
     if (currentPage.length > 0) {
       pages.push(currentPage);
@@ -490,15 +530,15 @@ export default function ScriptEditor() {
     };
 
     return (
-      <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none flex flex-col justify-between">
+      <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none flex flex-col justify-start">
         
         {includePageNumbers && (
-          <div className="absolute top-[0.5in] right-[1in] font-mono text-xs text-black text-right no-print print:block z-10">
+          <div className="absolute top-[0.5in] right-[1in] font-mono text-xs text-black text-right no-print print:block z-10 font-bold">
             {includeCoverPage ? pageIndex + 2 : pageIndex + 1}.
           </div>
         )}
 
-        <div className="space-y-3 flex-1">
+        <div className="space-y-3">
           {pageBlocks.map((block) => {
             let blockStyle = {};
             
@@ -588,7 +628,7 @@ export default function ScriptEditor() {
           </div>
         )}
 
-        <div className="text-[8px] text-slate-350 tracking-widest font-mono text-center pt-4 uppercase mt-auto select-none no-print">
+        <div className="absolute bottom-[0.5in] left-[1.25in] right-[1in] text-[8px] text-slate-350 tracking-widest font-mono text-center uppercase select-none no-print">
           {project?.title?.[language] || 'SCRIPT'} • PAGE {pageIndex + 1}
         </div>
       </div>
