@@ -364,17 +364,19 @@ export default function ScriptEditor() {
     return str.replace(zeroWidthChars, '').length;
   };
 
-  // Screenplay A4 Pagination Logic (Block-by-block with optimal line capacity)
+  // Screenplay A4 Pagination Logic (Block-by-block with optimal line capacity and orphan prevention)
   const getPaginatedBlocks = () => {
     const pages = [];
     let currentPage = [];
     let currentLines = 0;
     
     // Total spacing-inclusive lines inside the printable height of A4.
-    // 48 lines is mathematically optimal for 12pt monospaced font on A4 size.
-    const maxLinesPerPage = 48; 
+    // 42 lines is the optimal limit that fits within printable area under both Default & None margins.
+    const maxLinesPerPage = 42; 
 
-    blocks.forEach((block) => {
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i];
+      
       let charLimit = 60;
       if (block.type === 'dialogue') charLimit = 35;
       else if (block.type === 'parenthetical') charLimit = 30;
@@ -401,7 +403,42 @@ export default function ScriptEditor() {
 
       const totalBlockLines = blockLines + spacingLines;
 
-      if (currentLines + totalBlockLines > maxLinesPerPage && currentPage.length > 0) {
+      // Orphan Prevention Look-Ahead:
+      // If this block is a Heading or Character name, check if the NEXT block (if any) fits on the current page.
+      // If the next block doesn't fit, trigger the page break BEFORE this Heading/Character block so they stay together.
+      let nextBlockExceeds = false;
+      if ((block.type === 'heading' || block.type === 'character') && i + 1 < blocks.length) {
+        const nextBlock = blocks[i + 1];
+        let nextCharLimit = 60;
+        if (nextBlock.type === 'dialogue') nextCharLimit = 35;
+        else if (nextBlock.type === 'parenthetical') nextCharLimit = 30;
+        else if (nextBlock.type === 'character') nextCharLimit = 40;
+
+        const nextText = nextBlock.text || '';
+        const nextParagraphs = nextText.split('\n');
+        let nextBlockLines = 0;
+        nextParagraphs.forEach((p) => {
+          const visualLen = getVisualLength(p);
+          const lineCount = Math.max(1, Math.ceil(visualLen / nextCharLimit));
+          nextBlockLines += lineCount;
+        });
+
+        let nextSpacingLines = 1.0;
+        if (nextBlock.type === 'heading') nextSpacingLines = 2.0;
+        else if (nextBlock.type === 'action') nextSpacingLines = 1.5; 
+        else if (nextBlock.type === 'character') nextSpacingLines = 1.2; 
+        else if (nextBlock.type === 'parenthetical') nextSpacingLines = 0.2; 
+        else if (nextBlock.type === 'dialogue') nextSpacingLines = 0.5;
+        else if (nextBlock.type === 'transition') nextSpacingLines = 2.0;
+
+        const nextTotalLines = nextBlockLines + nextSpacingLines;
+
+        if (currentLines + totalBlockLines + nextTotalLines > maxLinesPerPage) {
+          nextBlockExceeds = true;
+        }
+      }
+
+      if ((currentLines + totalBlockLines > maxLinesPerPage || nextBlockExceeds) && currentPage.length > 0) {
         pages.push(currentPage);
         currentPage = [block];
         currentLines = totalBlockLines;
@@ -409,7 +446,7 @@ export default function ScriptEditor() {
         currentPage.push(block);
         currentLines += totalBlockLines;
       }
-    });
+    }
 
     if (currentPage.length > 0) {
       pages.push(currentPage);
@@ -420,8 +457,8 @@ export default function ScriptEditor() {
   const renderCoverPage = (isPrintView = false) => {
     const pageStyle = {
       fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
-      width: isPrintView ? '100%' : '210mm',
-      height: isPrintView ? 'auto' : '297mm',
+      width: '210mm',
+      height: '297mm',
       minHeight: '297mm',
       padding: '1in 1in 1in 1.25in',
       display: 'flex',
@@ -480,8 +517,8 @@ export default function ScriptEditor() {
   const renderScriptPage = (pageBlocks, pageIndex, totalPages, isPrintView = false) => {
     const pageStyle = {
       fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
-      width: isPrintView ? '100%' : '210mm',
-      height: isPrintView ? 'auto' : '297mm',
+      width: '210mm',
+      height: '297mm',
       minHeight: '297mm',
       padding: '1in 1in 1in 1.25in',
       backgroundColor: '#ffffff',
@@ -1161,6 +1198,7 @@ export default function ScriptEditor() {
                 </p>
                 <ul className="list-disc pl-3.5 space-y-1">
                   <li>{language === 'th' ? 'เลือกปลายทางเป็น Save as PDF เพื่อบันทึกไฟล์บทภาพยนตร์' : 'Set Destination to "Save as PDF" to export script file.'}</li>
+                  <li>{language === 'th' ? 'ตั้งค่า ระยะขอบ (Margins) เป็น "ไม่มี (None)" เพื่อให้ขนาดหน้าจัดพิมพ์ตรงกับพรีวิว' : 'Set Margins option to "None" in print settings to match the preview layout.'}</li>
                   <li>{language === 'th' ? 'เปิดการใช้งาน "กราฟิกพื้นหลัง (Background graphics)" ในเครื่องมือพิมพ์ของเบราว์เซอร์เพื่อแสดงลายน้ำ' : 'Enable "Background graphics" in print options to render the watermark.'}</li>
                   <li>{language === 'th' ? 'ปิด "หัวและท้ายกระดาษ (Headers and footers)" ของเบราว์เซอร์เพื่อซ่อนที่อยู่เว็บและวันที่' : 'Disable default "Headers and footers" to hide URL and date print stamp.'}</li>
                 </ul>

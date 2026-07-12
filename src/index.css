@@ -148,10 +148,25 @@
       print-color-adjust: exact !important;
     }
 
-    /* Configure A4 portrait page sizing and sheet margins */
     @page {
       size: A4 portrait;
-      margin: 20mm 20mm 20mm 20mm;
+      margin: 0 !important;
+    }
+
+    .a4-page {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 100% !important;
+      margin: 0 !important;
+      padding: 1in 1in 1in 1.25in !important;
+      border: none !important;
+      box-shadow: none !important;
+      page-break-after: always !important;
+      break-after: page !important;
+      position: relative !important;
+      box-sizing: border-box !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
 
     /* Expand main layout wrapper to consume full print width */
