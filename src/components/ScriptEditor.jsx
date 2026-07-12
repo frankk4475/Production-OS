@@ -364,14 +364,66 @@ export default function ScriptEditor() {
     return str.replace(zeroWidthChars, '').length;
   };
 
-  // Screenplay A4 Pagination Logic
+  // Helper to split a paragraph into visual lines of max length charLimit
+  const splitTextIntoLines = (text, charLimit) => {
+    const lines = [];
+    const paragraphs = (text || '').split('\n');
+    
+    paragraphs.forEach((p) => {
+      if (p.trim() === '') {
+        lines.push('');
+        return;
+      }
+      
+      const isThai = /[\u0E00-\u0E7F]/.test(p);
+      
+      if (isThai) {
+        let currentVisualLen = 0;
+        let startIdx = 0;
+        
+        for (let i = 0; i < p.length; i++) {
+          const char = p[i];
+          const isZeroWidth = /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/.test(char);
+          if (!isZeroWidth) {
+            currentVisualLen++;
+          }
+          
+          if (currentVisualLen > charLimit) {
+            lines.push(p.substring(startIdx, i));
+            startIdx = i;
+            currentVisualLen = 1; 
+          }
+        }
+        if (startIdx < p.length) {
+          lines.push(p.substring(startIdx));
+        }
+      } else {
+        const words = p.split(' ');
+        let currentLine = '';
+        words.forEach((word) => {
+          if ((currentLine + (currentLine ? ' ' : '') + word).length > charLimit) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            currentLine += (currentLine ? ' ' : '') + word;
+          }
+        });
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+      }
+    });
+    
+    return lines;
+  };
+
+  // Screenplay A4 Pagination Logic with Block-Splitting & Dialogue Cont'd repetitions
   const getPaginatedBlocks = () => {
     const pages = [];
     let currentPage = [];
     let currentLines = 0;
     
     // Total spacing-inclusive lines inside the printable height of A4.
-    // We set it to 40 lines as the safety limit to allow for margins, paddings, and footnotes.
     const maxLinesPerPage = 40; 
 
     for (let i = 0; i < blocks.length; i++) {
@@ -382,15 +434,6 @@ export default function ScriptEditor() {
       else if (block.type === 'parenthetical') charLimit = 30;
       else if (block.type === 'character') charLimit = 40;
 
-      const text = block.text || '';
-      const paragraphs = text.split('\n');
-      let blockLines = 0;
-      paragraphs.forEach((p) => {
-        const visualLen = getVisualLength(p);
-        const lineCount = Math.max(1, Math.ceil(visualLen / charLimit));
-        blockLines += lineCount;
-      });
-
       // Spacing lines based on margin height equivalents
       let spacingLines = 1.0;
       if (block.type === 'heading') spacingLines = 2.0;       
@@ -400,50 +443,70 @@ export default function ScriptEditor() {
       else if (block.type === 'dialogue') spacingLines = 0.5;   
       else if (block.type === 'transition') spacingLines = 2.0; 
 
-      const totalBlockLines = blockLines + spacingLines;
+      const lines = splitTextIntoLines(block.text, charLimit);
+      const textLinesCount = lines.length;
+      const totalBlockLines = textLinesCount + spacingLines;
 
-      // Orphan Prevention Look-Ahead:
-      // If this block is a Heading or Character name, check if the NEXT block (if any) fits on the current page.
-      // If the next block doesn't fit, we trigger the page break BEFORE this Heading/Character block so they stay together!
-      let nextBlockExceeds = false;
-      if ((block.type === 'heading' || block.type === 'character') && i + 1 < blocks.length) {
-        const nextBlock = blocks[i + 1];
-        let nextCharLimit = 60;
-        if (nextBlock.type === 'dialogue') nextCharLimit = 35;
-        else if (nextBlock.type === 'parenthetical') nextCharLimit = 30;
-        else if (nextBlock.type === 'character') nextCharLimit = 40;
-
-        const nextText = nextBlock.text || '';
-        const nextParagraphs = nextText.split('\n');
-        let nextBlockLines = 0;
-        nextParagraphs.forEach((p) => {
-          const visualLen = getVisualLength(p);
-          const lineCount = Math.max(1, Math.ceil(visualLen / nextCharLimit));
-          nextBlockLines += lineCount;
-        });
-
-        let nextSpacingLines = 1.0;
-        if (nextBlock.type === 'heading') nextSpacingLines = 2.0;
-        else if (nextBlock.type === 'action') nextSpacingLines = 1.5; 
-        else if (nextBlock.type === 'character') nextSpacingLines = 1.2; 
-        else if (nextBlock.type === 'parenthetical') nextSpacingLines = 0.2; 
-        else if (nextBlock.type === 'dialogue') nextSpacingLines = 0.5;
-        else if (nextBlock.type === 'transition') nextSpacingLines = 2.0;
-
-        const nextTotalLines = nextBlockLines + nextSpacingLines;
-
-        if (currentLines + totalBlockLines + nextTotalLines > maxLinesPerPage) {
-          nextBlockExceeds = true;
-        }
-      }
-
-      if ((currentLines + totalBlockLines > maxLinesPerPage || nextBlockExceeds) && currentPage.length > 0) {
-        pages.push(currentPage);
-        currentPage = [block];
-        currentLines = totalBlockLines;
-      } else {
+      // If the block fits entirely on the current page:
+      if (currentLines + totalBlockLines <= maxLinesPerPage) {
         currentPage.push(block);
         currentLines += totalBlockLines;
+      } 
+      // If the block does NOT fit entirely:
+      else {
+        const remainingSpace = maxLinesPerPage - currentLines - spacingLines;
+        
+        // If we can fit at least 2 lines of text on the current page, and the block type is action or dialogue:
+        if (remainingSpace >= 2 && (block.type === 'action' || block.type === 'dialogue') && currentPage.length > 0) {
+          const splitIdx = Math.floor(remainingSpace);
+          const firstPartText = lines.slice(0, splitIdx).join('\n');
+          const secondPartText = lines.slice(splitIdx).join('\n');
+          
+          // Add the first part to the current page
+          currentPage.push({
+            ...block,
+            text: firstPartText
+          });
+          pages.push(currentPage);
+          
+          // Start the new page with the second part
+          currentPage = [];
+          currentLines = 0;
+          
+          // If it was dialogue, repeat character name with (CONT'D)
+          if (block.type === 'dialogue') {
+            let charName = 'CHARACTER';
+            for (let j = i - 1; j >= 0; j--) {
+              if (blocks[j].type === 'character') {
+                charName = blocks[j].text.trim().replace(/\s*\(CONT'D\)/g, ''); // strip previous cont'd if any
+                break;
+              }
+            }
+            
+            currentPage.push({
+              id: `split-char-${Date.now()}-${Math.random()}`,
+              type: 'character',
+              text: `${charName} (CONT'D)`
+            });
+            currentLines += 1.2 + 1.0; 
+          }
+          
+          // Add the remaining text
+          currentPage.push({
+            ...block,
+            id: `split-text-${Date.now()}-${Math.random()}`,
+            text: secondPartText
+          });
+          currentLines += (textLinesCount - splitIdx) + spacingLines;
+        } 
+        // If we can't split, push the entire block to the next page
+        else {
+          if (currentPage.length > 0) {
+            pages.push(currentPage);
+          }
+          currentPage = [block];
+          currentLines = totalBlockLines;
+        }
       }
     }
 
