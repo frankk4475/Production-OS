@@ -57,6 +57,23 @@
   /* Print Styles for Call Sheet PDF & Production Documents */
   /* Print Styles for Call Sheet PDF & Production Documents */
   @media print {
+    /* Reset flex layouts and overflow clipping on container wrappers to prevent script text truncation/scrollbars */
+    html,
+    body,
+    #root,
+    .app,
+    div[class*="min-h-screen"],
+    .flex-1,
+    .main-content,
+    main {
+      display: block !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+      position: static !important;
+    }
+
     /* Hide layout sidebars, headers, mobile navigations, modal panels, buttons, and settings forms */
     aside,
     header,

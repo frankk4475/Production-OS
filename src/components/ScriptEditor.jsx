@@ -56,6 +56,12 @@ export default function ScriptEditor() {
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
   
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [previewFont, setPreviewFont] = useState('courier_prime'); // 'courier_prime' | 'courier' | 'sarabun'
+  const [includeCoverPage, setIncludeCoverPage] = useState(true);
+  const [includePageNumbers, setIncludePageNumbers] = useState(true);
+  const [watermarkText, setWatermarkText] = useState('');
+  
   const localChangeRef = useRef(false);
   const blockRefs = useRef([]);
 
@@ -131,10 +137,10 @@ export default function ScriptEditor() {
   const blockTypes = {
     heading: { label: language === 'th' ? 'หัวข้อฉาก (Scene Heading)' : 'Scene Heading', class: 'font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-3 border-l-2 border-slate-500/50 mt-6 mb-3', align: 'text-left' },
     action: { label: language === 'th' ? 'เหตุการณ์ / บทบรรยาย' : 'Action / Narrative', class: 'font-mono text-xs md:text-sm text-slate-700 dark:text-slate-300 mt-3 mb-3', align: 'text-left' },
-    character: { label: language === 'th' ? 'ตัวละคร (Character)' : 'Character', class: 'font-mono text-xs md:text-sm font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-center', align: 'text-center' },
-    parenthetical: { label: language === 'th' ? 'อารมณ์/ท่าทาง (Parenthetical)' : 'Parenthetical', class: 'font-mono text-xs md:text-sm text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-center', align: 'text-center' },
-    dialogue: { label: language === 'th' ? 'บทสนทนา (Dialogue)' : 'Dialogue', class: 'font-mono text-xs md:text-sm text-slate-800 dark:text-slate-200 mt-1.5 mb-2 mx-auto max-w-[80%] md:max-w-[60%] text-center', align: 'text-center font-medium' },
-    transition: { label: language === 'th' ? 'มุมกล้อง/คำเชื่อม (Transition)' : 'Transition', class: 'font-mono text-xs md:text-sm font-bold text-amber-600 dark:text-amber-500 uppercase mt-4 mb-4 text-right pr-2', align: 'text-right' }
+    character: { label: language === 'th' ? 'ตัวละคร (Character)' : 'Character', class: 'font-mono text-xs md:text-sm font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-left ml-[35%] w-[65%]', align: 'text-left' },
+    parenthetical: { label: language === 'th' ? 'อารมณ์/ท่าทาง (Parenthetical)' : 'Parenthetical', class: 'font-mono text-xs md:text-sm text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-left ml-[22%] w-[56%]', align: 'text-left' },
+    dialogue: { label: language === 'th' ? 'บทสนทนา (Dialogue)' : 'Dialogue', class: 'font-mono text-xs md:text-sm text-slate-800 dark:text-slate-200 mt-1.5 mb-2 text-left ml-[15%] w-[70%] font-medium', align: 'text-left' },
+    transition: { label: language === 'th' ? 'มุมกล้อง/คำเชื่อม (Transition)' : 'Transition', class: 'font-mono text-xs md:text-sm font-bold text-amber-600 dark:text-amber-500 uppercase mt-4 mb-4 text-right ml-[60%] w-[40%] pr-2', align: 'text-right' }
   };
 
   // Keyboard navigation & element cycling
@@ -350,6 +356,235 @@ export default function ScriptEditor() {
     return Array.from(charsSet);
   };
 
+  // Screenplay A4 Pagination Logic
+  const getPaginatedBlocks = () => {
+    const pages = [];
+    let currentPage = [];
+    let currentLines = 0;
+    
+    // An A4 page at 12pt has space for roughly 50 lines (including margins).
+    const maxLinesPerPage = 50; 
+
+    blocks.forEach((block) => {
+      let charLimit = 60;
+      if (block.type === 'dialogue') charLimit = 35;
+      else if (block.type === 'parenthetical') charLimit = 30;
+      else if (block.type === 'character') charLimit = 40;
+
+      const text = block.text || '';
+      const paragraphs = text.split('\n');
+      let blockLines = 0;
+      
+      paragraphs.forEach((p) => {
+        const lineCount = Math.max(1, Math.ceil(p.length / charLimit));
+        blockLines += lineCount;
+      });
+
+      let spacingLines = 1;
+      if (block.type === 'heading') spacingLines = 2;
+      else if (block.type === 'character') spacingLines = 1.5; 
+      else if (block.type === 'dialogue') spacingLines = 0.5;
+
+      const totalBlockLines = blockLines + spacingLines;
+
+      if (currentLines + totalBlockLines > maxLinesPerPage && currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [block];
+        currentLines = totalBlockLines;
+      } else {
+        currentPage.push(block);
+        currentLines += totalBlockLines;
+      }
+    });
+
+    if (currentPage.length > 0) {
+      pages.push(currentPage);
+    }
+    return pages;
+  };
+
+  const renderCoverPage = (isPrintView = false) => {
+    const pageStyle = {
+      fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
+      width: isPrintView ? '100%' : '210mm',
+      height: isPrintView ? 'auto' : '297mm',
+      minHeight: '297mm',
+      padding: '1in 1in 1in 1.25in',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      backgroundColor: '#ffffff',
+      color: '#000000',
+      boxSizing: 'border-box',
+      pageBreakAfter: 'always',
+      position: 'relative'
+    };
+
+    return (
+      <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none">
+        <div></div>
+
+        <div className="text-center space-y-8 flex flex-col items-center justify-center my-auto">
+          <h1 className="text-3xl font-bold tracking-wide uppercase border-b-2 border-black pb-4 px-8 min-w-[200px]">
+            {project?.title?.[language] || project?.title?.en || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')}
+          </h1>
+          
+          <div className="space-y-2 mt-8">
+            <p className="text-xs uppercase tracking-widest text-slate-500 font-bold">{language === 'th' ? 'เขียนโดย' : 'Written by'}</p>
+            <p className="text-lg font-bold font-serif">{project?.created_by_name || 'STUDIO WRITER'}</p>
+          </div>
+          
+          {project?.description && (
+            <p className="max-w-md mx-auto text-xs italic leading-relaxed text-slate-600 mt-6 border-t border-slate-200 pt-4">
+              "{project.description[language] || project.description.en || project.description}"
+            </p>
+          )}
+        </div>
+
+        <div className="flex justify-between items-end text-[10px] uppercase tracking-wider text-slate-500 font-mono mt-auto">
+          <div>
+            <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || Date.now()).toLocaleDateString()}</p>
+            <p>{language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER</p>
+          </div>
+          <div className="text-right">
+            <p>{language === 'th' ? 'บทร่างลิขสิทธิ์เฉพาะ' : 'PROPRIETARY DRAFT'}</p>
+            <p>© {new Date().getFullYear()} ALL RIGHTS RESERVED</p>
+          </div>
+        </div>
+        
+        {watermarkText && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.06]">
+            <span className="text-[90px] font-black tracking-widest uppercase rotate-[-35deg] border-8 border-black p-4 select-none">
+              {watermarkText}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderScriptPage = (pageBlocks, pageIndex, totalPages, isPrintView = false) => {
+    const pageStyle = {
+      fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
+      width: isPrintView ? '100%' : '210mm',
+      height: isPrintView ? 'auto' : '297mm',
+      minHeight: '297mm',
+      padding: '1in 1in 1in 1.25in',
+      backgroundColor: '#ffffff',
+      color: '#000000',
+      boxSizing: 'border-box',
+      pageBreakAfter: 'always',
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column'
+    };
+
+    return (
+      <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none flex flex-col justify-between">
+        
+        {includePageNumbers && (
+          <div className="absolute top-[0.5in] right-[1in] font-mono text-xs text-black text-right no-print print:block z-10">
+            {includeCoverPage ? pageIndex + 2 : pageIndex + 1}.
+          </div>
+        )}
+
+        <div className="space-y-3 flex-1">
+          {pageBlocks.map((block) => {
+            let blockStyle = {};
+            
+            switch (block.type) {
+              case 'heading':
+                blockStyle = {
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  marginTop: '16pt',
+                  marginBottom: '10pt',
+                  textAlign: 'left',
+                  marginLeft: '0px'
+                };
+                break;
+              case 'action':
+                blockStyle = {
+                  textAlign: 'left',
+                  marginTop: '10pt',
+                  marginBottom: '10pt',
+                  marginLeft: '0px',
+                  lineHeight: '1.25'
+                };
+                break;
+              case 'character':
+                blockStyle = {
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  textAlign: 'left',
+                  marginLeft: '2.2in',
+                  marginTop: '12pt',
+                  marginBottom: '2pt'
+                };
+                break;
+              case 'parenthetical':
+                blockStyle = {
+                  fontStyle: 'italic',
+                  textAlign: 'left',
+                  marginLeft: '1.6in',
+                  width: '3.1in',
+                  marginTop: '1pt',
+                  marginBottom: '1pt'
+                };
+                break;
+              case 'dialogue':
+                blockStyle = {
+                  textAlign: 'left',
+                  marginLeft: '1.0in',
+                  width: '3.5in',
+                  marginTop: '1pt',
+                  marginBottom: '6pt',
+                  lineHeight: '1.2'
+                };
+                break;
+              case 'transition':
+                blockStyle = {
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  textAlign: 'right',
+                  marginLeft: 'auto',
+                  marginRight: '0px',
+                  width: 'auto',
+                  marginTop: '12pt',
+                  marginBottom: '12pt'
+                };
+                break;
+              default:
+                break;
+            }
+
+            return (
+              <div 
+                key={block.id} 
+                style={blockStyle} 
+                className="whitespace-pre-wrap break-inside-avoid text-xs md:text-sm"
+              >
+                {block.type === 'character' ? block.text.toUpperCase() : block.text}
+              </div>
+            );
+          })}
+        </div>
+
+        {watermarkText && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden opacity-[0.06]">
+            <span className="text-[90px] font-black tracking-widest uppercase rotate-[-35deg] border-8 border-black p-4 select-none">
+              {watermarkText}
+            </span>
+          </div>
+        )}
+
+        <div className="text-[8px] text-slate-350 tracking-widest font-mono text-center pt-4 uppercase mt-auto select-none no-print">
+          {project?.title?.[language] || 'SCRIPT'} • PAGE {pageIndex + 1}
+        </div>
+      </div>
+    );
+  };
+
   const detectedScenes = getDetectedScenes();
   const detectedCharacters = getDetectedCharacters();
 
@@ -373,91 +608,34 @@ export default function ScriptEditor() {
     <div className="space-y-6 animate-fadeIn pb-20">
       
       {/* Print-only Screenplay Mode */}
-      <div className="hidden print:block w-full text-black font-mono leading-relaxed mx-auto" style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12pt' }}>
-        {/* Header / Title details */}
-        <div className="text-center pb-8 mb-8 uppercase tracking-widest text-xs font-bold">
-          {project?.title?.[language] || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')} — {language === 'th' ? 'มุมมองโครงการ' : 'PROJECT VIEW'}
-        </div>
-
-        <div className="space-y-4">
-          {blocks.map((block) => {
-            let blockStyle = { fontFamily: "'Courier New', Courier, monospace" };
-            switch (block.type) {
-              case 'heading':
-                blockStyle = {
-                  ...blockStyle,
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  marginTop: '2rem',
-                  marginBottom: '1rem',
-                  textAlign: 'left'
-                };
-                break;
-              case 'action':
-                blockStyle = {
-                  ...blockStyle,
-                  textAlign: 'left',
-                  marginTop: '1rem',
-                  marginBottom: '1rem'
-                };
-                break;
-              case 'character':
-                blockStyle = {
-                  ...blockStyle,
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  textAlign: 'left',
-                  marginLeft: '37.5%',
-                  marginTop: '1.5rem',
-                  marginBottom: '0.25rem'
-                };
-                break;
-              case 'parenthetical':
-                blockStyle = {
-                  ...blockStyle,
-                  fontStyle: 'italic',
-                  textAlign: 'left',
-                  marginLeft: '25%',
-                  width: '50%',
-                  marginTop: '0.25rem',
-                  marginBottom: '0.25rem'
-                };
-                break;
-              case 'dialogue':
-                blockStyle = {
-                  ...blockStyle,
-                  textAlign: 'left',
-                  marginLeft: '20%',
-                  width: '60%',
-                  marginTop: '0.25rem',
-                  marginBottom: '0.5rem'
-                };
-                break;
-              case 'transition':
-                blockStyle = {
-                  ...blockStyle,
-                  fontWeight: 'bold',
-                  textTransform: 'uppercase',
-                  textAlign: 'right',
-                  marginTop: '1.5rem',
-                  marginBottom: '1.5rem'
-                };
-                break;
-              default:
-                break;
+      <div className="hidden print:block w-full text-black bg-white" style={{ background: '#ffffff' }}>
+        <style>
+          {`
+            @media print {
+              @page {
+                size: A4 portrait !important;
+                margin: 0mm 0mm 0mm 0mm !important;
+              }
+              body {
+                background: #ffffff !important;
+                color: #000000 !important;
+              }
+              .a4-page {
+                border: none !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                page-break-after: always !important;
+                break-after: page !important;
+              }
             }
-
-            return (
-              <div 
-                key={block.id} 
-                style={blockStyle} 
-                className="whitespace-pre-wrap break-inside-avoid"
-              >
-                {block.type === 'character' ? block.text.toUpperCase() : block.text}
-              </div>
-            );
-          })}
-        </div>
+          `}
+        </style>
+        
+        {includeCoverPage && renderCoverPage(true)}
+        
+        {getPaginatedBlocks().map((pageBlocks, idx) => 
+          renderScriptPage(pageBlocks, idx, getPaginatedBlocks().length, true)
+        )}
       </div>
 
       {/* Editor Controls Header */}
@@ -526,7 +704,7 @@ export default function ScriptEditor() {
           </button>
 
           <button
-            onClick={() => window.print()}
+            onClick={() => setShowPrintPreview(true)}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               theme === 'dark' ? 'bg-obsidian-900 hover:bg-obsidian-800 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
             }`}
@@ -834,6 +1012,177 @@ export default function ScriptEditor() {
         </div>
 
       </div>
+
+      {/* Document Print Preview Modal */}
+      {showPrintPreview && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950/95 dark:bg-obsidian-950/98 backdrop-blur-md animate-fadeIn no-print">
+          
+          {/* Modal Header Panel */}
+          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-950 text-slate-200">
+            <div className="flex items-center gap-3">
+              <Printer className="text-gold-500 animate-pulse" size={20} />
+              <div>
+                <h2 className="text-sm font-bold tracking-tight">
+                  {language === 'th' ? 'ห้องเตรียมพิมพ์และบันทึก PDF' : 'Document Print Room & PDF Exporter'}
+                </h2>
+                <p className="text-[10px] text-slate-400">
+                  {language === 'th' ? 'จัดพรีวิวหน้าเอกสารมาตรฐานอุตสาหกรรมภาพยนตร์' : 'Industry-standard script preview & output optimizer'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-slate-950 font-extrabold text-xs rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-gold-500/10 active:scale-95 animate-pulse hover:animate-none"
+              >
+                <Printer size={14} />
+                <span>{language === 'th' ? 'พิมพ์ทันที / บันทึก PDF' : 'Print Now / Save PDF'}</span>
+              </button>
+              
+              <button
+                onClick={() => setShowPrintPreview(false)}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-350 font-bold text-xs rounded-lg transition-all"
+              >
+                {language === 'th' ? 'ปิดหน้าต่าง' : 'Close Preview'}
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Workspace Grid */}
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+            
+            {/* Sidebar Controls */}
+            <div className="w-full md:w-64 bg-slate-950 border-r border-slate-800 p-5 space-y-6 flex-shrink-0 overflow-y-auto">
+              
+              {/* Typography options */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                  {language === 'th' ? 'แบบฟอนต์เอกสาร (Script Font)' : 'Screenplay Typography'}
+                </label>
+                <div className="grid grid-cols-1 gap-1.5">
+                  <button
+                    onClick={() => setPreviewFont('courier_prime')}
+                    className={`px-3 py-2.5 rounded-lg border text-xs font-semibold font-mono text-left transition-all ${
+                      previewFont === 'courier_prime'
+                        ? 'border-gold-500 bg-gold-500/10 text-gold-400 font-bold'
+                        : 'border-slate-850 hover:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    📝 Courier Prime (HQ)
+                  </button>
+                  <button
+                    onClick={() => setPreviewFont('courier')}
+                    className={`px-3 py-2.5 rounded-lg border text-xs font-semibold font-mono text-left transition-all ${
+                      previewFont === 'courier'
+                        ? 'border-gold-500 bg-gold-500/10 text-gold-400 font-bold'
+                        : 'border-slate-850 hover:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    ⌨️ Courier New (Classic)
+                  </button>
+                  <button
+                    onClick={() => setPreviewFont('sarabun')}
+                    className={`px-3 py-2.5 rounded-lg border text-xs font-semibold font-sans text-left transition-all ${
+                      previewFont === 'sarabun'
+                        ? 'border-gold-500 bg-gold-500/10 text-gold-400 font-bold'
+                        : 'border-slate-850 hover:border-slate-700 text-slate-400'
+                    }`}
+                  >
+                    🇹🇭 Sarabun (Official)
+                  </button>
+                </div>
+              </div>
+
+              {/* Cover Page settings */}
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                  {language === 'th' ? 'ตัวเลือกหน้ากระดาษ' : 'Page Settings'}
+                </span>
+                
+                <label className="flex items-center gap-2.5 text-xs text-slate-350 font-semibold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={includeCoverPage}
+                    onChange={(e) => setIncludeCoverPage(e.target.checked)}
+                    className="rounded border-slate-850 bg-slate-900 text-gold-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                  />
+                  <span>{language === 'th' ? 'พิมพ์หน้าปกบทภาพยนตร์' : 'Include Cover Page'}</span>
+                </label>
+                
+                <label className="flex items-center gap-2.5 text-xs text-slate-350 font-semibold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={includePageNumbers}
+                    onChange={(e) => setIncludePageNumbers(e.target.checked)}
+                    className="rounded border-slate-850 bg-slate-900 text-gold-500 focus:ring-0 w-4 h-4 cursor-pointer"
+                  />
+                  <span>{language === 'th' ? 'แสดงเลขหน้าบท' : 'Show Page Numbers'}</span>
+                </label>
+              </div>
+
+              {/* Watermark Selector */}
+              <div className="space-y-2 pt-4 border-t border-slate-800">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">
+                  {language === 'th' ? 'ตราประทับ / ลายน้ำป้องกัน' : 'Watermark Overlay'}
+                </label>
+                <select
+                  value={watermarkText}
+                  onChange={(e) => setWatermarkText(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-850 bg-slate-900 text-xs font-bold text-slate-350 focus:outline-none focus:border-slate-700 cursor-pointer appearance-none"
+                >
+                  <option value="">{language === 'th' ? 'ไม่มี (None)' : 'None'}</option>
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="CONFIDENTIAL">CONFIDENTIAL</option>
+                  <option value="บทร่างเอกสาร">บทร่างเอกสาร</option>
+                  <option value="ห้ามเผยแพร่">ห้ามเผยแพร่</option>
+                </select>
+              </div>
+
+              {/* Helpful Tips */}
+              <div className="p-3.5 rounded-xl border border-slate-850 bg-slate-950/60 text-[10px] text-slate-400 leading-relaxed space-y-2 select-none">
+                <p className="font-bold text-gold-500 flex items-center gap-1.5">
+                  <Sparkles size={11} />
+                  <span>{language === 'th' ? 'คำแนะนำการพิมพ์' : 'Printing Tips'}</span>
+                </p>
+                <ul className="list-disc pl-3.5 space-y-1">
+                  <li>{language === 'th' ? 'เลือกปลายทางเป็น Save as PDF เพื่อบันทึกไฟล์บทภาพยนตร์' : 'Set Destination to "Save as PDF" to export script file.'}</li>
+                  <li>{language === 'th' ? 'เปิดการใช้งาน "กราฟิกพื้นหลัง (Background graphics)" ในเครื่องมือพิมพ์ของเบราว์เซอร์เพื่อแสดงลายน้ำ' : 'Enable "Background graphics" in print options to render the watermark.'}</li>
+                  <li>{language === 'th' ? 'ปิด "หัวและท้ายกระดาษ (Headers and footers)" ของเบราว์เซอร์เพื่อซ่อนที่อยู่เว็บและวันที่' : 'Disable default "Headers and footers" to hide URL and date print stamp.'}</li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Main Visual A4 Stack Viewer */}
+            <div className="flex-1 overflow-y-auto bg-slate-900 dark:bg-obsidian-950 p-6 flex flex-col items-center gap-8 shadow-inner select-none max-w-full">
+              
+              {/* Cover Page Preview */}
+              {includeCoverPage && (
+                <div className="flex flex-col items-center">
+                  <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2 font-mono uppercase">
+                    {language === 'th' ? 'หน้าปกบทภาพยนตร์' : 'Cover Page'}
+                  </div>
+                  {renderCoverPage()}
+                </div>
+              )}
+              
+              {/* Paginated Script Pages Preview */}
+              {getPaginatedBlocks().map((pageBlocks, idx) => (
+                <div key={idx} className="flex flex-col items-center">
+                  <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2 font-mono uppercase">
+                    {language === 'th' ? `หน้า ${idx + 1}` : `Page ${idx + 1}`}
+                  </div>
+                  {renderScriptPage(pageBlocks, idx, getPaginatedBlocks().length)}
+                </div>
+              ))}
+              
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );
