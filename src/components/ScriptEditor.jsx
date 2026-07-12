@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -356,14 +357,22 @@ export default function ScriptEditor() {
     return Array.from(charsSet);
   };
 
+  // Get visual length of Thai string by stripping non-spacing diacritics
+  const getVisualLength = (str) => {
+    if (!str) return 0;
+    const zeroWidthChars = /[\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/g;
+    return str.replace(zeroWidthChars, '').length;
+  };
+
   // Screenplay A4 Pagination Logic
   const getPaginatedBlocks = () => {
     const pages = [];
     let currentPage = [];
     let currentLines = 0;
     
-    // An A4 page at 12pt has space for roughly 50 lines (including margins).
-    const maxLinesPerPage = 50; 
+    // An A4 page at 12pt has space for roughly 45-50 lines (including margins).
+    // We set it to 46 lines to safely fit print layouts and avoid text overflowing or blank space jumps.
+    const maxLinesPerPage = 46; 
 
     blocks.forEach((block) => {
       let charLimit = 60;
@@ -376,7 +385,8 @@ export default function ScriptEditor() {
       let blockLines = 0;
       
       paragraphs.forEach((p) => {
-        const lineCount = Math.max(1, Math.ceil(p.length / charLimit));
+        const visualLen = getVisualLength(p);
+        const lineCount = Math.max(1, Math.ceil(visualLen / charLimit));
         blockLines += lineCount;
       });
 
@@ -1014,8 +1024,8 @@ export default function ScriptEditor() {
       </div>
 
       {/* Document Print Preview Modal */}
-      {showPrintPreview && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950/95 dark:bg-obsidian-950/98 backdrop-blur-md animate-fadeIn no-print">
+      {showPrintPreview && createPortal(
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-950/95 dark:bg-obsidian-950/98 backdrop-blur-md animate-fadeIn no-print">
           
           {/* Modal Header Panel */}
           <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-950 text-slate-200">
@@ -1181,7 +1191,8 @@ export default function ScriptEditor() {
 
           </div>
 
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
