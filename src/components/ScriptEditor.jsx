@@ -475,24 +475,24 @@ export default function ScriptEditor() {
       <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none">
         <div></div>
 
-        <div className="text-center space-y-8 flex flex-col items-center justify-center my-auto">
-          <h1 className="text-3xl font-bold tracking-wide uppercase border-b-2 border-black pb-4 px-8 min-w-[200px]">
+        <div className="text-center flex flex-col items-center justify-center my-auto" style={{ gap: '24pt' }}>
+          <h1 className="font-bold tracking-wide uppercase border-b-2 border-black pb-4 px-8 min-w-[200px]" style={{ fontSize: '24pt', lineHeight: '1.2' }}>
             {project?.title?.[language] || project?.title?.en || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')}
           </h1>
           
-          <div className="space-y-2 mt-8">
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-bold">{language === 'th' ? 'เขียนโดย' : 'Written by'}</p>
-            <p className="text-lg font-bold font-serif">{project?.created_by_name || 'STUDIO WRITER'}</p>
+          <div className="mt-8" style={{ gap: '6pt', display: 'flex', flexDirection: 'column' }}>
+            <p className="uppercase tracking-widest text-slate-500 font-bold" style={{ fontSize: '10pt' }}>{language === 'th' ? 'เขียนโดย' : 'Written by'}</p>
+            <p className="font-bold" style={{ fontSize: '14pt' }}>{project?.created_by_name || 'STUDIO WRITER'}</p>
           </div>
           
           {project?.description && (
-            <p className="max-w-md mx-auto text-xs italic leading-relaxed text-slate-600 mt-6 border-t border-slate-200 pt-4">
+            <p className="max-w-md mx-auto italic text-slate-600 mt-6 border-t border-slate-200 pt-4" style={{ fontSize: '10pt', lineHeight: '1.4' }}>
               "{project.description[language] || project.description.en || project.description}"
             </p>
           )}
         </div>
 
-        <div className="flex justify-between items-end text-[10px] uppercase tracking-wider text-slate-500 font-mono mt-auto">
+        <div className="flex justify-between items-end text-slate-500 font-mono mt-auto" style={{ fontSize: '9pt', lineHeight: '1.4' }}>
           <div>
             <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || Date.now()).toLocaleDateString()}</p>
             <p>{language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER</p>
@@ -527,7 +527,9 @@ export default function ScriptEditor() {
       pageBreakAfter: 'always',
       position: 'relative',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      fontSize: '12pt',
+      lineHeight: '1.25'
     };
 
     return (
@@ -613,7 +615,7 @@ export default function ScriptEditor() {
               <div 
                 key={block.id} 
                 style={blockStyle} 
-                className="whitespace-pre-wrap break-inside-avoid text-xs md:text-sm"
+                className="whitespace-pre-wrap break-inside-avoid"
               >
                 {block.type === 'character' ? block.text.toUpperCase() : block.text}
               </div>
