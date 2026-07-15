@@ -394,12 +394,12 @@ export default function ScriptEditor() {
 
       // Spacing lines based on margin height equivalents
       let spacingLines = 1.0;
-      if (block.type === 'heading') spacingLines = 2.0;       
-      else if (block.type === 'action') spacingLines = 1.5;     
-      else if (block.type === 'character') spacingLines = 1.2;  
-      else if (block.type === 'parenthetical') spacingLines = 0.2; 
+      if (block.type === 'heading') spacingLines = 1.5;       
+      else if (block.type === 'action') spacingLines = 1.0;     
+      else if (block.type === 'character') spacingLines = 1.0;  
+      else if (block.type === 'parenthetical') spacingLines = 0.0; 
       else if (block.type === 'dialogue') spacingLines = 0.5;   
-      else if (block.type === 'transition') spacingLines = 2.0; 
+      else if (block.type === 'transition') spacingLines = 1.0; 
 
       const totalBlockLines = blockLines + spacingLines;
 
@@ -424,12 +424,12 @@ export default function ScriptEditor() {
         });
 
         let nextSpacingLines = 1.0;
-        if (nextBlock.type === 'heading') nextSpacingLines = 2.0;
-        else if (nextBlock.type === 'action') nextSpacingLines = 1.5; 
-        else if (nextBlock.type === 'character') nextSpacingLines = 1.2; 
-        else if (nextBlock.type === 'parenthetical') nextSpacingLines = 0.2; 
+        if (nextBlock.type === 'heading') nextSpacingLines = 1.5;
+        else if (nextBlock.type === 'action') nextSpacingLines = 1.0; 
+        else if (nextBlock.type === 'character') nextSpacingLines = 1.0; 
+        else if (nextBlock.type === 'parenthetical') nextSpacingLines = 0.0; 
         else if (nextBlock.type === 'dialogue') nextSpacingLines = 0.5;
-        else if (nextBlock.type === 'transition') nextSpacingLines = 2.0;
+        else if (nextBlock.type === 'transition') nextSpacingLines = 1.0;
 
         const nextTotalLines = nextBlockLines + nextSpacingLines;
 
@@ -541,7 +541,7 @@ export default function ScriptEditor() {
           </div>
         )}
 
-        <div className="space-y-3">
+        <div>
           {pageBlocks.map((block) => {
             let blockStyle = {};
             
@@ -550,8 +550,8 @@ export default function ScriptEditor() {
                 blockStyle = {
                   fontWeight: 'bold',
                   textTransform: 'uppercase',
-                  marginTop: '16pt',
-                  marginBottom: '10pt',
+                  marginTop: '12pt',
+                  marginBottom: '6pt',
                   textAlign: 'left',
                   marginLeft: '0px'
                 };
@@ -559,8 +559,8 @@ export default function ScriptEditor() {
               case 'action':
                 blockStyle = {
                   textAlign: 'left',
-                  marginTop: '10pt',
-                  marginBottom: '10pt',
+                  marginTop: '12pt',
+                  marginBottom: '12pt',
                   marginLeft: '0px',
                   lineHeight: '1.25'
                 };
@@ -572,7 +572,7 @@ export default function ScriptEditor() {
                   textAlign: 'left',
                   marginLeft: '2.2in',
                   marginTop: '12pt',
-                  marginBottom: '2pt'
+                  marginBottom: '0pt'
                 };
                 break;
               case 'parenthetical':
@@ -581,8 +581,8 @@ export default function ScriptEditor() {
                   textAlign: 'left',
                   marginLeft: '1.6in',
                   width: '3.1in',
-                  marginTop: '1pt',
-                  marginBottom: '1pt'
+                  marginTop: '0pt',
+                  marginBottom: '0pt'
                 };
                 break;
               case 'dialogue':
@@ -590,7 +590,7 @@ export default function ScriptEditor() {
                   textAlign: 'left',
                   marginLeft: '1.0in',
                   width: '3.5in',
-                  marginTop: '1pt',
+                  marginTop: '0pt',
                   marginBottom: '6pt',
                   lineHeight: '1.2'
                 };
