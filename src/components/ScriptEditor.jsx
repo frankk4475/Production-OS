@@ -166,7 +166,7 @@ export default function ScriptEditor() {
       saveImmediately(newBlocks);
     }
 
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       
       // Decide next logical block type
@@ -371,8 +371,8 @@ export default function ScriptEditor() {
     let currentLines = 0;
     
     // Total spacing-inclusive lines inside the printable height of A4.
-    // 46 lines is the optimal limit that fits within the printable area of A4 with zero print margins.
-    const maxLinesPerPage = 46; 
+    // 48 lines is the optimal limit that fits within the printable area of A4 with zero print margins.
+    const maxLinesPerPage = 48; 
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
@@ -529,7 +529,7 @@ export default function ScriptEditor() {
       display: 'flex',
       flexDirection: 'column',
       fontSize: '12pt',
-      lineHeight: '1.25'
+      lineHeight: '1.20'
     };
 
     return (
