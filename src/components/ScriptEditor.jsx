@@ -136,8 +136,8 @@ export default function ScriptEditor() {
 
   // Screenplay format definitions
   const blockTypes = {
-    heading: { label: language === 'th' ? 'หัวข้อฉาก (Scene Heading)' : 'Scene Heading', class: 'font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-3 border-l-2 border-slate-500/50 mt-6 mb-3', align: 'text-left' },
-    action: { label: language === 'th' ? 'เหตุการณ์ / บทบรรยาย' : 'Action / Narrative', class: 'font-mono text-xs md:text-sm text-slate-700 dark:text-slate-300 mt-3 mb-3', align: 'text-left' },
+    heading: { label: language === 'th' ? 'หัวข้อฉาก (Scene Heading)' : 'Scene Heading', class: 'w-full font-mono text-xs md:text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-white pl-3 border-l-2 border-slate-500/50 mt-6 mb-3', align: 'text-left' },
+    action: { label: language === 'th' ? 'เหตุการณ์ / บทบรรยาย' : 'Action / Narrative', class: 'w-full font-mono text-xs md:text-sm text-slate-700 dark:text-slate-300 mt-3 mb-3', align: 'text-left' },
     character: { label: language === 'th' ? 'ตัวละคร (Character)' : 'Character', class: 'font-mono text-xs md:text-sm font-bold text-gold-600 dark:text-gold-400 uppercase tracking-widest mt-4 mb-1 text-left ml-[35%] w-[65%]', align: 'text-left' },
     parenthetical: { label: language === 'th' ? 'อารมณ์/ท่าทาง (Parenthetical)' : 'Parenthetical', class: 'font-mono text-xs md:text-sm text-slate-500 dark:text-slate-400 italic mt-1 mb-1 text-left ml-[22%] w-[56%]', align: 'text-left' },
     dialogue: { label: language === 'th' ? 'บทสนทนา (Dialogue)' : 'Dialogue', class: 'font-mono text-xs md:text-sm text-slate-800 dark:text-slate-200 mt-1.5 mb-2 text-left ml-[15%] w-[70%] font-medium', align: 'text-left' },
@@ -371,8 +371,8 @@ export default function ScriptEditor() {
     let currentLines = 0;
     
     // Total spacing-inclusive lines inside the printable height of A4.
-    // 42 lines is the optimal limit that fits within printable area under both Default & None margins.
-    const maxLinesPerPage = 42; 
+    // 46 lines is the optimal limit that fits within the printable area of A4 with zero print margins.
+    const maxLinesPerPage = 46; 
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i];
@@ -1003,7 +1003,7 @@ export default function ScriptEditor() {
                                     ? (language === 'th' ? 'ตัดฉากไปยัง (เช่น FADE OUT.)' : 'FADE OUT.')
                                     : (language === 'th' ? 'พิมพ์บทบรรยายการเคลื่อนไหวหรือเหตุการณ์...' : 'Describe the scene action...')
                         }
-                        className={`w-full bg-transparent border-0 outline-none focus:ring-0 resize-none font-mono text-xs md:text-sm leading-relaxed p-1 tracking-normal focus:bg-slate-100/5 dark:focus:bg-obsidian-950/20 rounded ${
+                        className={`bg-transparent border-0 outline-none focus:ring-0 resize-none font-mono text-xs md:text-sm leading-relaxed p-1 tracking-normal focus:bg-slate-100/5 dark:focus:bg-obsidian-950/20 rounded ${
                           typeStyle.class
                         } ${typeStyle.align} text-slate-900 dark:text-slate-100`}
                         style={{
