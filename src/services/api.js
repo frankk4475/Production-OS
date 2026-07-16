@@ -294,7 +294,10 @@ export const api = {
         console.error('Supabase error fetching scenes, falling back:', error);
         return getDbData(STORAGE_KEYS.SCENES).filter(s => s.project_id === projectId);
       }
-      return data || [];
+      return (data || []).map(scene => ({
+        ...scene,
+        pages: scene.tech_notes?.pages || scene.pages || '1/8'
+      }));
     } else {
       await delay();
       const scenes = getDbData(STORAGE_KEYS.SCENES);
@@ -315,7 +318,10 @@ export const api = {
       location: sceneData.location || { th: '', en: '' },
       props: sceneData.props || { th: '', en: '' },
       wardrobe: sceneData.wardrobe || { th: '', en: '' },
-      tech_notes: sceneData.tech_notes || { th: '', en: '' },
+      tech_notes: {
+        ...(sceneData.tech_notes || {}),
+        pages: sceneData.pages || '1/8'
+      },
       status: sceneData.status || 'pending'
     };
 
@@ -326,7 +332,10 @@ export const api = {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        pages: data.tech_notes?.pages || data.pages || '1/8'
+      };
     } else {
       await delay();
       const scenes = getDbData(STORAGE_KEYS.SCENES);
@@ -350,14 +359,20 @@ export const api = {
           location: updatedScene.location,
           props: updatedScene.props,
           wardrobe: updatedScene.wardrobe,
-          tech_notes: updatedScene.tech_notes,
+          tech_notes: {
+            ...(updatedScene.tech_notes || {}),
+            pages: updatedScene.pages || '1/8'
+          },
           status: updatedScene.status
         })
         .eq('id', updatedScene.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        pages: data.tech_notes?.pages || data.pages || '1/8'
+      };
     } else {
       await delay();
       const scenes = getDbData(STORAGE_KEYS.SCENES);
@@ -808,6 +823,15 @@ export const api = {
   },
 
   async syncScriptToBreakdown(projectId, blocks) {
+    const getEstimateString = (totalChars) => {
+      const eighths = Math.max(1, Math.round((totalChars / 1600) * 8));
+      if (eighths < 8) return `${eighths}/8`;
+      const whole = Math.floor(eighths / 8);
+      const rem = eighths % 8;
+      if (rem === 0) return `${whole}`;
+      return `${whole} ${rem}/8`;
+    };
+
     // 1. Parse screenplay blocks into scene chunks
     const parsedScenes = [];
     let currentScene = null;
@@ -846,9 +870,11 @@ export const api = {
           int_ext,
           day_night,
           description_blocks: [],
-          character_blocks: new Set()
+          character_blocks: new Set(),
+          total_chars: (block.text || '').length
         };
       } else if (currentScene) {
+        currentScene.total_chars += (block.text || '').length;
         if (block.type === 'action') {
           currentScene.description_blocks.push(block.text.trim());
         } else if (block.type === 'character') {
@@ -895,7 +921,10 @@ export const api = {
             location: match.location || { th: '', en: '' },
             props: match.props || { th: '', en: '' },
             wardrobe: match.wardrobe || { th: '', en: '' },
-            tech_notes: match.tech_notes || { th: '', en: '' },
+            tech_notes: {
+              ...(match.tech_notes || {}),
+              pages: match.tech_notes?.pages || match.pages || getEstimateString(parsed.total_chars)
+            },
             status: match.status || 'pending'
           };
         } else {
@@ -911,7 +940,9 @@ export const api = {
             location: { th: '', en: '' },
             props: { th: '', en: '' },
             wardrobe: { th: '', en: '' },
-            tech_notes: { th: '', en: '' },
+            tech_notes: {
+              pages: getEstimateString(parsed.total_chars)
+            },
             status: 'pending'
           };
         }
@@ -947,7 +978,8 @@ export const api = {
             cast: {
               th: castText || match.cast.th || '',
               en: castText || match.cast.en || ''
-            }
+            },
+            pages: match.pages || getEstimateString(parsed.total_chars)
           };
         } else {
           return {
@@ -963,6 +995,7 @@ export const api = {
             props: { th: '', en: '' },
             wardrobe: { th: '', en: '' },
             tech_notes: { th: '', en: '' },
+            pages: getEstimateString(parsed.total_chars),
             status: 'pending'
           };
         }

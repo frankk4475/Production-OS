@@ -364,6 +364,28 @@ export const ProjectProvider = ({ children }) => {
     }
   };
 
+  const recalculatePageLengths = async () => {
+    if (!currentProjectId || !scriptBlocks || scriptBlocks.length === 0) {
+      const isTh = localStorage.getItem('language') !== 'en';
+      alert(isTh ? 'ไม่มีข้อมูลบทเรียนหรือบทภาพยนตร์ในฉาก' : 'No screenplay blocks found to calculate.');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await api.saveScript(currentProjectId, scriptBlocks, false);
+      const updatedScenes = await api.getScenes(currentProjectId);
+      setScenes(updatedScenes);
+      const isTh = localStorage.getItem('language') !== 'en';
+      alert(isTh ? 'คำนวณความยาวหน้าบทของทุกฉากเสร็จเรียบร้อยแล้ว!' : 'Recalculated all scene page lengths successfully!');
+    } catch (err) {
+      console.error(err);
+      alert("Failed to recalculate: " + err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteScene = async (sceneId) => {
     try {
       setIsLoading(true);
@@ -683,6 +705,7 @@ export const ProjectProvider = ({ children }) => {
       addScene,
       updateScene,
       updateScenes,
+      recalculatePageLengths,
       deleteScene,
 
       // Crew actions

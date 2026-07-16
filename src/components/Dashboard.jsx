@@ -62,6 +62,12 @@ export default function Dashboard({ setCurrentTab }) {
   const [editStartDate, setEditStartDate] = useState('');
   const [editTotalBudget, setEditTotalBudget] = useState('');
   const [editCompletion, setEditCompletion] = useState(0);
+  const [editCameraPackage, setEditCameraPackage] = useState('');
+  const [editSoundRecorder, setEditSoundRecorder] = useState('');
+  const [editAspectRatio, setEditAspectRatio] = useState('1.85:1');
+  const [editFrameRate, setEditFrameRate] = useState('24 fps');
+  const [editLensKit, setEditLensKit] = useState('');
+  const [editProductionPhase, setEditProductionPhase] = useState('Pre-Production');
 
   // Fields for empty state creation
   const [emptyTitleTh, setEmptyTitleTh] = useState('');
@@ -89,6 +95,21 @@ export default function Dashboard({ setCurrentTab }) {
     setEditStartDate(project.start_date || '');
     setEditTotalBudget(project.total_budget || '');
     setEditCompletion(project.completion_percentage || 0);
+
+    const localMetaKey = `prod_project_metadata_${project.id}`;
+    let savedMeta = {};
+    try {
+      savedMeta = JSON.parse(localStorage.getItem(localMetaKey) || '{}');
+    } catch (e) {
+      console.error(e);
+    }
+    setEditCameraPackage(savedMeta.cameraPackage || '');
+    setEditSoundRecorder(savedMeta.soundRecorder || '');
+    setEditAspectRatio(savedMeta.aspectRatio || '1.85:1');
+    setEditFrameRate(savedMeta.frameRate || '24 fps');
+    setEditLensKit(savedMeta.lensKit || '');
+    setEditProductionPhase(savedMeta.productionPhase || 'Pre-Production');
+
     setIsEditModalOpen(true);
   };
 
@@ -192,6 +213,18 @@ export default function Dashboard({ setCurrentTab }) {
         total_budget: editTotalBudget,
         completion_percentage: Number(editCompletion)
       });
+
+      const localMetaKey = `prod_project_metadata_${project.id}`;
+      const metaToSave = {
+        cameraPackage: editCameraPackage,
+        soundRecorder: editSoundRecorder,
+        aspectRatio: editAspectRatio,
+        frameRate: editFrameRate,
+        lensKit: editLensKit,
+        productionPhase: editProductionPhase
+      };
+      localStorage.setItem(localMetaKey, JSON.stringify(metaToSave));
+
       setIsEditModalOpen(false);
     } catch (err) {
       alert("Failed to update project: " + err.message);
@@ -506,7 +539,7 @@ export default function Dashboard({ setCurrentTab }) {
   return (
     <div className="space-y-8 animate-fadeIn">
       {/* Welcome Banner / Overview Card */}
-      <div className={`p-6 md:p-8 rounded-2xl glass-panel relative overflow-hidden flex flex-col md:flex-row justify-between gap-6`}>
+      <div className={`p-6 md:p-8 rounded-2xl glass-panel relative overflow-hidden flex flex-col md:flex-row justify-between gap-6 border-slate-200/60 dark:border-obsidian-800/60 shadow-lg premium-glow`}>
         {/* Decorative ambient blur background */}
         <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-blue-500/5 blur-3xl pointer-events-none" />
@@ -558,28 +591,28 @@ export default function Dashboard({ setCurrentTab }) {
         </div>
 
         {/* Circular Progress Indicator */}
-        <div className="flex flex-col items-center justify-center bg-inherit p-4 rounded-xl border border-slate-200/40 dark:border-obsidian-800/40 z-10 shrink-0 md:w-56">
+        <div className="flex flex-col items-center justify-center glass-panel p-5 rounded-2xl dark:bg-obsidian-950/60 z-10 shrink-0 md:w-56 premium-glow transition-all duration-300 hover:scale-[1.02] border-slate-200/60 dark:border-obsidian-800/60 shadow-inner">
           <div className="relative w-24 h-24 flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90">
               <circle
                 cx="48"
                 cy="48"
                 r="40"
-                className="stroke-slate-200 dark:stroke-obsidian-800 fill-none"
+                className="stroke-slate-200/50 dark:stroke-obsidian-800/80 fill-none"
                 strokeWidth="6"
               />
               <circle
                 cx="48"
                 cy="48"
                 r="40"
-                className="stroke-gold-500 fill-none transition-all duration-1000"
+                className="stroke-gold-500 fill-none transition-all duration-1000 filter drop-shadow-[0_0_4px_rgba(204,164,59,0.5)]"
                 strokeWidth="6"
                 strokeDasharray="251.2"
                 strokeDashoffset={251.2 - (251.2 * project.completion_percentage) / 100}
                 strokeLinecap="round"
               />
             </svg>
-            <span className="absolute text-xl font-bold font-serif">{project.completion_percentage}%</span>
+            <span className="absolute text-xl font-bold font-serif text-gold-500 dark:text-gold-400 glow-text-subtle">{project.completion_percentage}%</span>
           </div>
           <p className="text-xs font-semibold text-slate-400 mt-3 uppercase tracking-wider">
             {t('dashboard.projectProgress')}
@@ -595,8 +628,10 @@ export default function Dashboard({ setCurrentTab }) {
             <button
               key={idx}
               onClick={() => setCurrentTab(stat.tab)}
-              className="glass-card p-5 rounded-xl flex items-center justify-between group text-left hover:scale-[1.01] active:scale-[0.99]"
+              className="glass-card p-5 rounded-2xl flex items-center justify-between group text-left premium-glow-hover border-slate-200/50 dark:border-obsidian-850 bg-white/40 dark:bg-obsidian-900/40 relative overflow-hidden active:scale-[0.99]"
             >
+              {/* Soft background glow */}
+              <div className="absolute -right-6 -bottom-6 w-16 h-16 rounded-full bg-gold-500/5 blur-xl group-hover:bg-gold-500/10 transition-all duration-300 pointer-events-none" />
               <div className="space-y-1">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                   {stat.label}
@@ -1084,6 +1119,117 @@ export default function Dashboard({ setCurrentTab }) {
                     <option value="wrap">{t('project.status.wrap')}</option>
                     <option value="post-prod">{t('project.status.postProd')}</option>
                   </select>
+                </div>
+              </div>
+
+              {/* StudioBinder Camera & Production Metadata */}
+              <div className="border-t border-slate-800/40 pt-4 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gold-500 font-mono">
+                  {language === 'th' ? 'รายละเอียดอุปกรณ์และข้อมูลการผลิตขั้นสูง (Production Package)' : 'Production & Equipment Package'}
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'th' ? 'กล้องถ่ายทำ (Camera Package)' : 'Camera Package'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ARRI Alexa Mini LF / Sony Venice 2"
+                      value={editCameraPackage}
+                      onChange={(e) => setEditCameraPackage(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'th' ? 'เครื่องบันทึกเสียง (Sound Recorder)' : 'Sound Recorder'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sound Devices 833 / Zoom F8n"
+                      value={editSoundRecorder}
+                      onChange={(e) => setEditSoundRecorder(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'th' ? 'อัตราส่วนภาพ (Aspect Ratio)' : 'Aspect Ratio'}
+                    </label>
+                    <select
+                      value={editAspectRatio}
+                      onChange={(e) => setEditAspectRatio(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <option value="16:9">16:9 (1.78:1)</option>
+                      <option value="1.85:1">1.85:1 (Flat)</option>
+                      <option value="2.39:1">2.39:1 (Scope)</option>
+                      <option value="4:3">4:3 (Academy)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'th' ? 'อัตราเฟรมภาพ (Frame Rate)' : 'Frame Rate'}
+                    </label>
+                    <select
+                      value={editFrameRate}
+                      onChange={(e) => setEditFrameRate(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <option value="23.976 fps">23.976 fps</option>
+                      <option value="24 fps">24 fps</option>
+                      <option value="25 fps">25 fps (PAL)</option>
+                      <option value="29.97 fps">29.97 fps</option>
+                      <option value="30 fps">30 fps</option>
+                      <option value="50 fps">50 fps</option>
+                      <option value="60 fps">60 fps</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      {language === 'th' ? 'เฟสการผลิต (Prod Phase)' : 'Production Phase'}
+                    </label>
+                    <select
+                      value={editProductionPhase}
+                      onChange={(e) => setEditProductionPhase(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <option value="Development">Development</option>
+                      <option value="Pre-Production">Pre-Production</option>
+                      <option value="Production">Production</option>
+                      <option value="Post-Production">Post-Production</option>
+                      <option value="Distribution">Distribution</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    {language === 'th' ? 'ชุดเลนส์ถ่ายทำ (Lens Kit)' : 'Lens Kit'}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Cooke S4/i 18, 25, 32, 50, 75, 100mm"
+                    value={editLensKit}
+                    onChange={(e) => setEditLensKit(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 ${
+                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-slate-100' : 'bg-slate-50 border-slate-200'
+                    }`}
+                  />
                 </div>
               </div>
 

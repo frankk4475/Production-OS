@@ -48,6 +48,7 @@ export default function ScriptEditor() {
     scriptBlocks,
     onlineUsers,
     saveScriptBlocks,
+    recalculatePageLengths,
     isLoading
   } = useProject();
 
@@ -77,6 +78,21 @@ export default function ScriptEditor() {
     } catch (err) {
       console.error("Immediate save failed:", err);
       setSaveStatus('error');
+    }
+  };
+
+  const handleSyncLengths = async () => {
+    setSaveStatus('saving');
+    try {
+      await saveScriptBlocks(blocks, false);
+      localChangeRef.current = false;
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      alert(language === 'th' ? 'คำนวณความยาวหน้าบทของทุกฉากเสร็จเรียบร้อยแล้ว!' : 'Recalculated all scene page lengths successfully!');
+    } catch (err) {
+      console.error("Sync lengths failed:", err);
+      setSaveStatus('error');
+      alert("Failed to sync: " + err.message);
     }
   };
 
@@ -757,6 +773,17 @@ export default function ScriptEditor() {
           </button>
 
           <button
+            onClick={handleSyncLengths}
+            className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              theme === 'dark' ? 'bg-gold-500/10 hover:bg-gold-500/20 text-gold-500 border border-gold-500/20' : 'bg-gold-50 hover:bg-gold-100 text-gold-700 border border-gold-200'
+            }`}
+            title={language === 'th' ? 'คำนวณจำนวนหน้าบทแยกตามทุกฉากอัตโนมัติจากหน้าเขียนบท' : 'Recalculate pages from screenplay text'}
+          >
+            <RefreshCw size={13} className="text-gold-500" />
+            <span>{language === 'th' ? 'คำนวณหน้าบทย่อย (Sync Lengths)' : 'Sync Scene Lengths'}</span>
+          </button>
+
+          <button
             onClick={() => setShowPrintPreview(true)}
             className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
               theme === 'dark' ? 'bg-obsidian-900 hover:bg-obsidian-800 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -818,7 +845,7 @@ export default function ScriptEditor() {
         
         {/* SIDE PANEL: Breakdown Sync Status */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 space-y-4">
+          <div className="glass-panel p-5 rounded-2xl border border-slate-200/60 dark:border-obsidian-800/60 shadow-md premium-glow space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-obsidian-800">
               <RefreshCw size={15} className="text-gold-500" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -834,7 +861,7 @@ export default function ScriptEditor() {
               </div>
               <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1 mt-2">
                 {detectedScenes.map(s => (
-                  <div key={s.num} className="p-2 rounded bg-obsidian-950/40 border border-obsidian-850/50 text-[10px] truncate font-mono">
+                  <div key={s.num} className="p-2 rounded-lg bg-obsidian-950/30 border border-obsidian-850/40 text-[10px] truncate font-mono hover:bg-gold-500/5 hover:border-gold-500/20 transition-all duration-200">
                     <span className="text-gold-500 font-bold mr-1">SCENE {s.num}:</span>
                     <span className="text-slate-300 font-semibold text-slate-700 dark:text-slate-300">{s.heading}</span>
                   </div>
@@ -885,10 +912,10 @@ export default function ScriptEditor() {
         {/* MAIN PANEL: The Virtual Script Page */}
         <div className="lg:col-span-3">
           
-          <div className={`p-6 md:p-12 min-h-[700px] border shadow-2xl rounded-2xl transition-all duration-300 ${
+          <div className={`p-6 md:p-12 min-h-[700px] border rounded-2xl transition-all duration-300 screenplay-sheet-shadow ${
             theme === 'dark' 
-              ? 'bg-obsidian-900/60 border-obsidian-800/80 shadow-black/80 shadow-slate-900' 
-              : 'bg-white border-slate-200'
+              ? 'bg-obsidian-900/65 border-obsidian-800/70' 
+              : 'bg-white border-slate-200/85'
           }`}>
             
             {/* Screenplay virtual title marker (Optional visual header) */}

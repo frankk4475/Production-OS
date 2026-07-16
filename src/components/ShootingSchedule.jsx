@@ -62,6 +62,7 @@ export default function ShootingSchedule() {
     currentProject: project,
     activeScenes: scenes,
     updateScenes,
+    updateScene,
     activeEvents,
     setEvents,
     isLoading
@@ -528,6 +529,30 @@ export default function ShootingSchedule() {
               {hasWriteAccess() && (
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200/20 dark:border-obsidian-800 no-print">
                   <button 
+                    onClick={() => {
+                      const nextStatus = scene.status === 'completed' 
+                        ? 'pending' 
+                        : scene.status === 'in_progress' 
+                          ? 'completed' 
+                          : 'in_progress';
+                      updateScene({ ...scene, status: nextStatus });
+                    }}
+                    className={`text-[9px] px-2 py-1 rounded-lg font-bold transition-all border shrink-0 ${
+                      scene.status === 'completed'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
+                        : scene.status === 'in_progress'
+                          ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20'
+                          : 'bg-slate-800 border-slate-700/60 text-slate-400 hover:text-slate-200'
+                    }`}
+                    title={language === 'th' ? 'เปลี่ยนสถานะคิวถ่ายทำ' : 'Toggle Shoot Status'}
+                  >
+                    {scene.status === 'completed' 
+                      ? (language === 'th' ? '✓ ถ่ายแล้ว' : '✓ Shot') 
+                      : scene.status === 'in_progress' 
+                        ? (language === 'th' ? '⚡ กำลังถ่าย' : '⚡ Shooting') 
+                        : (language === 'th' ? '○ รอถ่าย' : '○ Pending')}
+                  </button>
+                  <button 
                     onClick={() => addDayBreak(index)} 
                     className="text-[9px] bg-slate-900 hover:bg-slate-800 text-gold-500 px-2 py-1 rounded-lg font-bold border border-slate-800 transition-all hover:scale-105"
                     title={language === 'th' ? 'แทรกวันหยุดคิวถ่ายทำ' : 'Insert Day Break'}
@@ -645,19 +670,19 @@ export default function ShootingSchedule() {
       </div>
 
       {/* Mode Selectors */}
-      <div className="flex items-center justify-between border-b border-slate-200/30 dark:border-obsidian-850 pb-px no-print">
-        <div className="flex gap-4">
+      <div className="flex items-center justify-between no-print">
+        <div className="segmented-nav-container gap-1 max-w-max">
           <button
             onClick={() => setActiveTab('board')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
               activeTab === 'board'
-                ? 'border-gold-500 text-gold-500 font-extrabold'
-                : 'border-transparent text-slate-400 hover:text-slate-300'
+                ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle font-extrabold'
+                : 'text-slate-450 hover:text-slate-200'
             }`}
           >
             <span>{language === 'th' ? 'บอร์ดวางแผนคิว (Stripboard)' : 'Production Board'}</span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-              activeTab === 'board' ? 'bg-gold-500/10 text-gold-500' : 'bg-slate-500/10 text-slate-400'
+              activeTab === 'board' ? 'bg-gold-500/10 text-gold-500' : 'bg-slate-500/10 text-slate-450'
             }`}>
               {boardItems.filter(i => i.type === 'scene').length} {language === 'th' ? 'ฉาก' : 'scenes'}
             </span>
@@ -665,10 +690,10 @@ export default function ShootingSchedule() {
 
           <button
             onClick={() => setActiveTab('boneyard')}
-            className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-2 shrink-0 ${
               activeTab === 'boneyard'
-                ? 'border-gold-500 text-gold-500 font-extrabold'
-                : 'border-transparent text-slate-400 hover:text-slate-350'
+                ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle font-extrabold'
+                : 'text-slate-450 hover:text-slate-200'
             }`}
           >
             <span>{language === 'th' ? 'ฉากละทิ้ง (Boneyard / Omitted)' : 'Omitted / Boneyard'}</span>

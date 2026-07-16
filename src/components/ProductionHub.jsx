@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useProject } from '../context/ProjectContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -17,9 +17,27 @@ import {
 } from 'lucide-react';
 
 export default function ProductionHub() {
-  const { productionReports, saveProductionReports, activeScenes } = useProject();
+  const { 
+    productionReports, 
+    saveProductionReports, 
+    activeScenes, 
+    activeShotList, 
+    activeEvents,
+    updateScene,
+    currentProjectId
+  } = useProject();
   const { t, language } = useLanguage();
   const { theme } = useTheme();
+
+  const projectMeta = useMemo(() => {
+    if (!currentProjectId) return {};
+    try {
+      return JSON.parse(localStorage.getItem(`prod_project_metadata_${currentProjectId}`) || '{}');
+    } catch (e) {
+      console.error(e);
+      return {};
+    }
+  }, [currentProjectId]);
 
   // Sub-tabs: 'camera', 'sound', 'dit', 'daily'
   const [activeSubTab, setActiveSubTab] = useState('camera');
@@ -94,6 +112,32 @@ export default function ProductionHub() {
     crewCount: '',
     generalNotes: ''
   });
+
+  useEffect(() => {
+    if (projectMeta) {
+      if (projectMeta.frameRate) {
+        const parsedFps = parseInt(projectMeta.frameRate) || 24;
+        setCameraForm(prev => ({ ...prev, fps: String(parsedFps) }));
+      }
+      if (projectMeta.aspectRatio) {
+        setDitForm(prev => ({ ...prev, aspectRatio: projectMeta.aspectRatio }));
+      }
+    }
+  }, [projectMeta]);
+
+  const plannedShots = useMemo(() => {
+    if (!cameraForm.scene || !activeShotList) return [];
+    return activeShotList.filter(s => s.scene_number === cameraForm.scene);
+  }, [cameraForm.scene, activeShotList]);
+
+  const plannedSoundShots = useMemo(() => {
+    if (!soundForm.scene || !activeShotList) return [];
+    return activeShotList.filter(s => s.scene_number === soundForm.scene);
+  }, [soundForm.scene, activeShotList]);
+
+  const callSheetEvents = useMemo(() => {
+    return (activeEvents || []).filter(e => e.type === 'shoot' || e.title?.en?.toLowerCase().includes('shoot') || e.title?.th?.toLowerCase().includes('ถ่ายทำ'));
+  }, [activeEvents]);
 
   // Filtered reports
   const filteredReports = useMemo(() => {
@@ -270,6 +314,31 @@ export default function ProductionHub() {
     };
 
     saveProductionReports([...productionReports, newLog]);
+
+    if (dailyForm.scenesShot) {
+      const sceneNums = dailyForm.scenesShot.split(',').map(s => s.trim()).filter(Boolean);
+      sceneNums.forEach(num => {
+        const found = activeScenes.find(s => s.scene_number === num);
+        if (found && found.status !== 'completed') {
+          updateScene({ ...found, status: 'completed' });
+        }
+      });
+    }
+
+    setDailyForm({
+      date: new Date().toISOString().split('T')[0],
+      dayNum: (parseInt(dailyForm.dayNum) + 1 || 2).toString(),
+      weather: 'Sunny',
+      callTime: '06:00',
+      firstShot: '08:00',
+      lunchStart: '12:00',
+      lunchEnd: '13:00',
+      wrapTime: '18:00',
+      rollsUsed: '',
+      scenesShot: '',
+      crewCount: '',
+      generalNotes: ''
+    });
   };
 
   // Handle delete log
@@ -417,6 +486,33 @@ export default function ProductionHub() {
                   />
                 </div>
               </div>
+
+              {plannedShots.length > 0 && (
+                <div className="p-2 rounded bg-obsidian-950/40 border border-obsidian-800/40 space-y-1">
+                  <span className="block text-[10px] font-bold text-gold-500">
+                    {language === 'th' ? 'ช็อตที่วางแผนไว้ (Planned Shots) - คลิกเพื่อกรอกด่วน:' : 'Planned Shots - Click to auto-fill:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannedShots.map(shot => (
+                      <button
+                        key={shot.id}
+                        type="button"
+                        onClick={() => {
+                          setCameraForm(prev => ({
+                            ...prev,
+                            lens: shot.lens || prev.lens,
+                            notes: shot.description?.[language] || shot.description?.en || prev.notes,
+                            clipName: prev.roll ? `${prev.roll}_C${prev.take.padStart(3, '0')}_Sc${shot.scene_number}_Sh${shot.shot_number}` : `${shot.scene_number}_Sh${shot.shot_number}_T${prev.take}`
+                          }));
+                        }}
+                        className="px-2 py-0.5 rounded text-[10px] bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750 hover:text-gold-500 hover:border-gold-500/40 transition-all font-semibold"
+                      >
+                        {shot.shot_number} ({shot.size || 'MCU'}) - {shot.lens}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -647,6 +743,32 @@ export default function ProductionHub() {
                   />
                 </div>
               </div>
+
+              {plannedSoundShots.length > 0 && (
+                <div className="p-2 rounded bg-obsidian-950/40 border border-obsidian-800/40 space-y-1">
+                  <span className="block text-[10px] font-bold text-gold-500">
+                    {language === 'th' ? 'ช็อตที่วางแผนไว้ (Planned Shots) - คลิกเพื่อกรอกด่วน:' : 'Planned Shots - Click to auto-fill:'}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {plannedSoundShots.map(shot => (
+                      <button
+                        key={shot.id}
+                        type="button"
+                        onClick={() => {
+                          setSoundForm(prev => ({
+                            ...prev,
+                            notes: shot.description?.[language] || shot.description?.en || prev.notes,
+                            fileName: prev.roll ? `${prev.roll}_T${prev.take.padStart(3, '0')}_Sc${shot.scene_number}_Sh${shot.shot_number}.WAV` : `Sc${shot.scene_number}_Sh${shot.shot_number}_T${prev.take}.WAV`
+                          }));
+                        }}
+                        className="px-2 py-0.5 rounded text-[10px] bg-slate-850 hover:bg-slate-800 text-slate-300 border border-slate-750 hover:text-gold-500 hover:border-gold-500/40 transition-all font-semibold"
+                      >
+                        {shot.shot_number} ({shot.size || 'MCU'})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -921,6 +1043,45 @@ export default function ProductionHub() {
           {/* Render Daily Report Form */}
           {activeSubTab === 'daily' && (
             <form onSubmit={handleAddDaily} className="space-y-4">
+              {callSheetEvents.length > 0 && (
+                <div className="p-3 border border-gold-500/20 rounded bg-gold-500/5 space-y-1.5 animate-fadeIn">
+                  <label className="block text-[11px] font-bold text-gold-500">
+                    {language === 'th' ? '⚡ ดึงข้อมูลจากใบสั่งงาน (Call Sheet)' : '⚡ Autofill from Call Sheet'}
+                  </label>
+                  <select
+                    onChange={(e) => {
+                      const evtId = e.target.value;
+                      if (!evtId) return;
+                      const selectedEvt = callSheetEvents.find(evt => evt.id === evtId);
+                      if (selectedEvt) {
+                        const scNum = selectedEvt.scene_number || '';
+                        
+                        setDailyForm(prev => ({
+                          ...prev,
+                          date: selectedEvt.date || prev.date,
+                          weather: selectedEvt.notes?.weather || prev.weather || 'Sunny',
+                          callTime: selectedEvt.notes?.crew_call || prev.callTime || '07:00',
+                          firstShot: selectedEvt.notes?.shooting_call || prev.firstShot || '08:30',
+                          lunchStart: selectedEvt.notes?.lunch_time || prev.lunchStart || '12:00',
+                          wrapTime: selectedEvt.notes?.wrap_time || prev.wrapTime || '18:00',
+                          scenesShot: scNum ? String(scNum) : prev.scenesShot,
+                          crewCount: selectedEvt.crew_assigned?.length ? String(selectedEvt.crew_assigned.length) : prev.crewCount,
+                          generalNotes: selectedEvt.notes?.th || selectedEvt.notes?.en || prev.generalNotes
+                        }));
+                      }
+                    }}
+                    className={`w-full text-xs rounded border p-2 ${isDark ? 'bg-obsidian-950 border-obsidian-800 text-slate-350 focus:border-gold-500' : 'bg-slate-50 border-slate-200 focus:border-gold-500'}`}
+                  >
+                    <option value="">-- {language === 'th' ? 'เลือกใบสั่งงานคิวถ่ายทำ' : 'Choose Call Sheet Event'} --</option>
+                    {callSheetEvents.map(evt => (
+                      <option key={evt.id} value={evt.id}>
+                        {evt.date} - Sc {evt.scene_number || '?'} ({evt.location?.[language] || evt.location?.en || 'On Set'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 mb-1">{t('prod.daily.date')}</label>
@@ -1029,13 +1190,40 @@ export default function ProductionHub() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">{t('prod.daily.scenesShot')}</label>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  {language === 'th' ? 'ฉากที่ถ่ายทำเสร็จสิ้นวันนี้ (Scenes Shot Today)' : 'Scenes Shot Today'}
+                </label>
+                <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto p-2 border border-obsidian-800/80 rounded bg-obsidian-950/20 mb-2">
+                  {(activeScenes || []).map(sc => {
+                    const isChecked = dailyForm.scenesShot.split(',').map(s => s.trim()).includes(sc.scene_number);
+                    return (
+                      <label key={sc.id} className="flex items-center gap-2 cursor-pointer text-xs text-slate-350 hover:text-slate-100">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const currentList = dailyForm.scenesShot ? dailyForm.scenesShot.split(',').map(s => s.trim()).filter(Boolean) : [];
+                            let newList;
+                            if (e.target.checked) {
+                              newList = [...currentList, sc.scene_number];
+                            } else {
+                              newList = currentList.filter(s => s !== sc.scene_number);
+                            }
+                            setDailyForm(prev => ({ ...prev, scenesShot: newList.join(', ') }));
+                          }}
+                          className="rounded text-gold-500 bg-obsidian-950 border-obsidian-800 focus:ring-0"
+                        />
+                        <span>Sc {sc.scene_number}</span>
+                      </label>
+                    );
+                  })}
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. Sc 4, Sc 5, Sc 9"
+                  placeholder="e.g. Sc 4, Sc 5"
                   value={dailyForm.scenesShot}
                   onChange={e => setDailyForm(prev => ({ ...prev, scenesShot: e.target.value }))}
-                  className={`w-full text-sm rounded border p-2 ${isDark ? 'bg-obsidian-950 border-obsidian-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
+                  className={`w-full text-xs rounded border p-2 ${isDark ? 'bg-obsidian-950 border-obsidian-800 text-slate-200' : 'bg-slate-50 border-slate-200'}`}
                 />
               </div>
 

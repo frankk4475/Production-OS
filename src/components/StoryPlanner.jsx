@@ -21,7 +21,8 @@ import {
   Clapperboard,
   Film,
   User,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react';
 
 export default function StoryPlanner() {
@@ -595,7 +596,7 @@ export default function StoryPlanner() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           <button 
             onClick={() => setActiveTab('outlineText')}
-            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'outlineText' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'outlineText' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
             <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
               <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">1</span>
@@ -609,7 +610,7 @@ export default function StoryPlanner() {
           </button>
           <button 
             onClick={() => setActiveTab('characters')}
-            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'characters' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'characters' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
             <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
               <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">2</span>
@@ -623,7 +624,7 @@ export default function StoryPlanner() {
           </button>
           <button 
             onClick={() => setActiveTab('beats')}
-            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'beats' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/[0.03]' : 'border-slate-200/60 dark:border-obsidian-800/80 bg-slate-100/30 dark:bg-obsidian-900/30'}`}
+            className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'beats' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
             <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-350">
               <span className="bg-gold-500/10 text-gold-500 w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 font-serif">3</span>
@@ -651,7 +652,7 @@ export default function StoryPlanner() {
               <div key={beat.id} className="flex items-center shrink-0">
                 <div 
                   onClick={() => setViewingBeat(beat)}
-                  className="group relative px-3.5 py-2.5 rounded-lg border border-slate-200 dark:border-obsidian-800 bg-white/40 dark:bg-obsidian-900/40 backdrop-blur-xs flex flex-col items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 hover:border-gold-500/30 hover:shadow-md hover:shadow-gold-500/[0.02]"
+                  className="group relative px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-obsidian-800 bg-white/40 dark:bg-obsidian-900/40 backdrop-blur-xs flex flex-col items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 hover:border-gold-500/30 hover:shadow-lg"
                   style={{ borderLeftColor: plot.color, borderLeftWidth: '4px' }}
                 >
                   <span className="text-[10px] font-mono text-slate-400">#{idx + 1}</span>
@@ -669,7 +670,7 @@ export default function StoryPlanner() {
                   </div>
                 </div>
                 {idx < localOutline.beats.length - 1 && (
-                  <span className="text-slate-600 font-bold mx-1">→</span>
+                  <ChevronRight size={14} className="text-slate-500/60 mx-1 shrink-0" />
                 )}
               </div>
             );
@@ -683,49 +684,49 @@ export default function StoryPlanner() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-obsidian-800 gap-1 overflow-x-auto no-print">
+      <div className="segmented-nav-container gap-1 overflow-x-auto no-print max-w-max">
         <button
           onClick={() => setActiveTab('outlineText')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeTab === 'outlineText'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
-          <BookOpen size={16} />
+          <BookOpen size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 1: โครงขยายบทละครแบบข้อความ' : 'Step 1: Outline & Treatment'}</span>
         </button>
         <button
           onClick={() => setActiveTab('characters')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeTab === 'characters'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
-          <Users size={16} />
+          <Users size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 2: พัฒนาการและปมตัวละคร' : 'Step 2: Character Arcs'}</span>
         </button>
         <button
           onClick={() => setActiveTab('beats')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeTab === 'beats'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
-          <Layers size={16} />
+          <Layers size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 3: บอร์ดวางโครงเรื่องย่อย' : 'Step 3: Beat Board'}</span>
         </button>
         <button
           onClick={() => setActiveTab('plotlines')}
-          className={`px-4 py-2 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 shrink-0 ${
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeTab === 'plotlines'
-              ? 'border-gold-500 text-gold-500 bg-gold-500/5'
-              : 'border-transparent text-slate-400 hover:text-slate-200'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
-          <GitCommit size={16} />
+          <GitCommit size={14} />
           <span>{language === 'th' ? 'เส้นเรื่องและพล็อตย่อย' : 'Plotlines & Story Arcs'}</span>
         </button>
       </div>

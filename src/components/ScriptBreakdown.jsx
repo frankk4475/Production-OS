@@ -13,15 +13,15 @@ import {
   Clapperboard, 
   Printer, 
   FileText, 
-  Tag
+  Tag,
+  RefreshCw
 } from 'lucide-react';
 
 const ELEMENT_CATEGORIES = [
   { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 hover:bg-purple-500/20', dotColor: 'bg-purple-500' },
-  { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20 hover:bg-pink-500/20', dotColor: 'bg-pink-500' },
-  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 hover:bg-orange-500/20', dotColor: 'bg-orange-500' },
-  { id: 'set_dressing', label: 'Set Dressing', labelTh: 'การตกแต่งฉาก', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20', dotColor: 'bg-blue-500' },
-  { id: 'costumes', label: 'Costumes', labelTh: 'เครื่องแต่งกาย', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20', dotColor: 'bg-amber-500' },
+  { id: 'background_actors', label: 'Background Actors', labelTh: 'นักแสดงสมทบ/ตัวประกอบ', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 hover:bg-blue-500/20', dotColor: 'bg-blue-500' },
+  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20', dotColor: 'bg-amber-500' },
+  { id: 'wardrobe', label: 'Wardrobe', labelTh: 'เสื้อผ้าเครื่องแต่งกาย', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20 hover:bg-pink-500/20', dotColor: 'bg-pink-500' },
   { id: 'makeup_hair', label: 'Makeup & Hair', labelTh: 'แต่งหน้าทำผม', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20 hover:bg-teal-500/20', dotColor: 'bg-teal-500' },
   { id: 'sound', label: 'Sound', labelTh: 'เสียงและเอฟเฟกต์', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20 hover:bg-violet-500/20', dotColor: 'bg-violet-500' },
   { id: 'vfx', label: 'VFX', labelTh: 'วิชวลเอฟเฟกต์', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20', dotColor: 'bg-indigo-500' },
@@ -35,7 +35,7 @@ export default function ScriptBreakdown() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
-  const { activeScenes: scenes, addScene, updateScene, deleteScene, scriptBlocks } = useProject();
+  const { activeScenes: scenes, addScene, updateScene, deleteScene, recalculatePageLengths, scriptBlocks } = useProject();
 
   const [activeSubTab, setActiveSubTab] = useState('summary');
   const [searchTerm, setSearchTerm] = useState('');
@@ -266,6 +266,20 @@ export default function ScriptBreakdown() {
             <span>{language === 'th' ? 'พิมพ์รายงาน' : 'Print / Export'}</span>
           </button>
           {hasWriteAccess() && (
+            <button
+              onClick={recalculatePageLengths}
+              className={`px-3 py-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
+                theme === 'dark'
+                  ? 'bg-gold-500/10 border-gold-500/20 text-gold-500 hover:bg-gold-500/20'
+                  : 'bg-gold-50 border-gold-200 text-gold-700 hover:bg-gold-100'
+              }`}
+              title={language === 'th' ? 'คำนวณจำนวนหน้าบทแยกตามทุกฉากอัตโนมัติจากบทที่เซฟไว้' : 'Auto-calculate scene lengths from script'}
+            >
+              <RefreshCw size={14} />
+              <span>{language === 'th' ? 'คำนวณหน้าอัตโนมัติ' : 'Auto-calculate'}</span>
+            </button>
+          )}
+          {hasWriteAccess() && (
             <button 
               onClick={handleAddClick} 
               className="px-4 py-2 bg-gradient-to-r from-gold-600 to-amber-500 hover:shadow text-white font-bold text-xs rounded-lg transition-all active:scale-95 shadow-sm"
@@ -276,13 +290,13 @@ export default function ScriptBreakdown() {
         </div>
       </div>
 
-      <div className="flex gap-4 border-b border-slate-205/30 dark:border-obsidian-850 pb-px no-print">
+      <div className="segmented-nav-container gap-1 no-print max-w-max">
         <button 
           onClick={() => setActiveSubTab('summary')} 
-          className={`pb-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeSubTab === 'summary' 
-              ? 'border-gold-500 text-gold-500' 
-              : 'border-transparent text-slate-400 hover:text-slate-300'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle' 
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
           <FileText size={14} /> 
@@ -290,10 +304,10 @@ export default function ScriptBreakdown() {
         </button>
         <button 
           onClick={() => setActiveSubTab('tagging')} 
-          className={`pb-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
             activeSubTab === 'tagging' 
-              ? 'border-gold-500 text-gold-500' 
-              : 'border-transparent text-slate-400 hover:text-slate-300'
+              ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle' 
+              : 'text-slate-450 hover:text-slate-200'
           }`}
         >
           <Tag size={14} /> 
@@ -514,9 +528,26 @@ export default function ScriptBreakdown() {
                             <option value="completed" className="bg-obsidian-950 text-slate-450">{language === 'th' ? 'เสร็จสิ้น' : 'Completed'}</option>
                           </select>
                         </div>
-                        <p className="text-xs text-slate-450 font-mono mt-0.5">
-                          {language === 'th' ? 'จำนวนความยาว:' : 'Length:'} <span className="text-slate-900 dark:text-white font-bold">{activeScene.pages || '1/8'}</span> {language === 'th' ? 'หน้าบท' : 'pages'}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1.5 text-xs">
+                          <span className="text-slate-450 font-bold">{language === 'th' ? 'จำนวนความยาว:' : 'Length:'}</span>
+                          <select
+                            disabled={!hasWriteAccess()}
+                            value={activeScene.pages || '1/8'}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              await updateScene({ ...activeScene, pages: val });
+                            }}
+                            className={`px-2 py-0.5 rounded text-xs font-bold border focus:outline-none cursor-pointer ${
+                              theme === 'dark' 
+                                ? 'bg-obsidian-950 border-obsidian-800 text-slate-200 focus:border-gold-500' 
+                                : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-500'
+                            }`}
+                          >
+                            {['1/8', '2/8', '3/8', '4/8', '5/8', '6/8', '7/8', '1', '1 1/8', '1 2/8', '1 3/8', '1 4/8', '1 5/8', '1 6/8', '1 7/8', '2', '2 1/8', '2 2/8', '2 3/8', '2 4/8', '2 5/8', '2 6/8', '2 7/8', '3', '3 1/8', '3 2/8', '3 4/8', '4', '5', '6', '7', '8', '9', '10'].map(val => (
+                              <option key={val} value={val}>{val} {language === 'th' ? 'หน้าบท' : 'pgs'}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
