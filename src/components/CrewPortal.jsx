@@ -86,6 +86,7 @@ export default function CrewPortal({ lockedCrewId }) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { user, hasWriteAccess, isCrewOrTalent } = useAuth();
+  const isAdmin = user?.email?.toLowerCase() === 'admin@production.com';
   
   const {
     activeScenes,
@@ -103,21 +104,25 @@ export default function CrewPortal({ lockedCrewId }) {
 
   // Tab View Mode: 'producer' (Roster) | 'crew' (My Schedule) | 'access' (UserManager)
   const [portalMode, setPortalMode] = useState(() => {
-    return isCrewOrTalent() || lockedCrewId ? 'crew' : 'producer';
+    return !isAdmin || lockedCrewId ? 'crew' : 'producer';
   });
 
   const [selectedCrewId, setSelectedCrewId] = useState(lockedCrewId || '');
   const [allEvents, setAllEvents] = useState([]);
 
-  // Auto-select the logged-in crew member's ID if in crew/talent view
+  // Auto-select the logged-in crew member's ID if not admin
   useEffect(() => {
-    if (user && isCrewOrTalent() && crew.length > 0) {
-      const match = crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase());
-      if (match) {
-        setSelectedCrewId(match.id);
+    if (user && crew.length > 0) {
+      if (!isAdmin || lockedCrewId) {
+        const targetId = lockedCrewId || crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase())?.id;
+        if (targetId) {
+          setSelectedCrewId(targetId);
+        } else if (!isAdmin) {
+          setSelectedCrewId('none');
+        }
       }
     }
-  }, [user, crew]);
+  }, [user, crew, isAdmin, lockedCrewId]);
 
   // Fetch all events across all projects for cross-project conflict checking in the roster list
   useEffect(() => {
@@ -331,9 +336,15 @@ export default function CrewPortal({ lockedCrewId }) {
   };
 
   // Get selected crew details for personal portal
-  const activeCrewMember = selectedCrewId === 'none' 
-    ? null 
-    : (crew.find(c => c.id === selectedCrewId) || crew[0]);
+  const activeCrewMember = (() => {
+    if (selectedCrewId === 'none') return null;
+    if (!isAdmin) {
+      // Force non-admin to only access their own crew member profile
+      return crew.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase()) || null;
+    }
+    // Admin can access any selected crew member
+    return crew.find(c => c.id === selectedCrewId) || crew[0] || null;
+  })();
 
   // Get active crew member's events
   const crewEvents = activeCrewMember
@@ -812,7 +823,7 @@ export default function CrewPortal({ lockedCrewId }) {
         </div>
 
         {/* View mode toggle */}
-        {!isCrewOrTalent() && (
+        {isAdmin && (
           <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-obsidian-800">
             <button
               onClick={() => handlePortalModeChange('producer')}
@@ -989,7 +1000,7 @@ export default function CrewPortal({ lockedCrewId }) {
         <div className="space-y-6">
           
           {/* Select Crew Member context */}
-          {!lockedCrewId && (
+          {!lockedCrewId && isAdmin && (
             <div className="glass-panel p-4 rounded-xl flex items-center justify-between gap-4 max-w-md">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('crew.viewAsCrew')}</span>
               <select
