@@ -183,7 +183,8 @@ export default function UserManager({ hideHeader = false }) {
   };
 
   const getRoleLabel = (roleName) => {
-    switch (roleName) {
+    const cleanRole = roleName ? roleName.replace('_admin', '') : '';
+    switch (cleanRole) {
       case 'Producer':
         return language === 'th' ? 'ผู้ดำเนินงานสร้าง (Producer)' : 'Producer';
       case '1st_AD':
@@ -474,15 +475,15 @@ export default function UserManager({ hideHeader = false }) {
                         </td>
                         <td className="py-3.5 px-2">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                            u.role === 'Producer' 
+                            u.role?.replace('_admin', '') === 'Producer' 
                               ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
-                              : u.role === '1st_AD'
+                              : u.role?.replace('_admin', '') === '1st_AD'
                               ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                              : u.role === 'Director'
+                              : u.role?.replace('_admin', '') === 'Director'
                               ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                              : u.role === 'Production_Manager'
+                              : u.role?.replace('_admin', '') === 'Production_Manager'
                               ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                              : u.role === 'Screenwriter'
+                              : u.role?.replace('_admin', '') === 'Screenwriter'
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                               : 'bg-slate-500/10 text-slate-400 border border-slate-500/20'
                           }`}>

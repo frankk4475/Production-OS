@@ -25,7 +25,8 @@ import {
 } from 'lucide-react';
 
 const getRoleLabel = (roleName, language) => {
-  switch (roleName) {
+  const cleanRole = roleName ? roleName.replace('_admin', '') : '';
+  switch (cleanRole) {
     case 'Producer': return language === 'th' ? 'ผู้ดำเนินงานสร้าง' : 'Producer';
     case '1st_AD': return language === 'th' ? 'ผู้ช่วยผู้กำกับ 1' : '1st AD';
     case 'Director': return language === 'th' ? 'ผู้กำกับ' : 'Director';
