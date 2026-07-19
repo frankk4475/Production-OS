@@ -33,6 +33,31 @@ export const AuthProvider = ({ children }) => {
     fetchUsers();
   }, []);
 
+  // Dynamic session synchronization on data mount
+  useEffect(() => {
+    if (user && users.length > 0) {
+      const latestRecord = users.find(u => u.email?.toLowerCase() === user.email?.toLowerCase());
+      if (latestRecord) {
+        const updatedUser = {
+          ...user,
+          role: latestRecord.role,
+          name: latestRecord.name,
+          id: latestRecord.id,
+          is_admin: latestRecord.is_admin || latestRecord.email?.toLowerCase() === 'admin@production.com'
+        };
+        if (
+          user.role !== updatedUser.role ||
+          user.name !== updatedUser.name ||
+          user.id !== updatedUser.id ||
+          user.is_admin !== updatedUser.is_admin
+        ) {
+          localStorage.setItem('prod_user', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+        }
+      }
+    }
+  }, [users]);
+
   const login = async (email, password) => {
     // 1. Search in dynamic users database
     const allUsers = await api.getUsers();
@@ -65,18 +90,27 @@ export const AuthProvider = ({ children }) => {
     const matchedDemo = demoAccounts.find(d => d.email === email && d.password === password);
     if (matchedDemo) {
       // Auto-add demo user to dynamic list so they appear in user tables
-      const userExists = allUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!userExists) {
+      let dbUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!dbUser) {
         try {
-          const added = await api.createUser(matchedDemo.name, matchedDemo.email, matchedDemo.password, matchedDemo.role);
-          setUsers(prev => [...prev, added]);
+          dbUser = await api.createUser(matchedDemo.name, matchedDemo.email, matchedDemo.password, matchedDemo.role);
+          setUsers(prev => [...prev, dbUser]);
           setIsFirstTimeSetup(false);
         } catch (e) {
           console.error("Failed to auto-create demo user:", e);
         }
       }
-      localStorage.setItem('prod_user', JSON.stringify(matchedDemo));
-      setUser(matchedDemo);
+      
+      const userData = {
+        email: dbUser ? dbUser.email : matchedDemo.email,
+        role: dbUser ? dbUser.role : matchedDemo.role,
+        name: dbUser ? dbUser.name : matchedDemo.name,
+        id: dbUser ? dbUser.id : matchedDemo.id,
+        is_admin: dbUser ? (dbUser.is_admin || dbUser.email?.toLowerCase() === 'admin@production.com') : (matchedDemo.email?.toLowerCase() === 'admin@production.com')
+      };
+      
+      localStorage.setItem('prod_user', JSON.stringify(userData));
+      setUser(userData);
       window.location.hash = '#/dashboard';
       return { success: true };
     }
@@ -166,8 +200,12 @@ export const AuthProvider = ({ children }) => {
     await api.updateUserAdmin(userId, isAdminFlag);
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: isAdminFlag } : u));
     
-    // Update logged in user state if current user is elevated/demoted
-    if (user?.id === userId) {
+    // Find target user email in dynamic list
+    const targetUser = users.find(u => u.id === userId);
+    const targetEmail = targetUser?.email || '';
+
+    // Update logged in user state if current user is elevated/demoted (match by ID or Email)
+    if (user?.id === userId || (user?.email && targetEmail && user.email.toLowerCase() === targetEmail.toLowerCase())) {
       const updatedUser = { ...user, is_admin: isAdminFlag };
       localStorage.setItem('prod_user', JSON.stringify(updatedUser));
       setUser(updatedUser);
