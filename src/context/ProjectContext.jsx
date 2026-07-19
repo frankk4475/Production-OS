@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
 import { googleCalendar } from '../services/googleCalendar';
 import { useAuth } from './AuthContext';
@@ -8,7 +8,7 @@ const ProjectContext = createContext();
 
 export const ProjectProvider = ({ children }) => {
   const { user } = useAuth();
-  const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
+  const getProjectKey = useCallback((baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey, [user]);
 
   const [projects, setProjects] = useState([]);
   const [currentProjectId, setCurrentProjectId] = useState('');
@@ -64,7 +64,7 @@ export const ProjectProvider = ({ children }) => {
       }
     };
     initLoad();
-  }, [user?.id]);
+  }, [user?.id, getProjectKey]);
 
   // 2. Fetch Project-specific Data when currentProjectId changes
   useEffect(() => {
@@ -129,7 +129,7 @@ export const ProjectProvider = ({ children }) => {
       }
     };
     loadProjectData();
-  }, [currentProjectId]);
+  }, [currentProjectId, getProjectKey]);
 
   // Real-time Database Updates and Presence Collaboration System
   useEffect(() => {
@@ -234,7 +234,7 @@ export const ProjectProvider = ({ children }) => {
       supabase.removeChannel(dbChannel);
       supabase.removeChannel(presenceChannel);
     };
-  }, [currentProjectId, user?.id]);
+  }, [currentProjectId, user?.id, user?.email]);
 
   // Derived current active project
   const currentProject = projects.find(p => p.id === currentProjectId) || null;

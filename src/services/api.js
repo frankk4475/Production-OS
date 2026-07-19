@@ -1282,6 +1282,7 @@ export const api = {
       email,
       password,
       role,
+      is_admin: email.toLowerCase() === 'admin@production.com',
       created_at: new Date().toISOString()
     };
 
@@ -1299,6 +1300,31 @@ export const api = {
       users.push(newUser);
       setDbData(STORAGE_KEYS.USERS, users);
       return newUser;
+    }
+  },
+
+  async updateUserAdmin(userId, isAdmin) {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ is_admin: isAdmin })
+        .eq('id', userId)
+        .select()
+        .single();
+      if (error) {
+        console.error('Supabase error updating user admin status:', error);
+      }
+      return data;
+    } else {
+      await delay();
+      const users = getDbData(STORAGE_KEYS.USERS, []);
+      const index = users.findIndex(u => u.id === userId);
+      if (index !== -1) {
+        users[index].is_admin = isAdmin;
+        setDbData(STORAGE_KEYS.USERS, users);
+        return users[index];
+      }
+      return null;
     }
   },
 

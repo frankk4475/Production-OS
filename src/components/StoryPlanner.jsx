@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 import { useAuth } from '../context/AuthContext';
@@ -170,25 +170,7 @@ export default function StoryPlanner() {
     { value: '#ec4899', label: language === 'th' ? 'ชมพู (เส้นรัก/ความสัมพันธ์)' : 'Pink (Romance)' }
   ];
 
-  if (!project) {
-    return (
-      <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
-        <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
-          <BookOpen size={32} />
-        </div>
-        <h3 className="text-lg font-bold font-serif">
-          {language === 'th' ? 'กรุณาเลือกหรือสร้างโครงการก่อนเพื่อวางแผนโครงเรื่อง' : 'No Project Selected'}
-        </h3>
-        <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-          {language === 'th' 
-            ? 'การทำเส้นเรื่องและโครงขยายจำเป็นต้องอิงเข้ากับข้อมูลการผลิตในแต่ละโครงการหลัก' 
-            : 'Please select an existing project or create a new one to access the story & outline planner.'}
-        </p>
-      </div>
-    );
-  }
-
-  const handleSave = async (updatedOutline = localOutline) => {
+  const handleSave = useCallback(async (updatedOutline = localOutline) => {
     try {
       setIsSaving(true);
       await saveStoryOutline(updatedOutline);
@@ -201,10 +183,10 @@ export default function StoryPlanner() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [localOutline, saveStoryOutline, language]);
 
   // --- PLOTLINE CRUD ---
-  const handleAddPlotline = (e) => {
+  const handleAddPlotline = useCallback((e) => {
     e.preventDefault();
     if (!newPlotline.nameTh.trim() && !newPlotline.nameEn.trim()) return;
 
@@ -230,7 +212,7 @@ export default function StoryPlanner() {
     setNewPlotline({ nameTh: '', nameEn: '', color: '#ef4444', descriptionTh: '', descriptionEn: '' });
     setIsAddPlotlineOpen(false);
     handleSave(updated);
-  };
+  }, [newPlotline, localOutline, handleSave]);
 
   const openEditPlotline = (plot) => {
     setEditPlotlineId(plot.id);
@@ -277,7 +259,7 @@ export default function StoryPlanner() {
   };
 
   // --- CHARACTER CRUD ---
-  const handleAddCharacter = (e) => {
+  const handleAddCharacter = useCallback((e) => {
     e.preventDefault();
     if (!newChar.nameTh.trim() && !newChar.nameEn.trim()) return;
 
@@ -299,7 +281,7 @@ export default function StoryPlanner() {
     setNewChar({ nameTh: '', nameEn: '', roleTh: '', roleEn: '', goalTh: '', goalEn: '', arcTh: '', arcEn: '', conflictTh: '', conflictEn: '' });
     setIsAddCharOpen(false);
     handleSave(updated);
-  };
+  }, [newChar, localOutline, handleSave]);
 
   const openEditCharacter = (char) => {
     setEditCharId(char.id);
@@ -352,7 +334,7 @@ export default function StoryPlanner() {
   };
 
   // --- BEAT CARD CRUD ---
-  const handleAddBeat = (e) => {
+  const handleAddBeat = useCallback((e) => {
     e.preventDefault();
     if (!newBeat.titleTh.trim() && !newBeat.titleEn.trim()) return;
 
@@ -374,7 +356,7 @@ export default function StoryPlanner() {
     setNewBeat({ titleTh: '', titleEn: '', act: 'Act I', plotlineId: '', descriptionTh: '', descriptionEn: '', sceneTarget: '' });
     setIsAddBeatOpen(false);
     handleSave(updated);
-  };
+  }, [newBeat, localOutline, handleSave]);
 
   const openEditBeat = (beat) => {
     setEditBeatId(beat.id);
@@ -533,6 +515,24 @@ export default function StoryPlanner() {
     setLocalOutline(updated);
     handleSave(updated);
   };
+
+  if (!project) {
+    return (
+      <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn mt-10">
+        <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
+          <BookOpen size={32} />
+        </div>
+        <h3 className="text-lg font-bold font-serif">
+          {language === 'th' ? 'กรุณาเลือกหรือสร้างโครงการก่อนเพื่อวางแผนโครงเรื่อง' : 'No Project Selected'}
+        </h3>
+        <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+          {language === 'th' 
+            ? 'การทำเส้นเรื่องและโครงขยายจำเป็นต้องอิงเข้ากับข้อมูลการผลิตในแต่ละโครงการหลัก' 
+            : 'Please select an existing project or create a new one to access the story & outline planner.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fadeIn pb-20">

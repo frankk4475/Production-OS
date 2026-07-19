@@ -24,7 +24,8 @@ export default function UserManager({ hideHeader = false }) {
     user: currentUser, 
     users, 
     registerUserByAdmin, 
-    deleteUserByAdmin 
+    deleteUserByAdmin,
+    toggleUserAdminByAdmin
   } = useAuth();
 
   const { refreshCrew, activeCrew: crew, updateCrewMember } = useProject();
@@ -171,6 +172,16 @@ export default function UserManager({ hideHeader = false }) {
     }
   };
 
+  const handleToggleAdmin = async (userId, isAdminFlag) => {
+    try {
+      if (toggleUserAdminByAdmin) {
+        await toggleUserAdminByAdmin(userId, isAdminFlag);
+      }
+    } catch (err) {
+      alert("Failed to toggle admin status: " + err.message);
+    }
+  };
+
   const getRoleLabel = (roleName) => {
     switch (roleName) {
       case 'Producer':
@@ -181,10 +192,40 @@ export default function UserManager({ hideHeader = false }) {
         return language === 'th' ? 'ผู้กำกับ (Director)' : 'Director';
       case 'Production_Manager':
         return language === 'th' ? 'ผู้จัดการกองถ่าย (Production Manager)' : 'Production Manager';
-      case 'Crew':
-        return language === 'th' ? 'ทีมงานฝ่ายผลิต (Crew)' : 'Crew Member';
+      case 'Screenwriter':
+        return language === 'th' ? 'นักเขียนบท (Screenwriter)' : 'Screenwriter';
+      case 'Script_Supervisor':
+        return language === 'th' ? 'ผู้บันทึกการถ่ายทำ (Script Supervisor)' : 'Script Supervisor';
+      case 'DP':
+        return language === 'th' ? 'ผู้กำกับภาพ (Director of Photography)' : 'Director of Photography';
+      case 'Focus_Puller':
+        return language === 'th' ? 'ผู้ช่วยกล้อง 1 (Focus Puller)' : 'Focus Puller';
+      case 'Camera_Assistant':
+        return language === 'th' ? 'ผู้ช่วยกล้อง 2 (Camera Assistant)' : 'Camera Assistant';
+      case 'Key_Grip':
+        return language === 'th' ? 'หัวหน้าช่างคุมอุปกรณ์กล้อง (Key Grip)' : 'Key Grip';
+      case 'Gaffer':
+        return language === 'th' ? 'หัวหน้าช่างไฟ (Gaffer)' : 'Gaffer';
+      case 'Electric':
+        return language === 'th' ? 'ช่างไฟ (Best Boy Electric)' : 'Best Boy Electric';
+      case 'Production_Designer':
+        return language === 'th' ? 'ผู้กำกับศิลป์ (Production Designer)' : 'Production Designer';
+      case 'Prop_Master':
+        return language === 'th' ? 'ผู้ดูแลอุปกรณ์ประกอบฉาก (Prop Master)' : 'Prop Master';
+      case 'Sound_Mixer':
+        return language === 'th' ? 'ช่างบันทึกเสียง (Sound Mixer)' : 'Sound Mixer';
+      case 'Boom_Operator':
+        return language === 'th' ? 'คนถือไมค์บูม (Boom Operator)' : 'Boom Operator';
+      case 'Makeup_Artist':
+        return language === 'th' ? 'ช่างแต่งหน้าหลัก (Key Makeup Artist)' : 'Key Makeup Artist';
+      case 'Costume_Designer':
+        return language === 'th' ? 'ช่างออกแบบเครื่องแต่งกาย (Costume Designer)' : 'Costume Designer';
       case 'Talent':
         return language === 'th' ? 'นักแสดง / แบบ (Talent)' : 'Talent / Actor';
+      case 'Production_Assistant':
+        return language === 'th' ? 'ผู้ช่วยทั่วไปในกองถ่าย (Production Assistant)' : 'Production Assistant';
+      case 'Crew':
+        return language === 'th' ? 'ทีมงานฝ่ายผลิต (Crew)' : 'Crew Member';
       default:
         return roleName;
     }
@@ -401,6 +442,7 @@ export default function UserManager({ hideHeader = false }) {
                   <th className="py-3 px-2">{language === 'th' ? 'ชื่อ-นามสกุล' : 'Name'}</th>
                   <th className="py-3 px-2">{language === 'th' ? 'อีเมล' : 'Email Address'}</th>
                   <th className="py-3 px-2">{language === 'th' ? 'ระดับสิทธิ์' : 'Role level'}</th>
+                  <th className="py-3 px-2 text-center">{language === 'th' ? 'สิทธิ์แอดมิน' : 'Admin Access'}</th>
                   <th className="py-3 px-2 text-right">{language === 'th' ? 'จัดการ' : 'Actions'}</th>
                 </tr>
               </thead>
@@ -409,6 +451,9 @@ export default function UserManager({ hideHeader = false }) {
                   const safeUsers = Array.isArray(users) ? users : [];
                   return safeUsers.map((u) => {
                     const isCurrent = u.id === currentUser?.id;
+                    const isSystemAdmin = u.email?.toLowerCase() === 'admin@production.com';
+                    const hasAdminPower = u.is_admin || isSystemAdmin;
+
                     return (
                       <tr 
                         key={u.id} 
@@ -444,6 +489,22 @@ export default function UserManager({ hideHeader = false }) {
                             {getRoleLabel(u.role)}
                           </span>
                         </td>
+                        <td className="py-3.5 px-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAdmin(u.id, !hasAdminPower)}
+                            disabled={isSystemAdmin}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                              hasAdminPower
+                                ? 'bg-gold-500/10 border-gold-500 text-gold-500 hover:bg-gold-500/20'
+                                : 'bg-slate-500/5 border-slate-200/20 dark:border-obsidian-800 text-slate-400 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            {hasAdminPower
+                              ? (language === 'th' ? '👑 แอดมิน' : '👑 Admin')
+                              : (language === 'th' ? 'แต่งตั้ง' : 'Promote')}
+                          </button>
+                        </td>
                         <td className="py-3.5 px-2 text-right">
                           <button
                             onClick={() => handleDeleteUser(u.id, u.email)}
@@ -461,7 +522,7 @@ export default function UserManager({ hideHeader = false }) {
 
                 {(!Array.isArray(users) || users.length === 0) && (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-slate-500 italic">
+                    <td colSpan={5} className="py-12 text-center text-slate-500 italic">
                       {language === 'th' ? 'ไม่มีรายชื่อผู้ใช้งานลงทะเบียนในขณะนี้' : 'No registered users found.'}
                     </td>
                   </tr>

@@ -7,7 +7,7 @@ import { useProject } from '../context/ProjectContext';
 import { 
   FileText, 
   Sparkles, 
-  Save, 
+  X,
   Trash2, 
   ArrowUp, 
   ArrowDown, 
@@ -48,15 +48,14 @@ export default function ScriptEditor() {
     scriptBlocks,
     onlineUsers,
     saveScriptBlocks,
-    recalculatePageLengths,
     isLoading
   } = useProject();
 
   const [blocks, setBlocks] = useState([]);
   const [activeBlockIndex, setActiveBlockIndex] = useState(null);
   const [showKeyboardGuide, setShowKeyboardGuide] = useState(false);
-  const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+  const [defaultSessionDate] = useState(() => Date.now());
   
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [previewFont, setPreviewFont] = useState('courier_prime'); // 'courier_prime' | 'courier' | 'sarabun'
@@ -101,15 +100,18 @@ export default function ScriptEditor() {
     // If the local user has unsaved changes, DO NOT overwrite with remote scriptBlocks!
     if (localChangeRef.current) return;
 
-    if (scriptBlocks && scriptBlocks.length > 0) {
-      setBlocks(scriptBlocks);
-    } else {
-      setBlocks([
-        { id: `b-${Date.now()}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },
-        { id: `b-${Date.now()}-2`, type: 'action', text: 'Write screenplay action here...' }
-      ]);
-    }
-  }, [scriptBlocks]);
+    const timer = setTimeout(() => {
+      if (scriptBlocks && scriptBlocks.length > 0) {
+        setBlocks(scriptBlocks);
+      } else {
+        setBlocks([
+          { id: `b-${defaultSessionDate}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },
+          { id: `b-${defaultSessionDate}-2`, type: 'action', text: 'Write screenplay action here...' }
+        ]);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [scriptBlocks, defaultSessionDate]);
 
   // Debounced Auto-save System (Typing)
   useEffect(() => {
@@ -129,7 +131,7 @@ export default function ScriptEditor() {
     }, 500); // Fast 500ms debounce delay for typing!
 
     return () => clearTimeout(timer);
-  }, [blocks]);
+  }, [blocks, saveScriptBlocks]);
 
   // Sync refs array size
   useEffect(() => {
@@ -333,12 +335,6 @@ export default function ScriptEditor() {
     saveImmediately(blocks);
   };
 
-  // Save & Sync Action (Manual Trigger fallback)
-  const handleSaveAndSync = async () => {
-    if (!project) return;
-    saveImmediately(blocks);
-  };
-
   // Load StudioBinder style demo script
   const handleLoadDemo = () => {
     if (window.confirm(language === 'th' ? "คุณต้องการโหลดบทภาพยนตร์ตัวอย่างใช่หรือไม่? การกระทำนี้จะเขียนทับเนื้อหาปัจจุบัน" : "Are you sure you want to load the demo script? This will overwrite your current editing script.")) {
@@ -470,7 +466,7 @@ export default function ScriptEditor() {
     return pages;
   };
 
-  const renderCoverPage = (isPrintView = false) => {
+  const renderCoverPage = () => {
     const pageStyle = {
       fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
       width: '210mm',
@@ -510,12 +506,12 @@ export default function ScriptEditor() {
 
         <div className="flex justify-between items-end text-slate-500 font-mono mt-auto" style={{ fontSize: '9pt', lineHeight: '1.4' }}>
           <div>
-            <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || Date.now()).toLocaleDateString()}</p>
+            <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || defaultSessionDate).toLocaleDateString()}</p>
             <p>{language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER</p>
           </div>
           <div className="text-right">
             <p>{language === 'th' ? 'บทร่างลิขสิทธิ์เฉพาะ' : 'PROPRIETARY DRAFT'}</p>
-            <p>© {new Date().getFullYear()} ALL RIGHTS RESERVED</p>
+            <p>© {new Date(defaultSessionDate).getFullYear()} ALL RIGHTS RESERVED</p>
           </div>
         </div>
         
@@ -530,7 +526,7 @@ export default function ScriptEditor() {
     );
   };
 
-  const renderScriptPage = (pageBlocks, pageIndex, totalPages, isPrintView = false) => {
+  const renderScriptPage = (pageBlocks, pageIndex) => {
     const pageStyle = {
       fontFamily: previewFont === 'courier_prime' ? "'Courier Prime', monospace" : previewFont === 'sarabun' ? "'Sarabun', sans-serif" : "'Courier New', Courier, monospace",
       width: '210mm',
@@ -700,10 +696,10 @@ export default function ScriptEditor() {
           `}
         </style>
         
-        {includeCoverPage && renderCoverPage(true)}
+        {includeCoverPage && renderCoverPage()}
         
         {getPaginatedBlocks().map((pageBlocks, idx) => 
-          renderScriptPage(pageBlocks, idx, getPaginatedBlocks().length, true)
+          renderScriptPage(pageBlocks, idx)
         )}
       </div>
 
@@ -1254,7 +1250,7 @@ export default function ScriptEditor() {
                   <div className="text-[10px] font-bold text-slate-400 tracking-wider mb-2 font-mono uppercase">
                     {language === 'th' ? `หน้า ${idx + 1}` : `Page ${idx + 1}`}
                   </div>
-                  {renderScriptPage(pageBlocks, idx, getPaginatedBlocks().length)}
+                  {renderScriptPage(pageBlocks, idx)}
                 </div>
               ))}
               

@@ -1,0 +1,238 @@
+
+> -----@0.0.0 lint
+> eslint .
+
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/CrewPortal.jsx
+   88:33  error    'isCrewOrTalent' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  119:11  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  117 |         const targetId = lockedCrewId || crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase())?.id;
+  118 |         if (targetId) {
+> 119 |           setSelectedCrewId(targetId);
+      |           ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  120 |         } else if (!isAdmin) {
+  121 |           setSelectedCrewId('none');
+  122 |         }                                        react-hooks/set-state-in-effect
+  427:9   error    'personalClientId' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+  437:11  error    Error: Cannot access variable before it is declared
+
+`loadPersonalCalendars` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  435 |           localStorage.setItem(getPersonalKey('google_personal_access_token'), params.accessToken);
+  436 |           localStorage.setItem(getPersonalKey('google_personal_token_expires_at'), params.expiresAt);
+> 437 |           loadPersonalCalendars(params.accessToken);
+      |           ^^^^^^^^^^^^^^^^^^^^^ `loadPersonalCalendars` accessed before it is declared
+  438 |         }
+  439 |       }
+  440 |     };
+
+  461 |   }, [user?.id]);
+  462 |
+> 463 |   const loadPersonalCalendars = async (token) => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 464 |     try {
+      | ^^^^^^^^^
+> 465 |       const list = await googleCalendar.fetchCalendars(token);
+      …
+      | ^^^^^^^^^
+> 472 |     }
+      | ^^^^^^^^^
+> 473 |   };
+      | ^^^^^ `loadPersonalCalendars` is declared here
+  474 |
+  475 |   const handleConnectPersonalGoogle = () => {
+  476 |     const clientIdToUse = DEFAULT_CLIENT_ID;  react-hooks/immutability
+  461:6   warning  React Hook useEffect has missing dependencies: 'getPersonalKey' and 'loadPersonalCalendars'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  537:20  error    'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-unused-vars
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/DocumentsHub.jsx
+  235:14  error  'e' is defined but never used  no-unused-vars
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/Layout.jsx
+  24:3  error  'Shield' is defined but never used  no-unused-vars
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/MasterCalendar.jsx
+   34:9  error    'googleClientId' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+   85:7  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  83 |       localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
+  84 |       window.location.hash = '#/calendar';
+> 85 |       loadCalendars(params.accessToken);
+     |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  86 |       const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+  87 |       if (calId) {
+  88 |         loadGoogleEvents(params.accessToken, calId);  react-hooks/set-state-in-effect
+  104:6  warning  React Hook useEffect has missing dependencies: 'getProjectKey' and 'loadCalendars'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/ProductionHub.jsx
+  120:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  118 |       if (projectMeta.frameRate) {
+  119 |         const parsedFps = parseInt(projectMeta.frameRate) || 24;
+> 120 |         setCameraForm(prev => ({ ...prev, fps: String(parsedFps) }));
+      |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  121 |       }
+  122 |       if (projectMeta.aspectRatio) {
+  123 |         setDitForm(prev => ({ ...prev, aspectRatio: projectMeta.aspectRatio }));  react-hooks/set-state-in-effect
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/ScriptEditor.jsx
+   10:3   error    'Save' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+   51:5   error    'recalculatePageLengths' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+   58:10  error    'isSavedSuccessfully' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+   58:31  error    'setIsSavedSuccessfully' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+  105:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  103 |
+  104 |     if (scriptBlocks && scriptBlocks.length > 0) {
+> 105 |       setBlocks(scriptBlocks);
+      |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  106 |     } else {
+  107 |       setBlocks([
+  108 |         { id: `b-${Date.now()}-1`, type: 'heading', text: 'INT. NEW SCENE - DAY' },  react-hooks/set-state-in-effect
+  132:6   warning  React Hook useEffect has a missing dependency: 'saveScriptBlocks'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+  199:18  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  197 |
+  198 |       const newBlock = {
+> 199 |         id: `b-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      |                  ^^^^^^^^^^ Cannot call impure function
+  200 |         type: nextType,
+  201 |         text: ''
+  202 |       };                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/purity
+  199:32  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  197 |
+  198 |       const newBlock = {
+> 199 |         id: `b-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      |                                ^^^^^^^^^^^^^ Cannot call impure function
+  200 |         type: nextType,
+  201 |         text: ''
+  202 |       };                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/purity
+  275:16  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  273 |   const insertBlock = (index, type) => {
+  274 |     const newBlock = {
+> 275 |       id: `b-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      |                ^^^^^^^^^^ Cannot call impure function
+  276 |       type: type || 'action',
+  277 |       text: ''
+  278 |     };                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/purity
+  275:30  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  273 |   const insertBlock = (index, type) => {
+  274 |     const newBlock = {
+> 275 |       id: `b-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      |                              ^^^^^^^^^^^^^ Cannot call impure function
+  276 |       type: type || 'action',
+  277 |       text: ''
+  278 |     };                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/purity
+  337:9   error    'handleSaveAndSync' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+  473:28  error    'isPrintView' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  513:91  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  511 |         <div className="flex justify-between items-end text-slate-500 font-mono mt-auto" style={{ fontSize: '9pt', lineHeight: '1.4' }}>
+  512 |           <div>
+> 513 |             <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || Date.now()).toLocaleDateString()}</p>
+      |                                                                                           ^^^^^^^^^^ Cannot call impure function
+  514 |             <p>{language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER</p>
+  515 |           </div>
+  516 |           <div className="text-right">                                                                      react-hooks/purity
+  533:64  error    'isPrintView' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+  805:20  error    'X' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-undef
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/ShootingSchedule.jsx
+   1:8  error  'React' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+   8:3  error  'Plus' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+  98:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   96 |       });
+   97 |
+>  98 |       setBoardItems(items);
+      |       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+   99 |     } else {
+  100 |       setBoardItems([]);
+  101 |     }  react-hooks/set-state-in-effect
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/components/StoryPlanner.jsx
+  212:16  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  210 |
+  211 |     const plotlineEntry = {
+> 212 |       id: `p-${Date.now()}`,
+      |                ^^^^^^^^^^ Cannot call impure function
+  213 |       name: { 
+  214 |         th: newPlotline.nameTh || newPlotline.nameEn, 
+  215 |         en: newPlotline.nameEn || newPlotline.nameTh                                                                               react-hooks/purity
+  285:16  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  283 |
+  284 |     const charEntry = {
+> 285 |       id: `c-${Date.now()}`,
+      |                ^^^^^^^^^^ Cannot call impure function
+  286 |       name: { th: newChar.nameTh || newChar.nameEn, en: newChar.nameEn || newChar.nameTh },
+  287 |       role: { th: newChar.roleTh, en: newChar.roleEn },
+  288 |       goal: { th: newChar.goalTh, en: newChar.goalEn },  react-hooks/purity
+  360:16  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  358 |
+  359 |     const beatEntry = {
+> 360 |       id: `b-${Date.now()}`,
+      |                ^^^^^^^^^^ Cannot call impure function
+  361 |       title: { th: newBeat.titleTh || newBeat.titleEn, en: newBeat.titleEn || newBeat.titleTh },
+  362 |       act: newBeat.act,
+  363 |       plotlineId: newBeat.plotlineId || (localOutline.plotlines?.[0]?.id || ''),    react-hooks/purity
+
+/Users/macfitkaifrabk/Desktop/กสรจัดการงาน และ โปรดักชั่น/src/context/ProjectContext.jsx
+   67:6  warning  React Hook useEffect has a missing dependency: 'getProjectKey'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  132:6  warning  React Hook useEffect has a missing dependency: 'getProjectKey'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  237:6  warning  React Hook useEffect has a missing dependency: 'user.email'. Either include it or remove the dependency array     react-hooks/exhaustive-deps
+
+✖ 36 problems (30 errors, 6 warnings)
+

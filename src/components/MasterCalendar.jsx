@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,18 +25,17 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   // Views: 'month' | 'week' | 'day'
   const [currentView, setCurrentView] = useState('month');
   const { user, hasWriteAccess } = useAuth();
-  const getProjectKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
+  const getProjectKey = useCallback((baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey, [user]);
 
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState([]);
   const [selectedCalendarId, setSelectedCalendarId] = useState(() => localStorage.getItem(getProjectKey('google_project_calendar_id')) || '');
   const [googleEvents, setGoogleEvents] = useState([]);
-  const googleClientId = DEFAULT_CLIENT_ID;
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState('');
 
-  const loadCalendars = async (token) => {
+  const loadCalendars = useCallback(async (token) => {
     try {
       const list = await googleCalendar.fetchCalendars(token);
       setGoogleCalendars(list);
@@ -46,9 +45,9 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       setIsConnected(false);
       localStorage.removeItem(getProjectKey('google_project_access_token'));
     }
-  };
+  }, [getProjectKey]);
 
-  const loadGoogleEvents = async (token, calendarId) => {
+  const loadGoogleEvents = useCallback(async (token, calendarId) => {
     if (!token || !calendarId) return;
     try {
       const items = await googleCalendar.fetchEvents(token, calendarId);
@@ -56,7 +55,7 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
     } catch (err) {
       console.error("Failed to fetch Google Calendar events:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const handleAuthMessage = (event) => {
@@ -66,12 +65,14 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
         if (params) {
           localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
           localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
-          loadCalendars(params.accessToken);
-          const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
-          if (calId) {
-            loadGoogleEvents(params.accessToken, calId);
-          }
-          setIsGoogleModalOpen(true);
+          setTimeout(() => {
+            loadCalendars(params.accessToken);
+            const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+            if (calId) {
+              loadGoogleEvents(params.accessToken, calId);
+            }
+            setIsGoogleModalOpen(true);
+          }, 0);
         }
       }
     };
@@ -82,26 +83,30 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
       localStorage.setItem(getProjectKey('google_project_access_token'), params.accessToken);
       localStorage.setItem(getProjectKey('google_project_token_expires_at'), params.expiresAt);
       window.location.hash = '#/calendar';
-      loadCalendars(params.accessToken);
-      const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
-      if (calId) {
-        loadGoogleEvents(params.accessToken, calId);
-      }
-      setIsGoogleModalOpen(true);
+      setTimeout(() => {
+        loadCalendars(params.accessToken);
+        const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
+        if (calId) {
+          loadGoogleEvents(params.accessToken, calId);
+        }
+        setIsGoogleModalOpen(true);
+      }, 0);
     } else {
       const token = localStorage.getItem(getProjectKey('google_project_access_token'));
       const expiresAt = localStorage.getItem(getProjectKey('google_project_token_expires_at'));
       const calId = localStorage.getItem(getProjectKey('google_project_calendar_id'));
       if (token && expiresAt && Number(expiresAt) > Date.now()) {
-        loadCalendars(token);
-        if (calId) {
-          loadGoogleEvents(token, calId);
-        }
+        setTimeout(() => {
+          loadCalendars(token);
+          if (calId) {
+            loadGoogleEvents(token, calId);
+          }
+        }, 0);
       }
     }
 
     return () => window.removeEventListener('message', handleAuthMessage);
-  }, [user?.id]);
+  }, [user?.id, getProjectKey, loadCalendars, loadGoogleEvents]);
 
   const handleConnectGoogle = () => {
     const clientIdToUse = DEFAULT_CLIENT_ID;

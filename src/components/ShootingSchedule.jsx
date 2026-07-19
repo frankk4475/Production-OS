@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
 import { 
   Film, 
-  Plus, 
   Trash2, 
   MapPin, 
   Calendar, 
@@ -75,30 +74,33 @@ export default function ShootingSchedule() {
 
   // Load and construct schedule list from scenes
   useEffect(() => {
-    if (scenes && scenes.length > 0) {
-      // 1. Separate scheduled and boneyard scenes
-      const scheduled = scenes.filter(s => !s.tech_notes?.scheduling?.inBoneyard);
-      
-      // 2. Sort scheduled scenes by shoot order
-      const sortedScheduled = [...scheduled].sort((a, b) => {
-        const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
-        const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
-        return orderA - orderB;
-      });
+    const timer = setTimeout(() => {
+      if (scenes && scenes.length > 0) {
+        // 1. Separate scheduled and boneyard scenes
+        const scheduled = scenes.filter(s => !s.tech_notes?.scheduling?.inBoneyard);
+        
+        // 2. Sort scheduled scenes by shoot order
+        const sortedScheduled = [...scheduled].sort((a, b) => {
+          const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
+          const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
+          return orderA - orderB;
+        });
 
-      // 3. Insert day break placeholders
-      const items = [];
-      sortedScheduled.forEach((scene) => {
-        items.push({ type: 'scene', id: scene.id, scene });
-        if (scene.tech_notes?.scheduling?.dayBreakAfter) {
-          items.push({ type: 'day_break', id: `db-${scene.id}` });
-        }
-      });
+        // 3. Insert day break placeholders
+        const items = [];
+        sortedScheduled.forEach((scene) => {
+          items.push({ type: 'scene', id: scene.id, scene });
+          if (scene.tech_notes?.scheduling?.dayBreakAfter) {
+            items.push({ type: 'day_break', id: `db-${scene.id}` });
+          }
+        });
 
-      setBoardItems(items);
-    } else {
-      setBoardItems([]);
-    }
+        setBoardItems(items);
+      } else {
+        setBoardItems([]);
+      }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [scenes]);
 
   // Extract all unique characters to auto-generate Cast IDs (1, 2, 3...)

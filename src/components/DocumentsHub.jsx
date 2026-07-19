@@ -232,7 +232,7 @@ export default function DocumentsHub({
         day: 'numeric',
         year: 'numeric'
       });
-    } catch (e) {
+    } catch {
       return callSheetDate;
     }
   })();

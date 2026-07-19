@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useProject } from '../context/ProjectContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -29,16 +29,6 @@ export default function ProductionHub() {
   const { t, language } = useLanguage();
   const { theme } = useTheme();
 
-  const projectMeta = useMemo(() => {
-    if (!currentProjectId) return {};
-    try {
-      return JSON.parse(localStorage.getItem(`prod_project_metadata_${currentProjectId}`) || '{}');
-    } catch (e) {
-      console.error(e);
-      return {};
-    }
-  }, [currentProjectId]);
-
   // Sub-tabs: 'camera', 'sound', 'dit', 'daily'
   const [activeSubTab, setActiveSubTab] = useState('camera');
   
@@ -48,24 +38,37 @@ export default function ProductionHub() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Form states
-  const [cameraForm, setCameraForm] = useState({
-    scene: '',
-    take: '',
-    roll: '',
-    clipName: '',
-    lens: '',
-    aperture: '',
-    iso: '800',
-    shutter: '180°',
-    kelvin: '5600K',
-    filter: '',
-    fps: '24',
-    focus: '',
-    height: '',
-    tilt: '',
-    soundRoll: '',
-    status: 'Good',
-    notes: ''
+  const [cameraForm, setCameraForm] = useState(() => {
+    let initialFps = '24';
+    if (currentProjectId) {
+      try {
+        const meta = JSON.parse(localStorage.getItem(`prod_project_metadata_${currentProjectId}`) || '{}');
+        if (meta.frameRate) {
+          initialFps = String(parseInt(meta.frameRate) || 24);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      scene: '',
+      take: '',
+      roll: '',
+      clipName: '',
+      lens: '',
+      aperture: '',
+      iso: '800',
+      shutter: '180°',
+      kelvin: '5600K',
+      filter: '',
+      fps: initialFps,
+      focus: '',
+      height: '',
+      tilt: '',
+      soundRoll: '',
+      status: 'Good',
+      notes: ''
+    };
   });
 
   const [soundForm, setSoundForm] = useState({
@@ -85,17 +88,30 @@ export default function ProductionHub() {
     notes: ''
   });
 
-  const [ditForm, setDitForm] = useState({
-    cardName: '',
-    slot: 'A',
-    size: '',
-    fileFormat: 'ProRes 4444',
-    aspectRatio: '1.85:1',
-    lut: 'Rec709',
-    backupA: false,
-    backupB: false,
-    checksum: 'Verified',
-    notes: ''
+  const [ditForm, setDitForm] = useState(() => {
+    let initialAspect = '1.85:1';
+    if (currentProjectId) {
+      try {
+        const meta = JSON.parse(localStorage.getItem(`prod_project_metadata_${currentProjectId}`) || '{}');
+        if (meta.aspectRatio) {
+          initialAspect = meta.aspectRatio;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return {
+      cardName: '',
+      slot: 'A',
+      size: '',
+      fileFormat: 'ProRes 4444',
+      aspectRatio: initialAspect,
+      lut: 'Rec709',
+      backupA: false,
+      backupB: false,
+      checksum: 'Verified',
+      notes: ''
+    };
   });
 
   const [dailyForm, setDailyForm] = useState({
@@ -112,18 +128,6 @@ export default function ProductionHub() {
     crewCount: '',
     generalNotes: ''
   });
-
-  useEffect(() => {
-    if (projectMeta) {
-      if (projectMeta.frameRate) {
-        const parsedFps = parseInt(projectMeta.frameRate) || 24;
-        setCameraForm(prev => ({ ...prev, fps: String(parsedFps) }));
-      }
-      if (projectMeta.aspectRatio) {
-        setDitForm(prev => ({ ...prev, aspectRatio: projectMeta.aspectRatio }));
-      }
-    }
-  }, [projectMeta]);
 
   const plannedShots = useMemo(() => {
     if (!cameraForm.scene || !activeShotList) return [];

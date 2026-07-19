@@ -41,7 +41,13 @@ export const AuthProvider = ({ children }) => {
     );
     
     if (matched) {
-      const userData = { email: matched.email, role: matched.role, name: matched.name, id: matched.id };
+      const userData = {
+        email: matched.email,
+        role: matched.role,
+        name: matched.name,
+        id: matched.id,
+        is_admin: matched.is_admin || matched.email?.toLowerCase() === 'admin@production.com'
+      };
       localStorage.setItem('prod_user', JSON.stringify(userData));
       setUser(userData);
       window.location.hash = '#/dashboard';
@@ -50,10 +56,10 @@ export const AuthProvider = ({ children }) => {
 
     // 2. Fallback to demo accounts for ease of presentation/testing
     const demoAccounts = [
-      { email: 'producer@production.com', password: 'password123', role: 'Producer', name: 'Executive Producer', id: 'u-prod' },
-      { email: 'admin@production.com', password: 'password123', role: '1st_AD', name: 'Assistant Director', id: 'crew-4' },
-      { email: 'crew@production.com', password: 'password123', role: 'Crew', name: 'Natdanai (DP)', id: 'crew-1' },
-      { email: 'talent@production.com', password: 'password123', role: 'Talent', name: 'Pimrada (Designer)', id: 'crew-2' }
+      { email: 'producer@production.com', password: 'password123', role: 'Producer', name: 'Executive Producer', id: 'u-prod', is_admin: false },
+      { email: 'admin@production.com', password: 'password123', role: '1st_AD', name: 'Assistant Director', id: 'crew-4', is_admin: true },
+      { email: 'crew@production.com', password: 'password123', role: 'Crew', name: 'Natdanai (DP)', id: 'crew-1', is_admin: false },
+      { email: 'talent@production.com', password: 'password123', role: 'Talent', name: 'Pimrada (Designer)', id: 'crew-2', is_admin: false }
     ];
     
     const matchedDemo = demoAccounts.find(d => d.email === email && d.password === password);
@@ -98,12 +104,18 @@ export const AuthProvider = ({ children }) => {
         }
       });
     } catch (err) {
-      console.error("Failed to auto-create crew member on first register:", err);
+      console.error("Failed to auto-create crew member for first setup:", err);
     }
     
-    // Auto-login
-    localStorage.setItem('prod_user', JSON.stringify(newUser));
-    setUser(newUser);
+    const userData = {
+      email: newUser.email,
+      role: newUser.role,
+      name: newUser.name,
+      id: newUser.id,
+      is_admin: newUser.is_admin || newUser.email?.toLowerCase() === 'admin@production.com'
+    };
+    localStorage.setItem('prod_user', JSON.stringify(userData));
+    setUser(userData);
     window.location.hash = '#/dashboard';
   };
 
@@ -144,29 +156,37 @@ export const AuthProvider = ({ children }) => {
         });
       }
     } catch (err) {
-      console.error("Failed to auto-create crew member on admin register:", err);
+      console.error("Failed to auto-create crew member:", err);
     }
 
     return newUser;
   };
 
-  const deleteUserByAdmin = async (id) => {
-    if (id === user?.id) {
-      throw new Error('Cannot delete your own logged-in account');
+  const toggleUserAdminByAdmin = async (userId, isAdminFlag) => {
+    await api.updateUserAdmin(userId, isAdminFlag);
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: isAdminFlag } : u));
+    
+    // Update logged in user state if current user is elevated/demoted
+    if (user?.id === userId) {
+      const updatedUser = { ...user, is_admin: isAdminFlag };
+      localStorage.setItem('prod_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
     }
+  };
 
-    const targetUser = users.find(u => u.id === id);
-
+  const deleteUserByAdmin = async (id) => {
+    // 1. Delete from dynamic users database
     await api.deleteUser(id);
     setUsers(prev => prev.filter(u => u.id !== id));
-    
-    // Automatically delete corresponding crew member in roster
-    if (targetUser && targetUser.email) {
+
+    // 2. Check if there's a corresponding crew member and auto-delete
+    const userToDelete = users.find(u => u.id === id);
+    if (userToDelete) {
       try {
         const allCrew = await api.getCrew();
-        const matchCrew = allCrew.find(c => c.email.toLowerCase() === targetUser.email.toLowerCase());
-        if (matchCrew) {
-          await api.deleteCrewMember(matchCrew.id);
+        const matchedCrew = allCrew.find(c => c.email?.toLowerCase() === userToDelete.email?.toLowerCase());
+        if (matchedCrew) {
+          await api.deleteCrewMember(matchedCrew.id);
         }
       } catch (err) {
         console.error("Failed to auto-delete corresponding crew member:", err);
@@ -185,7 +205,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasWriteAccess = () => {
-    return ['Producer', '1st_AD', 'Director', 'Production_Manager', 'Screenwriter'].includes(user?.role);
+    return ['Producer', '1st_AD', 'Director', 'Production_Manager', 'Screenwriter'].includes(user?.role) || !!user?.is_admin || user?.email?.toLowerCase() === 'admin@production.com';
   };
 
   const isCrewOrTalent = () => {
@@ -203,6 +223,7 @@ export const AuthProvider = ({ children }) => {
       isFirstTimeSetup,
       registerFirstUser,
       registerUserByAdmin,
+      toggleUserAdminByAdmin,
       deleteUserByAdmin
     }}>
       {children}

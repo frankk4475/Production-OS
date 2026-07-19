@@ -85,8 +85,8 @@ const generateGoogleCalendarUrl = (title, dateStr, location = '', details = '') 
 export default function CrewPortal({ lockedCrewId }) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
-  const { user, hasWriteAccess, isCrewOrTalent } = useAuth();
-  const isAdmin = user?.email?.toLowerCase() === 'admin@production.com';
+  const { user, hasWriteAccess } = useAuth();
+  const isAdmin = user?.email?.toLowerCase() === 'admin@production.com' || !!user?.is_admin;
   
   const {
     activeScenes,
@@ -110,19 +110,14 @@ export default function CrewPortal({ lockedCrewId }) {
   const [selectedCrewId, setSelectedCrewId] = useState(lockedCrewId || '');
   const [allEvents, setAllEvents] = useState([]);
 
-  // Auto-select the logged-in crew member's ID if not admin
-  useEffect(() => {
-    if (user && crew.length > 0) {
-      if (!isAdmin || lockedCrewId) {
-        const targetId = lockedCrewId || crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase())?.id;
-        if (targetId) {
-          setSelectedCrewId(targetId);
-        } else if (!isAdmin) {
-          setSelectedCrewId('none');
-        }
-      }
+  const effectiveCrewId = (() => {
+    if (lockedCrewId) return lockedCrewId;
+    if (!isAdmin) {
+      if (!user || crew.length === 0) return 'none';
+      return crew.find(c => c.email?.toLowerCase() === user.email?.toLowerCase())?.id || 'none';
     }
-  }, [user, crew, isAdmin, lockedCrewId]);
+    return selectedCrewId || (crew[0]?.id || 'none');
+  })();
 
   // Fetch all events across all projects for cross-project conflict checking in the roster list
   useEffect(() => {
@@ -337,13 +332,8 @@ export default function CrewPortal({ lockedCrewId }) {
 
   // Get selected crew details for personal portal
   const activeCrewMember = (() => {
-    if (selectedCrewId === 'none') return null;
-    if (!isAdmin) {
-      // Force non-admin to only access their own crew member profile
-      return crew.find(c => c.email?.toLowerCase() === user?.email?.toLowerCase()) || null;
-    }
-    // Admin can access any selected crew member
-    return crew.find(c => c.id === selectedCrewId) || crew[0] || null;
+    if (effectiveCrewId === 'none') return null;
+    return crew.find(c => c.id === effectiveCrewId) || null;
   })();
 
   // Get active crew member's events
@@ -424,7 +414,18 @@ export default function CrewPortal({ lockedCrewId }) {
   const getPersonalKey = (baseKey) => user?.id ? `${baseKey}_${user.id}` : baseKey;
 
   const [selectedPersonalCalendarId, setSelectedPersonalCalendarId] = useState(() => localStorage.getItem(getPersonalKey('google_personal_calendar_id')) || '');
-  const personalClientId = DEFAULT_CLIENT_ID;
+
+  const loadPersonalCalendars = async (token) => {
+    try {
+      const list = await googleCalendar.fetchCalendars(token);
+      setPersonalCalendars(list);
+      setPersonalIsConnected(true);
+    } catch (err) {
+      console.error("Failed to load Google personal calendars:", err);
+      setPersonalIsConnected(false);
+      localStorage.removeItem(getPersonalKey('google_personal_access_token'));
+    }
+  };
 
   useEffect(() => {
     const handleAuthMessage = (event) => {
@@ -458,19 +459,7 @@ export default function CrewPortal({ lockedCrewId }) {
     }
 
     return () => window.removeEventListener('message', handleAuthMessage);
-  }, [user?.id]);
-
-  const loadPersonalCalendars = async (token) => {
-    try {
-      const list = await googleCalendar.fetchCalendars(token);
-      setPersonalCalendars(list);
-      setPersonalIsConnected(true);
-    } catch (err) {
-      console.error("Failed to load Google personal calendars:", err);
-      setPersonalIsConnected(false);
-      localStorage.removeItem(getPersonalKey('google_personal_access_token'));
-    }
-  };
+  }, [user?.id, getPersonalKey, loadPersonalCalendars]);
 
   const handleConnectPersonalGoogle = () => {
     const clientIdToUse = DEFAULT_CLIENT_ID;
@@ -534,7 +523,7 @@ export default function CrewPortal({ lockedCrewId }) {
         if (gId) {
           try {
             await googleCalendar.updateEvent(token, calId, gId, eventData);
-          } catch (err) {
+          } catch {
             const res = await googleCalendar.createEvent(token, calId, eventData);
             gId = res.id;
           }
@@ -1375,7 +1364,7 @@ export default function CrewPortal({ lockedCrewId }) {
               </div>
 
             </div>
-          ) : selectedCrewId === 'none' ? (
+          ) : effectiveCrewId === 'none' ? (
             <div className="glass-panel p-8 text-center text-xs space-y-3 max-w-lg mx-auto border border-amber-500/20 bg-amber-500/5 rounded-xl">
               <p className="text-amber-500 font-bold text-sm">⚠️ {language === 'th' ? 'พบบัญชีผู้ใช้แต่ไม่พบคู่สัญญาในรายชื่อทีมงาน' : 'Account Not Linked to Crew Roster'}</p>
               <p className="text-slate-400 leading-relaxed font-medium">

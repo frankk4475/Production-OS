@@ -21,7 +21,6 @@ import {
   Layers,
   PenTool,
   BookOpen,
-  Shield,
   Clapperboard
 } from 'lucide-react';
 

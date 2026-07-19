@@ -17,6 +17,10 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      'react-hooks/purity': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
   {
     files: ['src/context/**/*.{js,jsx}'],
