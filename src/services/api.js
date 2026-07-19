@@ -1281,19 +1281,31 @@ export const api = {
       name,
       email,
       password,
-      role,
+      role: email.toLowerCase() === 'admin@production.com' && !role.endsWith('_admin') ? role + '_admin' : role,
       is_admin: email.toLowerCase() === 'admin@production.com',
       created_at: new Date().toISOString()
     };
 
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('users')
-        .insert([newUser])
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .insert([newUser])
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.warn('Supabase createUser with is_admin failed, retrying without it:', err);
+        const { is_admin, ...cleanedUser } = newUser;
+        const { data, error } = await supabase
+          .from('users')
+          .insert([cleanedUser])
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
     } else {
       await delay();
       const users = getDbData(STORAGE_KEYS.USERS, []);
@@ -1305,22 +1317,62 @@ export const api = {
 
   async updateUserAdmin(userId, isAdmin) {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('users')
-        .update({ is_admin: isAdmin })
-        .eq('id', userId)
-        .select()
-        .single();
-      if (error) {
-        console.error('Supabase error updating user admin status:', error);
+      try {
+        // Try updating using the is_admin column first
+        const { data, error } = await supabase
+          .from('users')
+          .update({ is_admin: isAdmin })
+          .eq('id', userId)
+          .select()
+          .single();
+        
+        if (error) {
+          throw error;
+        }
+        return data;
+      } catch (err) {
+        console.warn('is_admin column update failed, falling back to role-suffix:', err);
+        // Fallback: Fetch user, toggle role suffix
+        const { data: userRecord, error: fetchErr } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        if (fetchErr) throw fetchErr;
+
+        let newRole = userRecord.role || 'Crew';
+        if (isAdmin) {
+          if (!newRole.endsWith('_admin')) {
+            newRole = newRole + '_admin';
+          }
+        } else {
+          newRole = newRole.replace('_admin', '');
+        }
+
+        const { data: updatedData, error: updateErr } = await supabase
+          .from('users')
+          .update({ role: newRole })
+          .eq('id', userId)
+          .select()
+          .single();
+        if (updateErr) throw updateErr;
+        return updatedData;
       }
-      return data;
     } else {
       await delay();
       const users = getDbData(STORAGE_KEYS.USERS, []);
       const index = users.findIndex(u => u.id === userId);
       if (index !== -1) {
         users[index].is_admin = isAdmin;
+        
+        let newRole = users[index].role || 'Crew';
+        if (isAdmin) {
+          if (!newRole.endsWith('_admin')) newRole = newRole + '_admin';
+        } else {
+          newRole = newRole.replace('_admin', '');
+        }
+        users[index].role = newRole;
+
         setDbData(STORAGE_KEYS.USERS, users);
         return users[index];
       }
