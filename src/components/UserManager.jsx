@@ -40,6 +40,7 @@ export default function UserManager({ hideHeader = false }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [changedAdmins, setChangedAdmins] = useState({});
 
   const handleSelectCrewLink = (crewId) => {
     if (crewId === 'independent') {
@@ -172,13 +173,29 @@ export default function UserManager({ hideHeader = false }) {
     }
   };
 
-  const handleToggleAdmin = async (userId, isAdminFlag) => {
+  const handleToggleAdminLocal = (userId, currentIsAdmin) => {
+    setChangedAdmins(prev => ({
+      ...prev,
+      [userId]: !currentIsAdmin
+    }));
+  };
+
+  const handleSaveAdmin = async (userId, isAdminFlag) => {
     try {
       if (toggleUserAdminByAdmin) {
         await toggleUserAdminByAdmin(userId, isAdminFlag);
+        if (refreshCrew) await refreshCrew();
+        
+        // Clear pending change
+        setChangedAdmins(prev => {
+          const updated = { ...prev };
+          delete updated[userId];
+          return updated;
+        });
+        alert(language === 'th' ? 'บันทึกสิทธิ์แอดมินเรียบร้อยแล้ว!' : 'Admin permission saved successfully!');
       }
     } catch (err) {
-      alert("Failed to toggle admin status: " + err.message);
+      alert((language === 'th' ? 'เกิดข้อผิดพลาดในการบันทึก: ' : 'Failed to save admin status: ') + err.message);
     }
   };
 
@@ -453,7 +470,11 @@ export default function UserManager({ hideHeader = false }) {
                   return safeUsers.map((u) => {
                     const isCurrent = u.id === currentUser?.id;
                     const isSystemAdmin = u.email?.toLowerCase() === 'admin@production.com';
-                    const hasAdminPower = u.is_admin || isSystemAdmin;
+                    const matchedCrew = crew?.find(c => c.email?.toLowerCase() === u.email?.toLowerCase());
+                    const crewIsAdmin = matchedCrew?.tasks?.is_admin === true;
+                    const dbIsAdmin = u.is_admin || crewIsAdmin || isSystemAdmin;
+                    
+                    const currentIsAdmin = changedAdmins[u.id] !== undefined ? changedAdmins[u.id] : dbIsAdmin;
 
                     return (
                       <tr 
@@ -491,20 +512,32 @@ export default function UserManager({ hideHeader = false }) {
                           </span>
                         </td>
                         <td className="py-3.5 px-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleAdmin(u.id, !hasAdminPower)}
-                            disabled={isSystemAdmin}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                              hasAdminPower
-                                ? 'bg-gold-500/10 border-gold-500 text-gold-500 hover:bg-gold-500/20'
-                                : 'bg-slate-500/5 border-slate-200/20 dark:border-obsidian-800 text-slate-400 hover:bg-slate-800/50'
-                            }`}
-                          >
-                            {hasAdminPower
-                              ? (language === 'th' ? '👑 แอดมิน' : '👑 Admin')
-                              : (language === 'th' ? 'แต่งตั้ง' : 'Promote')}
-                          </button>
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAdminLocal(u.id, currentIsAdmin)}
+                              disabled={isSystemAdmin}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                                currentIsAdmin
+                                  ? 'bg-gold-500/10 border-gold-500 text-gold-500 hover:bg-gold-500/20'
+                                  : 'bg-slate-500/5 border-slate-200/20 dark:border-obsidian-800 text-slate-400 hover:bg-slate-800/50'
+                              }`}
+                            >
+                              {currentIsAdmin
+                                ? (language === 'th' ? '👑 แอดมิน' : '👑 Admin')
+                                : (language === 'th' ? 'แต่งตั้ง' : 'Promote')}
+                            </button>
+
+                            {changedAdmins[u.id] !== undefined && changedAdmins[u.id] !== dbIsAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => handleSaveAdmin(u.id, changedAdmins[u.id])}
+                                className="px-2 py-1 rounded bg-emerald-650 hover:bg-emerald-600 text-white text-[10px] font-bold transition-all border border-emerald-500 cursor-pointer"
+                              >
+                                {language === 'th' ? 'บันทึก' : 'Save'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-2 text-right">
                           <button

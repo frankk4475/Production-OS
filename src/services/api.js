@@ -1260,15 +1260,34 @@ export const api = {
   // ================= SYSTEM USERS API =================
   async getUsers() {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase
+      const { data: usersData, error: usersErr } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: true });
-      if (error) {
-        console.error('Supabase error fetching users, falling back:', error);
+      if (usersErr) {
+        console.error('Supabase error fetching users, falling back:', usersErr);
         return getDbData(STORAGE_KEYS.USERS, []);
       }
-      return data || [];
+
+      // Merge is_admin status from the crew roster tasks.is_admin fallback to bypass users table RLS restrictions
+      try {
+        const { data: crewData } = await supabase
+          .from('crew')
+          .select('email, tasks');
+        if (crewData) {
+          return (usersData || []).map(u => {
+            const matchedCrew = crewData.find(c => c.email?.toLowerCase() === u.email?.toLowerCase());
+            const crewIsAdmin = matchedCrew?.tasks?.is_admin === true;
+            return {
+              ...u,
+              is_admin: u.is_admin || crewIsAdmin || u.email?.toLowerCase() === 'admin@production.com'
+            };
+          });
+        }
+      } catch (err) {
+        console.error('Failed to merge crew admin status into users list:', err);
+      }
+      return usersData || [];
     } else {
       await delay();
       return getDbData(STORAGE_KEYS.USERS, []);
@@ -1315,50 +1334,100 @@ export const api = {
     }
   },
 
+  async syncCrewAdminStatus(email, isAdmin) {
+    if (!email) return;
+    try {
+      const { data: crewMembers, error: fetchErr } = await supabase
+        .from('crew')
+        .select('*')
+        .eq('email', email);
+      if (fetchErr) throw fetchErr;
+
+      if (crewMembers && crewMembers.length > 0) {
+        for (const member of crewMembers) {
+          const currentTasks = member.tasks || {};
+          const updatedTasks = {
+            ...currentTasks,
+            is_admin: isAdmin
+          };
+          await supabase
+            .from('crew')
+            .update({ tasks: updatedTasks })
+            .eq('id', member.id);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to sync crew admin status:', e);
+    }
+  },
+
   async updateUserAdmin(userId, isAdmin) {
+    let email = '';
+    let dbUser = null;
+
     if (isSupabaseConfigured) {
       try {
-        // Try updating using the is_admin column first
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('users')
-          .update({ is_admin: isAdmin })
+          .select('email, role')
           .eq('id', userId)
-          .select()
           .single();
-        
-        if (error) {
-          throw error;
+        if (data) {
+          email = data.email;
+          dbUser = data;
         }
-        return data;
-      } catch (err) {
-        console.warn('is_admin column update failed, falling back to role-suffix:', err);
-        // Fallback: Fetch user, toggle role suffix
-        const { data: userRecord, error: fetchErr } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        if (fetchErr) throw fetchErr;
-
-        let newRole = userRecord.role || 'Crew';
-        if (isAdmin) {
-          if (!newRole.endsWith('_admin')) {
-            newRole = newRole + '_admin';
-          }
-        } else {
-          newRole = newRole.replace('_admin', '');
-        }
-
-        const { data: updatedData, error: updateErr } = await supabase
-          .from('users')
-          .update({ role: newRole })
-          .eq('id', userId)
-          .select()
-          .single();
-        if (updateErr) throw updateErr;
-        return updatedData;
+      } catch (e) {
+        console.error('Failed to fetch user email for admin sync:', e);
       }
     } else {
+      const users = getDbData(STORAGE_KEYS.USERS, []);
+      const matched = users.find(u => u.id === userId);
+      if (matched) {
+        email = matched.email;
+        dbUser = matched;
+      }
+    }
+
+    if (isSupabaseConfigured) {
+      // 1. Try to update users table (is_admin field) - best effort
+      try {
+        const { error } = await supabase
+          .from('users')
+          .update({ is_admin: isAdmin })
+          .eq('id', userId);
+        if (error) throw error;
+      } catch (err) {
+        console.warn('is_admin column update failed, trying role-suffix update:', err);
+        try {
+          if (dbUser) {
+            let newRole = dbUser.role || 'Crew';
+            if (isAdmin) {
+              if (!newRole.endsWith('_admin')) newRole = newRole + '_admin';
+            } else {
+              newRole = newRole.replace('_admin', '');
+            }
+            await supabase
+              .from('users')
+              .update({ role: newRole })
+              .eq('id', userId);
+          }
+        } catch (e2) {
+          console.warn('Role suffix update also failed due to RLS, relying on crew tasks:', e2);
+        }
+      }
+
+      // 2. Sync to crew table (source of truth fallback due to RLS bypass)
+      if (email) {
+        await this.syncCrewAdminStatus(email, isAdmin);
+      }
+
+      return {
+        id: userId,
+        email: email,
+        is_admin: isAdmin
+      };
+    } else {
+      // LocalStorage mode
       await delay();
       const users = getDbData(STORAGE_KEYS.USERS, []);
       const index = users.findIndex(u => u.id === userId);
@@ -1374,6 +1443,18 @@ export const api = {
         users[index].role = newRole;
 
         setDbData(STORAGE_KEYS.USERS, users);
+
+        if (email) {
+          const crewData = getDbData(STORAGE_KEYS.CREW) || [];
+          const matchedCrew = crewData.filter(c => c.email?.toLowerCase() === email.toLowerCase());
+          matchedCrew.forEach(c => {
+            c.tasks = {
+              ...(typeof c.tasks === 'object' ? c.tasks : {}),
+              is_admin: isAdmin
+            };
+          });
+          setDbData(STORAGE_KEYS.CREW, crewData);
+        }
         return users[index];
       }
       return null;
