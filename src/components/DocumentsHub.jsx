@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,8 +32,8 @@ import {
   User,
   Users,
   Film,
-  Folder,
-  FolderOpen
+  FolderOpen,
+  AlertTriangle
 } from 'lucide-react';
 
 const ELEMENT_CATEGORIES = [
@@ -99,7 +99,17 @@ const DOCUMENT_GROUPS = [
   }
 ];
 
-export default function DocumentsHub({ 
+// Bulletproof Helper function for text formatting (handles strings, objects, nulls)
+const formatTextValue = (val, lang = 'th', fallback = '-') => {
+  if (!val) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    return val[lang] || val.th || val.en || fallback;
+  }
+  return String(val);
+};
+
+function DocumentsHubContent({ 
   scenes = [], 
   crew = [], 
   weather, 
@@ -112,16 +122,23 @@ export default function DocumentsHub({
 }) {
   const { language } = useLanguage();
   const { theme } = useTheme();
-  const { hasWriteAccess } = useAuth();
+  const auth = useAuth();
   const { currentProject: project } = useProject();
 
   const isTh = language === 'th';
+  const hasWriteAccess = typeof auth?.hasWriteAccess === 'function' ? auth.hasWriteAccess() : true;
+
+  // Safe Array Wrappers
+  const safeScenes = Array.isArray(scenes) ? scenes : [];
+  const safeCrew = Array.isArray(crew) ? crew : [];
+  const safeShotList = Array.isArray(shotList) ? shotList : [];
+  const safeEvents = Array.isArray(events) ? events : [];
 
   // Active Major Document Tab State
   const [activeSubTab, setActiveSubTab] = useState(() => lockedTab || 'callsheet');
 
   // Selected Scene Number (for Scene Breakdown, Shot List, Storyboard tabs)
-  const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (scenes[0]?.scene_number || '1'));
+  const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (safeScenes[0]?.scene_number || '1'));
   
   // Selected Shoot Day Number (for Call Sheet tab)
   const [selectedShootDay, setSelectedShootDay] = useState('1');
@@ -148,7 +165,7 @@ export default function DocumentsHub({
 
   // Active Shoot Day / Event resolver
   const shootDaysList = (() => {
-    const shootEvents = (events || []).filter(e => e.type === 'shoot');
+    const shootEvents = safeEvents.filter(e => e.type === 'shoot');
     if (shootEvents.length > 0) {
       return shootEvents.map((evt, idx) => ({
         dayNumber: String(idx + 1),
@@ -164,7 +181,7 @@ export default function DocumentsHub({
 
   // Current active Shoot Day event object & primitive ID for memoized effects
   const activeShootDayItem = shootDaysList.find(d => d.dayNumber === selectedShootDay) || shootDaysList[0];
-  const activeEvent = (events || []).find(e => e.id === activeShootDayItem?.eventId || e.scene_number === selectedSceneNum);
+  const activeEvent = safeEvents.find(e => e.id === activeShootDayItem?.eventId || e.scene_number === selectedSceneNum);
   const activeEventId = activeEvent?.id || '';
 
   // Call Sheet Edit Form States
@@ -185,8 +202,6 @@ export default function DocumentsHub({
   const [wardrobeNotes, setWardrobeNotes] = useState('');
   const [productionNotes, setProductionNotes] = useState('');
   const [assignedCrewIds, setAssignedCrewIds] = useState([]);
-  
-  // Cast Call Sheet Schedule state
   const [castCallSchedules, setCastCallSchedules] = useState([]);
 
   // Shot List / Storyboard Form States
@@ -255,11 +270,11 @@ export default function DocumentsHub({
       setShootCallTime(activeEvent.notes?.shooting_call || activeEvent.time || '08:30 AM');
       setLunchTime(activeEvent.notes?.lunch_time || '12:30 PM');
       setWrapTime(activeEvent.notes?.wrap_time || '06:00 PM');
-      setShootLocation(activeEvent.location?.[language] || activeEvent.location?.th || activeEvent.location?.en || (isTh ? 'สถานที่หลักตามบท' : 'Main Set Location'));
+      setShootLocation(formatTextValue(activeEvent.location, language, isTh ? 'สถานที่หลักตามบท' : 'Main Set Location'));
       setMapsUrl(activeEvent.notes?.maps_url || '');
       setHospitalInfo(activeEvent.notes?.hospital_info || (isTh ? 'โรงพยาบาลศูนย์พิษณุโลก (โทร. 055-270-300)' : 'Phitsanulok Central Hospital (Tel. 055-270-300)'));
       setWeatherAlertText(activeEvent.notes?.weather_alert || (isTh ? 'สภาพอากาศเมฆครึ้ม ควรเตรียมผ้าพลาสติกคลุมกล้องและแผงไฟ' : 'Cloudy weather. Prepare camera rain covers & power distro protection.'));
-      setGeneralNotes(activeEvent.notes?.th || activeEvent.notes?.en || '');
+      setGeneralNotes(formatTextValue(activeEvent.notes, language, ''));
       setCameraNotes(activeEvent.notes?.camera_notes || (isTh ? 'เตรียมกล้อง A/B Roll, เลนส์ระยะ 35mm, 50mm และการ์ดบันทึกสำรอง' : 'Prep A/B Camera Package, 35mm & 50mm lenses, spare media cards.'));
       setArtNotes(activeEvent.notes?.art_notes || (isTh ? 'เซ็ตอุปกรณ์ประกอบฉากหลัก กระเป๋าเดินทาง และพร็อพประจำตัวละคร' : 'Set up main props, travel bags, and character personal items.'));
       setLightingNotes(activeEvent.notes?.lighting_notes || (isTh ? 'ตั้งชุดไฟ HMI 2.5KW ด้านนอกหน้าต่างรถไฟ พร้อมสะท้อนแสง Hard Light' : 'Position 2.5KW HMI outside train window with Hard Light reflectors.'));
@@ -293,16 +308,16 @@ export default function DocumentsHub({
         { charName: 'พลอย', actorName: 'พลอย (นักแสดงหลัก)', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' }
       ]);
     }
-  }, [activeEventId, selectedShootDay, project?.start_date, isTh]);
+  }, [activeEventId, selectedShootDay, project?.start_date, isTh, language]);
 
   // Selected Scene Object resolver
-  const activeScene = scenes.find(s => s.scene_number === selectedSceneNum) || scenes[0];
+  const activeScene = safeScenes.find(s => String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
 
   // Filter shots for selected scene
-  const activeSceneShots = shotList.filter(s => 
-    s.scene_id === selectedSceneNum || 
-    s.scene_number === selectedSceneNum || 
-    s.sceneNum === selectedSceneNum ||
+  const activeSceneShots = safeShotList.filter(s => 
+    String(s.scene_id) === String(selectedSceneNum) || 
+    String(s.scene_number) === String(selectedSceneNum) || 
+    String(s.sceneNum) === String(selectedSceneNum) ||
     (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
   );
 
@@ -343,13 +358,13 @@ export default function DocumentsHub({
       }
     };
 
-    const existingIndex = (events || []).findIndex(evt => evt.id === eventId);
+    const existingIndex = safeEvents.findIndex(evt => evt.id === eventId);
     let newEventsList;
     if (existingIndex !== -1) {
-      newEventsList = [...events];
+      newEventsList = [...safeEvents];
       newEventsList[existingIndex] = updatedEvent;
     } else {
-      newEventsList = [...(events || []), updatedEvent];
+      newEventsList = [...safeEvents, updatedEvent];
     }
 
     if (setEvents) setEvents(newEventsList);
@@ -379,8 +394,8 @@ export default function DocumentsHub({
       }
     };
 
-    const updatedShots = [...shotList, newShot];
-    setShotList(updatedShots);
+    const updatedShots = [...safeShotList, newShot];
+    if (setShotList) setShotList(updatedShots);
     setNewShotNum('');
     setNewShotDescTh('');
     setNewShotDescEn('');
@@ -390,7 +405,7 @@ export default function DocumentsHub({
   // Delete Shot
   const handleDeleteShot = (shotId) => {
     if (window.confirm(isTh ? 'ต้องการลบช็อตถ่ายทำนี้ใช่หรือไม่?' : 'Delete this shot item?')) {
-      setShotList(shotList.filter(s => s.id !== shotId));
+      if (setShotList) setShotList(safeShotList.filter(s => s.id !== shotId));
     }
   };
 
@@ -402,19 +417,19 @@ export default function DocumentsHub({
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target.result;
-      const updatedShots = shotList.map(s => {
+      const updatedShots = safeShotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
             description: {
-              ...s.description,
+              ...(typeof s.description === 'object' ? s.description : { th: s.description || '' }),
               image_url: base64Data
             }
           };
         }
         return s;
       });
-      setShotList(updatedShots);
+      if (setShotList) setShotList(updatedShots);
     };
     reader.readAsDataURL(file);
   };
@@ -422,19 +437,19 @@ export default function DocumentsHub({
   // Remove Storyboard Image
   const handleRemoveStoryboardImage = (shotId) => {
     if (window.confirm(isTh ? 'ต้องการลบภาพสเก็ตช์สตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Remove storyboard image?')) {
-      const updatedShots = shotList.map(s => {
+      const updatedShots = safeShotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
             description: {
-              ...s.description,
+              ...(typeof s.description === 'object' ? s.description : { th: s.description || '' }),
               image_url: ''
             }
           };
         }
         return s;
       });
-      setShotList(updatedShots);
+      if (setShotList) setShotList(updatedShots);
     }
   };
 
@@ -487,14 +502,15 @@ export default function DocumentsHub({
   };
 
   // Filtered Vault Files List
-  const filteredVaultFiles = vaultFiles.filter(f => {
+  const safeVaultFiles = Array.isArray(vaultFiles) ? vaultFiles : [];
+  const filteredVaultFiles = safeVaultFiles.filter(f => {
     const matchCategory = vaultCategoryFilter === 'all' || f.category === vaultCategoryFilter;
-    const matchQuery = !vaultSearch || f.name.toLowerCase().includes(vaultSearch.toLowerCase()) || f.desc.toLowerCase().includes(vaultSearch.toLowerCase());
+    const matchQuery = !vaultSearch || (f.name && f.name.toLowerCase().includes(vaultSearch.toLowerCase())) || (f.desc && f.desc.toLowerCase().includes(vaultSearch.toLowerCase()));
     return matchCategory && matchQuery;
   });
 
   // Scheduled Scenes list for active Shoot Day
-  const dayScheduledScenes = scenes.filter(s => 
+  const dayScheduledScenes = safeScenes.filter(s => 
     s.tech_notes?.scheduling?.shootDay === selectedShootDay ||
     (selectedShootDay === '1' && !s.tech_notes?.scheduling?.shootDay)
   );
@@ -622,7 +638,6 @@ export default function DocumentsHub({
       {/* SUBTAB 1.1: DAILY CALL SHEET */}
       {activeSubTab === 'callsheet' && (
         <div className="space-y-5">
-          {/* Shoot Day Selector & Call Sheet Modal Trigger Bar */}
           <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
@@ -641,7 +656,7 @@ export default function DocumentsHub({
               </select>
             </div>
 
-            {hasWriteAccess() && (
+            {hasWriteAccess && (
               <button
                 onClick={() => setIsCallSheetModalOpen(true)}
                 className="px-3.5 py-2 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-500 border border-gold-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer font-sans"
@@ -652,19 +667,17 @@ export default function DocumentsHub({
             )}
           </div>
 
-          {/* STUDIOBINDER-STYLE CALL SHEET DOCUMENT PRINT PREVIEW */}
           <div className="print-area print-card glass-panel p-8 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-6 text-slate-900 dark:text-slate-100 shadow-xl bg-white dark:bg-obsidian-950">
-            {/* Call Sheet Document Header */}
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pb-5 border-b-2 border-slate-900 dark:border-gold-500">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-gold-500 font-mono">
                   PRODUCTION CALL SHEET
                 </span>
                 <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white font-sans mt-0.5">
-                  {project?.title?.[language] || project?.title?.th || project?.title?.en || (isTh ? 'ใบสั่งงานกองถ่ายประจำวัน' : 'Daily Call Sheet')}
+                  {formatTextValue(project?.title, language, isTh ? 'ใบสั่งงานกองถ่ายประจำวัน' : 'Daily Call Sheet')}
                 </h1>
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans mt-1">
-                  {isTh ? `คิววันถ่ายทำที่: DAY ${selectedShootDay}` : `SHOOT DAY ${selectedShootDay}`} | {isTh ? 'ผู้กำกับ:' : 'Director:'} {project?.director?.[language] || project?.director?.th || '-'} | {isTh ? 'ผู้ดำเนินงานสร้าง:' : 'Producer:'} {project?.producer?.[language] || project?.producer?.th || '-'}
+                  {isTh ? `คิววันถ่ายทำที่: DAY ${selectedShootDay}` : `SHOOT DAY ${selectedShootDay}`} | {isTh ? 'ผู้กำกับ:' : 'Director:'} {formatTextValue(project?.director, language, '-')} | {isTh ? 'ผู้ดำเนินงานสร้าง:' : 'Producer:'} {formatTextValue(project?.producer, language, '-')}
                 </p>
               </div>
 
@@ -678,7 +691,6 @@ export default function DocumentsHub({
               </div>
             </div>
 
-            {/* Call Times Summary Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { labelTh: 'เวลาเปิดกอง (CREW CALL)', labelEn: 'CREW CALL TIME', val: crewCallTime, icon: Clock, color: 'border-l-gold-500' },
@@ -701,7 +713,6 @@ export default function DocumentsHub({
               })}
             </div>
 
-            {/* Location & Emergency Hospital Box */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800 space-y-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
@@ -734,7 +745,6 @@ export default function DocumentsHub({
               </div>
             </div>
 
-            {/* Scheduled Scenes Table for Shoot Day */}
             <div className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
                 <Clapperboard size={14} className="text-gold-500" />
@@ -755,7 +765,7 @@ export default function DocumentsHub({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
-                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : scenes.slice(0, 3)).map((sc) => (
+                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3)).map((sc) => (
                       <tr key={sc.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
                         <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc.scene_number}</td>
                         <td className="p-2.5 font-bold font-mono">{sc.int_ext}</td>
@@ -763,10 +773,10 @@ export default function DocumentsHub({
                         <td className="p-2.5 font-bold font-mono">{sc.day_night}</td>
                         <td className="p-2.5 font-mono">{sc.pages || '1/8'} pgs</td>
                         <td className="p-2.5 max-w-xs truncate text-slate-600 dark:text-slate-300">
-                          {sc.description?.[language] || sc.description?.th || '-'}
+                          {formatTextValue(sc.description, language, '-')}
                         </td>
                         <td className="p-2.5 font-mono font-bold text-purple-400">
-                          {sc.cast?.[language] || sc.cast?.th || '-'}
+                          {formatTextValue(sc.cast, language, '-')}
                         </td>
                       </tr>
                     ))}
@@ -775,7 +785,6 @@ export default function DocumentsHub({
               </div>
             </div>
 
-            {/* Cast Schedule Call Sheet Table */}
             <div className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
                 <Users size={14} className="text-gold-500" />
@@ -808,7 +817,6 @@ export default function DocumentsHub({
               </div>
             </div>
 
-            {/* Departmental Technical Notes Grid */}
             <div className="space-y-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
                 <Wrench size={14} className="text-gold-500" />
@@ -836,7 +844,6 @@ export default function DocumentsHub({
               </div>
             </div>
 
-            {/* Department Crew Roster */}
             <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-obsidian-800">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
                 <Users size={14} className="text-gold-500" />
@@ -844,7 +851,7 @@ export default function DocumentsHub({
               </h3>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs font-sans">
-                {(crew.length > 0 ? crew : [
+                {(safeCrew.length > 0 ? safeCrew : [
                   { name: 'ธนบดี กองศรี', role: 'Producer' },
                   { name: 'ผู้กำกับหลัก', role: 'Director' },
                   { name: 'ผู้ช่วยผู้กำกับ 1', role: '1st AD' },
@@ -864,7 +871,6 @@ export default function DocumentsHub({
       {/* SUBTAB 1.2: SCENE BREAKDOWN SHEET */}
       {activeSubTab === 'breakdown' && (
         <div className="space-y-5">
-          {/* Scene Selector */}
           <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center gap-3">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
@@ -875,7 +881,7 @@ export default function DocumentsHub({
                 onChange={(e) => setSelectedSceneNum(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
               >
-                {scenes.map((s) => (
+                {safeScenes.map((s) => (
                   <option key={s.id} value={s.scene_number}>
                     Scene {s.scene_number} - {s.setting}
                   </option>
@@ -884,7 +890,6 @@ export default function DocumentsHub({
             </div>
           </div>
 
-          {/* Breakdown Sheet Document Card */}
           <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-5 bg-white dark:bg-obsidian-950 shadow-xl">
             <div className="flex items-center justify-between pb-3 border-b-2 border-gold-500">
               <div>
@@ -898,7 +903,6 @@ export default function DocumentsHub({
               </span>
             </div>
 
-            {/* Scene Header Details Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-sans text-xs">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
                 <span className="text-[9px] font-black text-slate-400 font-mono block">SCENE NUMBER</span>
@@ -914,21 +918,20 @@ export default function DocumentsHub({
               </div>
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
                 <span className="text-[9px] font-black text-slate-400 font-mono block">LOCATION</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{activeScene?.location?.[language] || activeScene?.location?.th || '-'}</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{formatTextValue(activeScene?.location, language, '-')}</span>
               </div>
             </div>
 
-            {/* Scene Synopsis */}
-            {activeScene?.description?.[language] && (
+            {/* Bulletproof Scene Synopsis rendering */}
+            {activeScene?.description && (
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800 space-y-1">
                 <span className="text-[10px] font-black uppercase text-slate-400 font-mono">SCENE SYNOPSIS</span>
                 <p className="text-xs text-slate-700 dark:text-slate-300 font-sans leading-relaxed">
-                  {activeScene.description[language]}
+                  {formatTextValue(activeScene.description, language, '-')}
                 </p>
               </div>
             )}
 
-            {/* Tagged Breakdown Elements Category Badges */}
             <div className="space-y-3 pt-2">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono">
                 {isTh ? 'องค์ประกอบฉากที่แจกแจงได้ (TAGGED ELEMENTS)' : 'TAGGED BREAKDOWN ELEMENTS'}
@@ -975,7 +978,7 @@ export default function DocumentsHub({
               </h2>
             </div>
             <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-              {scenes.length} {isTh ? 'ฉากทั้งหมด' : 'Total Scenes'}
+              {safeScenes.length} {isTh ? 'ฉากทั้งหมด' : 'Total Scenes'}
             </span>
           </div>
 
@@ -994,15 +997,15 @@ export default function DocumentsHub({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
-                {scenes.map((sc) => (
+                {safeScenes.map((sc) => (
                   <tr key={sc.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
                     <td className="p-3 font-mono font-black text-gold-500">SCENE {sc.scene_number}</td>
                     <td className="p-3 font-mono font-bold">{sc.int_ext}</td>
                     <td className="p-3 font-bold">{sc.setting}</td>
                     <td className="p-3 font-mono">{sc.day_night}</td>
                     <td className="p-3 font-mono">{sc.pages || '1/8'} pgs</td>
-                    <td className="p-3 text-slate-600 dark:text-slate-300">{sc.location?.[language] || sc.location?.th || '-'}</td>
-                    <td className="p-3 font-mono font-bold text-purple-400">{sc.cast?.[language] || sc.cast?.th || '-'}</td>
+                    <td className="p-3 text-slate-600 dark:text-slate-300">{formatTextValue(sc.location, language, '-')}</td>
+                    <td className="p-3 font-mono font-bold text-purple-400">{formatTextValue(sc.cast, language, '-')}</td>
                     <td className="p-3 uppercase font-mono text-[10px] font-bold">
                       <span className={`px-2 py-0.5 rounded ${sc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-400'}`}>
                         {sc.status || 'pending'}
@@ -1033,7 +1036,7 @@ export default function DocumentsHub({
                 onChange={(e) => setSelectedSceneNum(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
               >
-                {scenes.map((s) => (
+                {safeScenes.map((s) => (
                   <option key={s.id} value={s.scene_number}>
                     Scene {s.scene_number} - {s.setting} ({s.int_ext} / {s.day_night})
                   </option>
@@ -1041,7 +1044,7 @@ export default function DocumentsHub({
               </select>
             </div>
 
-            {hasWriteAccess() && (
+            {hasWriteAccess && (
               <button
                 onClick={() => setIsShotModalOpen(true)}
                 className="px-3.5 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer font-sans shadow-xs"
@@ -1090,7 +1093,7 @@ export default function DocumentsHub({
                         <td className="p-3 font-mono">{shot.lens || '50mm'}</td>
                         <td className="p-3 font-mono text-slate-400">{shot.equipment || 'Tripod'}</td>
                         <td className="p-3 text-slate-700 dark:text-slate-200">
-                          {shot.description?.[language] || shot.description?.th || shot.description?.en || '-'}
+                          {formatTextValue(shot.description, language, '-')}
                         </td>
                         <td className="p-3 no-print">
                           <button
@@ -1130,7 +1133,7 @@ export default function DocumentsHub({
                 onChange={(e) => setSelectedSceneNum(e.target.value)}
                 className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
               >
-                {scenes.map((s) => (
+                {safeScenes.map((s) => (
                   <option key={s.id} value={s.scene_number}>
                     Scene {s.scene_number} - {s.setting}
                   </option>
@@ -1194,7 +1197,7 @@ export default function DocumentsHub({
                   </div>
 
                   <p className="text-xs text-slate-700 dark:text-slate-300 font-sans leading-relaxed min-h-[40px]">
-                    {shot.description?.[language] || shot.description?.th || shot.description?.en || '-'}
+                    {formatTextValue(shot.description, language, '-')}
                   </p>
                 </div>
               ))}
@@ -1223,7 +1226,7 @@ export default function DocumentsHub({
                 />
               </div>
 
-              {hasWriteAccess() && (
+              {hasWriteAccess && (
                 <button
                   onClick={() => setIsFileUploadModalOpen(true)}
                   className="px-4 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer font-sans shadow-xs shrink-0"
@@ -1640,5 +1643,56 @@ export default function DocumentsHub({
         </div>
       )}
     </div>
+  );
+}
+
+// React Class Error Boundary Component
+class DocumentsHubErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("DocumentsHub Error Boundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="glass-panel p-8 rounded-2xl border border-red-500/30 text-center space-y-4 max-w-xl mx-auto my-12 text-slate-100 font-sans shadow-2xl bg-obsidian-950">
+          <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 border border-red-500/20 flex items-center justify-center mx-auto">
+            <AlertTriangle size={24} />
+          </div>
+          <h2 className="text-lg font-black text-white">ระบบคลังเอกสารได้รับการฟื้นฟูอัตโนมัติ (Document Hub Safe Recovery)</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            ระบบตรวจพบความผิดปกติของรูปแบบข้อมูลเอกสาร กดปุ่มด้านล่างเพื่อโหลดหน้าระบบคลังเอกสารใหม่
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-5 py-2.5 rounded-xl bg-gold-500 text-obsidian-950 font-black text-xs hover:bg-gold-400 transition-all cursor-pointer shadow-md"
+          >
+            รีเฟรชหน้าระบบเอกสาร (Reload Document Suite)
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default function DocumentsHub(props) {
+  return (
+    <DocumentsHubErrorBoundary>
+      <DocumentsHubContent {...props} />
+    </DocumentsHubErrorBoundary>
   );
 }
