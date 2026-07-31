@@ -99,12 +99,16 @@ const DOCUMENT_GROUPS = [
   }
 ];
 
-// Bulletproof Helper function for text formatting (handles strings, objects, nulls)
+// Bulletproof Helper function for text formatting (handles strings, objects, numbers, nulls)
 const formatTextValue = (val, lang = 'th', fallback = '-') => {
-  if (!val) return fallback;
+  if (val === null || val === undefined) return fallback;
   if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
   if (typeof val === 'object') {
-    return val[lang] || val.th || val.en || fallback;
+    const text = val[lang] || val.th || val.en || val.text || val.value;
+    if (typeof text === 'string') return text;
+    if (typeof text === 'number') return String(text);
+    return fallback;
   }
   return String(val);
 };
@@ -170,21 +174,21 @@ function DocumentsHubContent({
       return shootEvents.map((evt, idx) => ({
         dayNumber: String(idx + 1),
         eventId: evt.id,
-        date: evt.date,
+        date: formatTextValue(evt.date, language, ''),
         sceneNumber: evt.scene_number || '1'
       }));
     }
     return [
-      { dayNumber: '1', eventId: 'evt-day-1', date: project?.start_date || new Date().toISOString().split('T')[0], sceneNumber: '1' }
+      { dayNumber: '1', eventId: 'evt-day-1', date: formatTextValue(project?.start_date, language, new Date().toISOString().split('T')[0]), sceneNumber: '1' }
     ];
   })();
 
   // Current active Shoot Day event object & primitive ID for memoized effects
-  const activeShootDayItem = shootDaysList.find(d => d.dayNumber === selectedShootDay) || shootDaysList[0];
+  const activeShootDayItem = shootDaysList.find(d => d && d.dayNumber === selectedShootDay) || shootDaysList[0];
   const activeEvent = safeEvents.find(e => e && (e.id === activeShootDayItem?.eventId || String(e.scene_number) === String(selectedSceneNum)));
   const activeEventId = activeEvent?.id || '';
 
-  // Call Sheet Edit Form States
+  // Call Sheet Edit Form States (Always stored as formatted Strings to prevent React child object crashes!)
   const [callSheetDate, setCallSheetDate] = useState('');
   const [crewCallTime, setCrewCallTime] = useState('07:00 AM');
   const [shootCallTime, setShootCallTime] = useState('08:30 AM');
@@ -265,32 +269,32 @@ function DocumentsHubContent({
     }
   };
 
-  // Sync Call Sheet form states using primitive dependency activeEventId to prevent infinite re-renders!
+  // Sync Call Sheet form states securely with formatTextValue on every single property!
   useEffect(() => {
     if (activeEvent) {
-      setCallSheetDate(activeEvent.date || project?.start_date || new Date().toISOString().split('T')[0]);
-      setCrewCallTime(activeEvent.notes?.crew_call || '07:00 AM');
-      setShootCallTime(activeEvent.notes?.shooting_call || activeEvent.time || '08:30 AM');
-      setLunchTime(activeEvent.notes?.lunch_time || '12:30 PM');
-      setWrapTime(activeEvent.notes?.wrap_time || '06:00 PM');
+      setCallSheetDate(formatTextValue(activeEvent.date || project?.start_date, language, new Date().toISOString().split('T')[0]));
+      setCrewCallTime(formatTextValue(activeEvent.notes?.crew_call, language, '07:00 AM'));
+      setShootCallTime(formatTextValue(activeEvent.notes?.shooting_call || activeEvent.time, language, '08:30 AM'));
+      setLunchTime(formatTextValue(activeEvent.notes?.lunch_time, language, '12:30 PM'));
+      setWrapTime(formatTextValue(activeEvent.notes?.wrap_time, language, '06:00 PM'));
       setShootLocation(formatTextValue(activeEvent.location, language, isTh ? 'สถานที่หลักตามบท' : 'Main Set Location'));
-      setMapsUrl(activeEvent.notes?.maps_url || '');
-      setHospitalInfo(activeEvent.notes?.hospital_info || (isTh ? 'โรงพยาบาลศูนย์พิษณุโลก (โทร. 055-270-300)' : 'Phitsanulok Central Hospital (Tel. 055-270-300)'));
-      setWeatherAlertText(activeEvent.notes?.weather_alert || (isTh ? 'สภาพอากาศเมฆครึ้ม ควรเตรียมผ้าพลาสติกคลุมกล้องและแผงไฟ' : 'Cloudy weather. Prepare camera rain covers & power distro protection.'));
+      setMapsUrl(formatTextValue(activeEvent.notes?.maps_url, language, ''));
+      setHospitalInfo(formatTextValue(activeEvent.notes?.hospital_info, language, isTh ? 'โรงพยาบาลศูนย์พิษณุโลก (โทร. 055-270-300)' : 'Phitsanulok Central Hospital (Tel. 055-270-300)'));
+      setWeatherAlertText(formatTextValue(activeEvent.notes?.weather_alert, language, isTh ? 'สภาพอากาศเมฆครึ้ม ควรเตรียมผ้าพลาสติกคลุมกล้องและแผงไฟ' : 'Cloudy weather. Prepare camera rain covers & power distro protection.'));
       setGeneralNotes(formatTextValue(activeEvent.notes, language, ''));
-      setCameraNotes(activeEvent.notes?.camera_notes || (isTh ? 'เตรียมกล้อง A/B Roll, เลนส์ระยะ 35mm, 50mm และการ์ดบันทึกสำรอง' : 'Prep A/B Camera Package, 35mm & 50mm lenses, spare media cards.'));
-      setArtNotes(activeEvent.notes?.art_notes || (isTh ? 'เซ็ตอุปกรณ์ประกอบฉากหลัก กระเป๋าเดินทาง และพร็อพประจำตัวละคร' : 'Set up main props, travel bags, and character personal items.'));
-      setLightingNotes(activeEvent.notes?.lighting_notes || (isTh ? 'ตั้งชุดไฟ HMI 2.5KW ด้านนอกหน้าต่างรถไฟ พร้อมสะท้อนแสง Hard Light' : 'Position 2.5KW HMI outside train window with Hard Light reflectors.'));
-      setSoundNotes(activeEvent.notes?.sound_notes || (isTh ? 'ติดไมค์ลาวาเลียร์นักแสดงหลัก 2 ท่าน และใช้ไมค์บูมเก็บเสียงบรรยากาศ' : 'Lav two lead actors. Boom mic for ambient train tracks background.'));
-      setWardrobeNotes(activeEvent.notes?.wardrobe_notes || (isTh ? 'เสื้อเชิ้ตทำงานรอยยับตามบท และสร้อยข้อมือแฮนด์เมด' : 'Worn work shirt with script wrinkles and handmade wristlet.'));
-      setProductionNotes(activeEvent.notes?.production_notes || (isTh ? 'ตรวจเช็กใบสั่งงาน ปิดเสียงโทรศัพท์ในกองถ่าย ประสานงานรถรับส่งนักแสดง' : 'Check call sheets, enforce quiet on set, coordinate talent transport.'));
+      setCameraNotes(formatTextValue(activeEvent.notes?.camera_notes, language, isTh ? 'เตรียมกล้อง A/B Roll, เลนส์ระยะ 35mm, 50mm และการ์ดบันทึกสำรอง' : 'Prep A/B Camera Package, 35mm & 50mm lenses, spare media cards.'));
+      setArtNotes(formatTextValue(activeEvent.notes?.art_notes, language, isTh ? 'เซ็ตอุปกรณ์ประกอบฉากหลัก กระเป๋าเดินทาง และพร็อพประจำตัวละคร' : 'Set up main props, travel bags, and character personal items.'));
+      setLightingNotes(formatTextValue(activeEvent.notes?.lighting_notes, language, isTh ? 'ตั้งชุดไฟ HMI 2.5KW ด้านนอกหน้าต่างรถไฟ พร้อมสะท้อนแสง Hard Light' : 'Position 2.5KW HMI outside train window with Hard Light reflectors.'));
+      setSoundNotes(formatTextValue(activeEvent.notes?.sound_notes, language, isTh ? 'ติดไมค์ลาวาเลียร์นักแสดงหลัก 2 ท่าน และใช้ไมค์บูมเก็บเสียงบรรยากาศ' : 'Lav two lead actors. Boom mic for ambient train tracks background.'));
+      setWardrobeNotes(formatTextValue(activeEvent.notes?.wardrobe_notes, language, isTh ? 'เสื้อเชิ้ตทำงานรอยยับตามบท และสร้อยข้อมือแฮนด์เมด' : 'Worn work shirt with script wrinkles and handmade wristlet.'));
+      setProductionNotes(formatTextValue(activeEvent.notes?.production_notes, language, isTh ? 'ตรวจเช็กใบสั่งงาน ปิดเสียงโทรศัพท์ในกองถ่าย ประสานงานรถรับส่งนักแสดง' : 'Check call sheets, enforce quiet on set, coordinate talent transport.'));
       setAssignedCrewIds(Array.isArray(activeEvent.crew_assigned) ? activeEvent.crew_assigned : []);
       setCastCallSchedules(Array.isArray(activeEvent.notes?.cast_calls) ? activeEvent.notes.cast_calls : [
         { charName: 'พลอย', actorName: 'พลอย (นักแสดงหลัก)', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' },
         { charName: 'ชายปริศนา', actorName: 'สมชาย (นักแสดงสมทบ)', pickupTime: '07:00 AM', hmwTime: '07:30 AM', onSetTime: '08:45 AM' }
       ]);
     } else {
-      setCallSheetDate(project?.start_date || new Date().toISOString().split('T')[0]);
+      setCallSheetDate(formatTextValue(project?.start_date, language, new Date().toISOString().split('T')[0]));
       setCrewCallTime('07:00 AM');
       setShootCallTime('08:30 AM');
       setLunchTime('12:30 PM');
@@ -666,7 +670,7 @@ function DocumentsHubContent({
               >
                 {shootDaysList.map((day) => (
                   <option key={day.dayNumber} value={day.dayNumber}>
-                    DAY {day.dayNumber} ({day.date || (isTh ? 'ยังไม่กำหนดวัน' : 'TBD')})
+                    DAY {day.dayNumber} ({formatTextValue(day.date, language, isTh ? 'ยังไม่กำหนดวัน' : 'TBD')})
                   </option>
                 ))}
               </select>
@@ -699,10 +703,10 @@ function DocumentsHubContent({
 
               <div className="text-right font-mono text-xs space-y-1 shrink-0">
                 <div className="px-3 py-1 rounded bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 font-bold inline-block">
-                  {isTh ? 'วันที่ถ่ายทำ (Date):' : 'DATE:'} <span className="text-gold-500">{callSheetDate || 'TBD'}</span>
+                  {isTh ? 'วันที่ถ่ายทำ (Date):' : 'DATE:'} <span className="text-gold-500">{formatTextValue(callSheetDate, language, 'TBD')}</span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {isTh ? 'สภาพอากาศ:' : 'Weather:'} {weatherAlertText || (isTh ? 'ปกติ' : 'Normal')}
+                  {isTh ? 'สภาพอากาศ:' : 'Weather:'} {formatTextValue(weatherAlertText, language, isTh ? 'ปกติ' : 'Normal')}
                 </div>
               </div>
             </div>
@@ -722,7 +726,7 @@ function DocumentsHubContent({
                       <span>{isTh ? item.labelTh : item.labelEn}</span>
                     </span>
                     <span className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight">
-                      {item.val}
+                      {formatTextValue(item.val, language, '-')}
                     </span>
                   </div>
                 );
@@ -736,9 +740,9 @@ function DocumentsHubContent({
                   <span>{isTh ? 'สถานที่ถ่ายทำหลัก (SHOOT LOCATION)' : 'SHOOT LOCATION'}</span>
                 </span>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200 font-sans leading-relaxed">
-                  {shootLocation}
+                  {formatTextValue(shootLocation, language, '-')}
                 </p>
-                {mapsUrl && (
+                {mapsUrl && typeof mapsUrl === 'string' && (
                   <a
                     href={mapsUrl}
                     target="_blank"
@@ -756,7 +760,7 @@ function DocumentsHubContent({
                   <span>{isTh ? 'โรงพยาบาลใกล้ที่สุดกรณีฉุกเฉิน (NEAREST HOSPITAL)' : 'NEAREST HOSPITAL'}</span>
                 </span>
                 <p className="text-xs font-bold text-red-700 dark:text-red-300 font-sans leading-relaxed">
-                  {hospitalInfo}
+                  {formatTextValue(hospitalInfo, language, '-')}
                 </p>
               </div>
             </div>
@@ -781,18 +785,18 @@ function DocumentsHubContent({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
-                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3)).map((sc) => (
-                      <tr key={sc.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
-                        <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc.scene_number}</td>
-                        <td className="p-2.5 font-bold font-mono">{sc.int_ext}</td>
-                        <td className="p-2.5 font-bold">{sc.setting}</td>
-                        <td className="p-2.5 font-bold font-mono">{sc.day_night}</td>
-                        <td className="p-2.5 font-mono">{sc.pages || '1/8'} pgs</td>
+                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3)).map((sc, idx) => (
+                      <tr key={sc?.id || idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                        <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc?.scene_number || (idx + 1)}</td>
+                        <td className="p-2.5 font-bold font-mono">{sc?.int_ext || 'INT'}</td>
+                        <td className="p-2.5 font-bold">{sc?.setting || '-'}</td>
+                        <td className="p-2.5 font-bold font-mono">{sc?.day_night || 'DAY'}</td>
+                        <td className="p-2.5 font-mono">{sc?.pages || '1/8'} pgs</td>
                         <td className="p-2.5 max-w-xs truncate text-slate-600 dark:text-slate-300">
-                          {formatTextValue(sc.description, language, '-')}
+                          {formatTextValue(sc?.description, language, '-')}
                         </td>
                         <td className="p-2.5 font-mono font-bold text-purple-400">
-                          {formatTextValue(sc.cast, language, '-')}
+                          {formatTextValue(sc?.cast, language, '-')}
                         </td>
                       </tr>
                     ))}
@@ -821,11 +825,11 @@ function DocumentsHubContent({
                   <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80 font-mono">
                     {safeCastCallSchedules.map((c, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
-                        <td className="p-2.5 font-black text-gold-500">{c.charName}</td>
-                        <td className="p-2.5 font-sans font-bold">{c.actorName}</td>
-                        <td className="p-2.5 text-slate-400">{c.pickupTime}</td>
-                        <td className="p-2.5 text-amber-400">{c.hmwTime}</td>
-                        <td className="p-2.5 font-bold text-emerald-400">{c.onSetTime}</td>
+                        <td className="p-2.5 font-black text-gold-500">{formatTextValue(c?.charName, language, '-')}</td>
+                        <td className="p-2.5 font-sans font-bold">{formatTextValue(c?.actorName, language, '-')}</td>
+                        <td className="p-2.5 text-slate-400">{formatTextValue(c?.pickupTime, language, '-')}</td>
+                        <td className="p-2.5 text-amber-400">{formatTextValue(c?.hmwTime, language, '-')}</td>
+                        <td className="p-2.5 font-bold text-emerald-400">{formatTextValue(c?.onSetTime, language, '-')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -853,7 +857,7 @@ function DocumentsHubContent({
                       {dept.title}
                     </span>
                     <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
-                      {dept.text || '-'}
+                      {formatTextValue(dept.text, language, '-')}
                     </p>
                   </div>
                 ))}
@@ -874,8 +878,12 @@ function DocumentsHubContent({
                   { name: 'ผู้กำกับภาพ', role: 'DP' }
                 ]).map((member, idx) => (
                   <div key={idx} className="p-2 rounded-lg bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800/60">
-                    <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{member.name}</div>
-                    <div className="text-[10px] font-mono text-gold-500 truncate">{member.role}</div>
+                    <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
+                      {formatTextValue(member?.name || member, language, '-')}
+                    </div>
+                    <div className="text-[10px] font-mono text-gold-500 truncate">
+                      {formatTextValue(member?.role, language, '-')}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -967,7 +975,7 @@ function DocumentsHubContent({
                         {items.length > 0 ? (
                           items.map((it, idx) => (
                             <span key={idx} className={`px-2 py-0.5 rounded text-[11px] font-bold border ${cat.color}`}>
-                              {it.name}
+                              {formatTextValue(it?.name || it, language, '-')}
                             </span>
                           ))
                         ) : (
@@ -1662,11 +1670,11 @@ function DocumentsHubContent({
   );
 }
 
-// React Class Error Boundary Component
+// React Class Error Boundary Component with Error Inspection
 class DocumentsHubErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, showDetails: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -1688,9 +1696,26 @@ class DocumentsHubErrorBoundary extends React.Component {
           <p className="text-xs text-slate-400 leading-relaxed">
             ระบบตรวจพบความผิดปกติของรูปแบบข้อมูลเอกสาร กดปุ่มด้านล่างเพื่อโหลดหน้าระบบคลังเอกสารใหม่
           </p>
+
+          {/* Diagnostic Error Details Dropdown */}
+          <div className="text-left font-mono text-[11px] text-red-400 bg-red-950/40 p-3 rounded-xl border border-red-900/50 space-y-2">
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => this.setState(prev => ({ showDetails: !prev.showDetails }))}>
+              <span className="font-bold uppercase tracking-wider text-red-300">📋 รายละเอียดความผิดพลาด (Error Diagnostic Log):</span>
+              <span className="text-xs">{this.state.showDetails ? '▲ ซ่อน' : '▼ ดูเพิ่ม'}</span>
+            </div>
+            <div className="text-red-200 font-bold truncate">
+              {this.state.error?.message || String(this.state.error)}
+            </div>
+            {this.state.showDetails && (
+              <pre className="text-[10px] text-slate-400 overflow-x-auto max-h-40 whitespace-pre-wrap pt-2 border-t border-red-900/40">
+                {this.state.error?.stack}
+              </pre>
+            )}
+          </div>
+
           <button
             onClick={() => {
-              this.setState({ hasError: false, error: null });
+              this.setState({ hasError: false, error: null, showDetails: false });
               window.location.reload();
             }}
             className="px-5 py-2.5 rounded-xl bg-gold-500 text-obsidian-950 font-black text-xs hover:bg-gold-400 transition-all cursor-pointer shadow-md"
