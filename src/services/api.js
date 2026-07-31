@@ -865,6 +865,7 @@ export const api = {
         sceneIndex += 1;
         const { int_ext, setting, day_night } = parseHeading(block.text);
         currentScene = {
+          script_block_id: block.id,
           scene_number: String(sceneIndex),
           setting: setting || 'UNNAMED SCENE',
           int_ext,
@@ -898,7 +899,10 @@ export const api = {
         .eq('project_id', projectId);
 
       const finalProjectScenes = parsedScenes.map((parsed) => {
-        const match = existingProjectScenes?.find(s => s.scene_number === parsed.scene_number);
+        const match = existingProjectScenes?.find(s => 
+          s.tech_notes?.script_block_id === parsed.script_block_id ||
+          (!s.tech_notes?.script_block_id && s.scene_number === parsed.scene_number)
+        );
         const descText = parsed.description_blocks.join(' ');
         const castText = Array.from(parsed.character_blocks).join(', ');
 
@@ -923,6 +927,7 @@ export const api = {
             wardrobe: match.wardrobe || { th: '', en: '' },
             tech_notes: {
               ...(match.tech_notes || {}),
+              script_block_id: parsed.script_block_id,
               pages: match.tech_notes?.pages || match.pages || getEstimateString(parsed.total_chars)
             },
             status: match.status || 'pending'
@@ -941,12 +946,27 @@ export const api = {
             props: { th: '', en: '' },
             wardrobe: { th: '', en: '' },
             tech_notes: {
+              script_block_id: parsed.script_block_id,
               pages: getEstimateString(parsed.total_chars)
             },
             status: 'pending'
           };
         }
       });
+
+      // Delete orphaned scenes from Supabase
+      const orphanedScenes = existingProjectScenes?.filter(s => 
+        s.tech_notes?.script_block_id && !parsedScenes.some(ps => ps.script_block_id === s.tech_notes.script_block_id)
+      ) || [];
+
+      if (orphanedScenes.length > 0) {
+        const orphanedIds = orphanedScenes.map(s => s.id);
+        const { error: deleteError } = await supabase
+          .from('scenes')
+          .delete()
+          .in('id', orphanedIds);
+        if (deleteError) console.error('Failed to delete orphaned scenes from Supabase:', deleteError);
+      }
 
       // Upsert scenes to Supabase
       if (finalProjectScenes.length > 0) {
@@ -961,7 +981,10 @@ export const api = {
       const existingProjectScenes = allScenes.filter(s => s.project_id === projectId);
 
       const finalProjectScenes = parsedScenes.map((parsed) => {
-        const match = existingProjectScenes.find(s => s.scene_number === parsed.scene_number);
+        const match = existingProjectScenes.find(s => 
+          s.tech_notes?.script_block_id === parsed.script_block_id ||
+          (!s.tech_notes?.script_block_id && s.scene_number === parsed.scene_number)
+        );
         const descText = parsed.description_blocks.join(' ');
         const castText = Array.from(parsed.character_blocks).join(', ');
 
@@ -979,6 +1002,10 @@ export const api = {
               th: castText || match.cast.th || '',
               en: castText || match.cast.en || ''
             },
+            tech_notes: {
+              ...(match.tech_notes || {}),
+              script_block_id: parsed.script_block_id
+            },
             pages: match.pages || getEstimateString(parsed.total_chars)
           };
         } else {
@@ -994,14 +1021,24 @@ export const api = {
             location: { th: '', en: '' },
             props: { th: '', en: '' },
             wardrobe: { th: '', en: '' },
-            tech_notes: { th: '', en: '' },
+            tech_notes: {
+              script_block_id: parsed.script_block_id
+            },
             pages: getEstimateString(parsed.total_chars),
             status: 'pending'
           };
         }
       });
 
-      setDbData(STORAGE_KEYS.SCENES, [...otherProjectScenes, ...finalProjectScenes]);
+      // Filter out orphaned scenes from otherProjectScenes
+      const orphanedScenes = existingProjectScenes.filter(s => 
+        s.tech_notes?.script_block_id && !parsedScenes.some(ps => ps.script_block_id === s.tech_notes.script_block_id)
+      );
+      const orphanedIds = orphanedScenes.map(s => s.id);
+      const remainingProjectScenes = existingProjectScenes.filter(s => !orphanedIds.includes(s.id));
+      const manualScenes = remainingProjectScenes.filter(s => !s.tech_notes?.script_block_id);
+
+      setDbData(STORAGE_KEYS.SCENES, [...otherProjectScenes, ...manualScenes, ...finalProjectScenes]);
     }
   },
 

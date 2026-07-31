@@ -14,197 +14,291 @@ import {
   Camera, 
   Wrench,
   Clapperboard,
-  Bookmark,
   Edit,
   Trash2,
   Upload,
-  Settings,
   Volume2,
   Sparkles,
-  Briefcase
+  Briefcase,
+  Layers,
+  Calendar,
+  Clock,
+  Hospital,
+  CheckCircle,
+  X,
+  Download,
+  FolderPlus,
+  Search,
+  User,
+  Users,
+  Film,
+  Folder,
+  FolderOpen
 } from 'lucide-react';
 
 const ELEMENT_CATEGORIES = [
-  { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500' },
-  { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', dotColor: 'bg-pink-500' },
-  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', dotColor: 'bg-orange-500' },
-  { id: 'set_dressing', label: 'Set Dressing', labelTh: 'การตกแต่งฉาก', dotColor: 'bg-blue-500' },
-  { id: 'costumes', label: 'Costumes', labelTh: 'เครื่องแต่งกาย', dotColor: 'bg-amber-500' },
-  { id: 'makeup_hair', label: 'Makeup & Hair', labelTh: 'แต่งหน้าทำผม', dotColor: 'bg-teal-500' },
-  { id: 'sound', label: 'Sound', labelTh: 'เสียงและเอฟเฟกต์', dotColor: 'bg-violet-500' },
-  { id: 'vfx', label: 'VFX', labelTh: 'วิชวลเอฟเฟกต์', dotColor: 'bg-indigo-500' },
-  { id: 'vehicles', label: 'Vehicles', labelTh: 'ยานพาหนะ', dotColor: 'bg-emerald-500' },
-  { id: 'stunts', label: 'Stunts', labelTh: 'สตันท์', dotColor: 'bg-red-500' },
-  { id: 'animals', label: 'Animals', labelTh: 'นักแสดงสัตว์', dotColor: 'bg-green-500' },
-  { id: 'other', label: 'Other', labelTh: 'อื่นๆ', dotColor: 'bg-slate-500' }
+  { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+  { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', dotColor: 'bg-pink-500', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20' },
+  { id: 'props', label: 'Props', labelTh: 'อุปกรณ์ประกอบฉาก', dotColor: 'bg-amber-500', color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' },
+  { id: 'set_dressing', label: 'Set Dressing', labelTh: 'การตกแต่งฉาก', dotColor: 'bg-blue-500', color: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+  { id: 'costumes', label: 'Costumes', labelTh: 'เครื่องแต่งกาย', dotColor: 'bg-emerald-500', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' },
+  { id: 'makeup_hair', label: 'Makeup & Hair', labelTh: 'แต่งหน้าทำผม', dotColor: 'bg-teal-500', color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20' },
+  { id: 'sound', label: 'Sound', labelTh: 'เสียงและเอฟเฟกต์', dotColor: 'bg-violet-500', color: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20' },
+  { id: 'vfx', label: 'VFX', labelTh: 'วิชวลเอฟเฟกต์', dotColor: 'bg-indigo-500', color: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
+  { id: 'vehicles', label: 'Vehicles', labelTh: 'ยานพาหนะ', dotColor: 'bg-cyan-500', color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
+  { id: 'stunts', label: 'Stunts', labelTh: 'สตันท์', dotColor: 'bg-red-500', color: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' },
+  { id: 'animals', label: 'Animals', labelTh: 'นักแสดงสัตว์', dotColor: 'bg-green-500', color: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' },
+  { id: 'other', label: 'Other', labelTh: 'อื่นๆ', dotColor: 'bg-slate-500', color: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20' }
+];
+
+const FILE_CATEGORIES = [
+  { id: 'all', labelTh: 'ทั้งหมด', labelEn: 'All Files' },
+  { id: 'contracts', labelTh: 'สัญญาและข้อตกลง', labelEn: 'Contracts & Agreements' },
+  { id: 'permits', labelTh: 'ใบอนุญาตสถานที่', labelEn: 'Location Permits' },
+  { id: 'plans', labelTh: 'ผังฉาก/ไฟ/บล็อกกิ้ง', labelEn: 'Floor Plans & Lighting Plots' },
+  { id: 'scripts', labelTh: 'บทภาพยนตร์แก้ไข', labelEn: 'Script Revisions' },
+  { id: 'reports', labelTh: 'รายงานกองถ่าย', labelEn: 'Production & Set Reports' },
+  { id: 'safety', labelTh: 'เอกสารความปลอดภัย', labelEn: 'Safety & Risk Assessments' },
+  { id: 'other', labelTh: 'อื่นๆ', labelEn: 'Other Documents' }
+];
+
+// Major Category Groups Definition
+const DOCUMENT_GROUPS = [
+  {
+    id: 'preprod',
+    titleTh: 'หมวดหมู่ที่ 1: เอกสารเตรียมการถ่ายทำ (Pre-Production Documents)',
+    titleEn: 'Category 1: Pre-Production Documents',
+    icon: FolderOpen,
+    color: 'border-l-gold-500',
+    tabs: [
+      { id: 'callsheet', icon: FileText, labelTh: 'ใบสั่งงานกองถ่าย (Daily Call Sheet)', labelEn: 'Daily Call Sheet' },
+      { id: 'breakdown', icon: Layers, labelTh: 'ใบแจกแจงฉาก (Scene Breakdown)', labelEn: 'Scene Breakdown Sheet' },
+      { id: 'schedule_report', icon: Calendar, labelTh: 'ตารางคิวกองถ่าย (Shooting Schedule)', labelEn: 'One-Liner Schedule' }
+    ]
+  },
+  {
+    id: 'shooting_visual',
+    titleTh: 'หมวดหมู่ที่ 2: เอกสารการถ่ายทำ & งานภาพ (Shooting & Visual Suite)',
+    titleEn: 'Category 2: Shooting & Visual Suite',
+    icon: Film,
+    color: 'border-l-amber-500',
+    tabs: [
+      { id: 'shotlist', icon: Video, labelTh: 'รายการช็อตถ่ายทำ (Shot List)', labelEn: 'Shot List' },
+      { id: 'storyboard', icon: ImageIcon, labelTh: 'สตอรี่บอร์ด & สเก็ตช์ (Storyboards)', labelEn: 'Storyboards & Previs' }
+    ]
+  },
+  {
+    id: 'vault',
+    titleTh: 'หมวดหมู่ที่ 3: คลังจัดเก็บเอกสารกองถ่าย (Production File Vault)',
+    titleEn: 'Category 3: Production File Vault & Archive',
+    icon: FolderPlus,
+    color: 'border-l-purple-500',
+    tabs: [
+      { id: 'file_vault', icon: FolderPlus, labelTh: 'คลังไฟล์เอกสาร (File Vault)', labelEn: 'Production File Vault' }
+    ]
+  }
 ];
 
 export default function DocumentsHub({ 
-  scenes, 
-  crew, 
+  scenes = [], 
+  crew = [], 
   weather, 
   initialSceneNum, 
-  shotList, 
+  shotList = [], 
   setShotList, 
   lockedTab,
   events = [],
   setEvents
 }) {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
   const { currentProject: project } = useProject();
 
-  const getSceneDayMap = () => {
-    if (!scenes || scenes.length === 0) return {};
-    
-    const scheduled = scenes.filter(s => !s.tech_notes?.scheduling?.inBoneyard);
-    const sortedScheduled = [...scheduled].sort((a, b) => {
-      const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
-      const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
-      return orderA - orderB;
-    });
+  const isTh = language === 'th';
 
-    const map = {};
-    let currentDay = 1;
-    const projectStart = project?.start_date ? new Date(project.start_date) : new Date();
+  // Active Major Document Tab State
+  const [activeSubTab, setActiveSubTab] = useState(() => lockedTab || 'callsheet');
 
-    sortedScheduled.forEach((scene) => {
-      const dayDate = new Date(projectStart.getTime() + (currentDay - 1) * 24 * 60 * 60 * 1000);
-      const dateStr = dayDate.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-      const rawDateStr = dayDate.toISOString().split('T')[0];
-
-      map[scene.scene_number] = {
-        day: currentDay,
-        dateStr,
-        rawDate: rawDateStr
-      };
-
-      if (scene.tech_notes?.scheduling?.dayBreakAfter) {
-        currentDay += 1;
-      }
-    });
-    return map;
-  };
-
-  const sceneDayMap = getSceneDayMap();
-
-  // Sub-tabs: 'callsheet' | 'shotlist' | 'storyboard'
-  const [activeSubTab, setActiveSubTab] = useState(() => {
-    return lockedTab || 'callsheet';
-  });
-
-  // Selected Scene State (shared across all tabs)
+  // Selected Scene Number (for Scene Breakdown, Shot List, Storyboard tabs)
   const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (scenes[0]?.scene_number || '1'));
   
-  // Print Orientation State
-  const [printOrientation, setPrintOrientation] = useState('portrait'); // 'portrait' | 'landscape'
+  // Selected Shoot Day Number (for Call Sheet tab)
+  const [selectedShootDay, setSelectedShootDay] = useState('1');
 
-  // Inline edit state for editing storyboard/shot details
-  const [editingShot, setEditingShot] = useState(null);
+  // Print Orientation State ('portrait' | 'landscape')
+  const [printOrientation, setPrintOrientation] = useState('portrait');
 
-  // Dynamic Shot Form State
+  // File Vault State (Persisted in LocalStorage per project)
+  const [vaultFiles, setVaultFiles] = useState([]);
+  const [vaultCategoryFilter, setVaultCategoryFilter] = useState('all');
+  const [vaultSearch, setVaultSearch] = useState('');
+  const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false);
+
+  // File Upload Form State
+  const [newFileName, setNewFileName] = useState('');
+  const [newFileCategory, setNewFileCategory] = useState('contracts');
+  const [newFileDesc, setNewFileDesc] = useState('');
+  const [newFileDataUrl, setNewFileDataUrl] = useState('');
+  const [newFileType, setNewFileType] = useState('');
+  const [newFileSize, setNewFileSize] = useState('');
+
+  // Call Sheet Editor Modal State
+  const [isCallSheetModalOpen, setIsCallSheetModalOpen] = useState(false);
+
+  // Active Shoot Day / Event resolver
+  const shootDaysList = (() => {
+    const shootEvents = (events || []).filter(e => e.type === 'shoot');
+    if (shootEvents.length > 0) {
+      return shootEvents.map((evt, idx) => ({
+        dayNumber: String(idx + 1),
+        eventId: evt.id,
+        date: evt.date,
+        sceneNumber: evt.scene_number || '1'
+      }));
+    }
+    return [
+      { dayNumber: '1', eventId: 'evt-day-1', date: project?.start_date || new Date().toISOString().split('T')[0], sceneNumber: '1' }
+    ];
+  })();
+
+  // Current active Shoot Day event object & primitive ID for memoized effects
+  const activeShootDayItem = shootDaysList.find(d => d.dayNumber === selectedShootDay) || shootDaysList[0];
+  const activeEvent = (events || []).find(e => e.id === activeShootDayItem?.eventId || e.scene_number === selectedSceneNum);
+  const activeEventId = activeEvent?.id || '';
+
+  // Call Sheet Edit Form States
+  const [callSheetDate, setCallSheetDate] = useState('');
+  const [crewCallTime, setCrewCallTime] = useState('07:00 AM');
+  const [shootCallTime, setShootCallTime] = useState('08:30 AM');
+  const [lunchTime, setLunchTime] = useState('12:30 PM');
+  const [wrapTime, setWrapTime] = useState('06:00 PM');
+  const [shootLocation, setShootLocation] = useState('');
+  const [mapsUrl, setMapsUrl] = useState('');
+  const [hospitalInfo, setHospitalInfo] = useState('');
+  const [weatherAlertText, setWeatherAlertText] = useState('');
+  const [generalNotes, setGeneralNotes] = useState('');
+  const [cameraNotes, setCameraNotes] = useState('');
+  const [artNotes, setArtNotes] = useState('');
+  const [lightingNotes, setLightingNotes] = useState('');
+  const [soundNotes, setSoundNotes] = useState('');
+  const [wardrobeNotes, setWardrobeNotes] = useState('');
+  const [productionNotes, setProductionNotes] = useState('');
+  const [assignedCrewIds, setAssignedCrewIds] = useState([]);
+  
+  // Cast Call Sheet Schedule state
+  const [castCallSchedules, setCastCallSchedules] = useState([]);
+
+  // Shot List / Storyboard Form States
   const [newShotNum, setNewShotNum] = useState('');
   const [newShotFraming, setNewShotFraming] = useState('MCU');
   const [newShotLens, setNewShotLens] = useState('50mm');
   const [newShotMove, setNewShotMove] = useState('Static');
   const [newShotDescTh, setNewShotDescTh] = useState('');
   const [newShotDescEn, setNewShotDescEn] = useState('');
+  const [isShotModalOpen, setIsShotModalOpen] = useState(false);
 
-  // Selected Scene resolver
+  // Load Vault Files from LocalStorage
+  useEffect(() => {
+    if (!project?.id) return;
+    try {
+      const stored = localStorage.getItem(`prod_vault_files_${project.id}`);
+      if (stored) {
+        setVaultFiles(JSON.parse(stored));
+      } else {
+        const defaultFiles = [
+          {
+            id: 'file-1',
+            name: isTh ? 'สัญญาอนุญาตใช้สถานที่ถ่ายทำ (Location Release Form)' : 'Location Release Form.pdf',
+            category: 'permits',
+            desc: isTh ? 'เอกสารอนุญาตถ่ายทำสถานที่หลัก' : 'Main location shooting permit',
+            uploadDate: new Date().toISOString().split('T')[0],
+            fileSize: '1.4 MB',
+            fileType: 'application/pdf',
+            dataUrl: ''
+          },
+          {
+            id: 'file-2',
+            name: isTh ? 'ผังการตั้งไฟและตำแหน่งกล้อง Scene 1' : 'Lighting Plot Scene 1.png',
+            category: 'plans',
+            desc: isTh ? 'Floor plan & Gaffer lighting diagram' : 'Floor plan & Gaffer lighting diagram',
+            uploadDate: new Date().toISOString().split('T')[0],
+            fileSize: '2.8 MB',
+            fileType: 'image/png',
+            dataUrl: ''
+          }
+        ];
+        setVaultFiles(defaultFiles);
+      }
+    } catch (e) {
+      console.error('Failed to load file vault:', e);
+    }
+  }, [project?.id, isTh]);
+
+  // Save Vault Files to LocalStorage
+  const saveVaultFiles = (newFilesList) => {
+    setVaultFiles(newFilesList);
+    if (project?.id) {
+      try {
+        localStorage.setItem(`prod_vault_files_${project.id}`, JSON.stringify(newFilesList));
+      } catch (e) {
+        console.error('Failed to save file vault:', e);
+      }
+    }
+  };
+
+  // Sync Call Sheet form states using primitive dependency activeEventId to prevent infinite re-renders!
+  useEffect(() => {
+    if (activeEvent) {
+      setCallSheetDate(activeEvent.date || project?.start_date || new Date().toISOString().split('T')[0]);
+      setCrewCallTime(activeEvent.notes?.crew_call || '07:00 AM');
+      setShootCallTime(activeEvent.notes?.shooting_call || activeEvent.time || '08:30 AM');
+      setLunchTime(activeEvent.notes?.lunch_time || '12:30 PM');
+      setWrapTime(activeEvent.notes?.wrap_time || '06:00 PM');
+      setShootLocation(activeEvent.location?.[language] || activeEvent.location?.th || activeEvent.location?.en || (isTh ? 'สถานที่หลักตามบท' : 'Main Set Location'));
+      setMapsUrl(activeEvent.notes?.maps_url || '');
+      setHospitalInfo(activeEvent.notes?.hospital_info || (isTh ? 'โรงพยาบาลศูนย์พิษณุโลก (โทร. 055-270-300)' : 'Phitsanulok Central Hospital (Tel. 055-270-300)'));
+      setWeatherAlertText(activeEvent.notes?.weather_alert || (isTh ? 'สภาพอากาศเมฆครึ้ม ควรเตรียมผ้าพลาสติกคลุมกล้องและแผงไฟ' : 'Cloudy weather. Prepare camera rain covers & power distro protection.'));
+      setGeneralNotes(activeEvent.notes?.th || activeEvent.notes?.en || '');
+      setCameraNotes(activeEvent.notes?.camera_notes || (isTh ? 'เตรียมกล้อง A/B Roll, เลนส์ระยะ 35mm, 50mm และการ์ดบันทึกสำรอง' : 'Prep A/B Camera Package, 35mm & 50mm lenses, spare media cards.'));
+      setArtNotes(activeEvent.notes?.art_notes || (isTh ? 'เซ็ตอุปกรณ์ประกอบฉากหลัก กระเป๋าเดินทาง และพร็อพประจำตัวละคร' : 'Set up main props, travel bags, and character personal items.'));
+      setLightingNotes(activeEvent.notes?.lighting_notes || (isTh ? 'ตั้งชุดไฟ HMI 2.5KW ด้านนอกหน้าต่างรถไฟ พร้อมสะท้อนแสง Hard Light' : 'Position 2.5KW HMI outside train window with Hard Light reflectors.'));
+      setSoundNotes(activeEvent.notes?.sound_notes || (isTh ? 'ติดไมค์ลาวาเลียร์นักแสดงหลัก 2 ท่าน และใช้ไมค์บูมเก็บเสียงบรรยากาศ' : 'Lav two lead actors. Boom mic for ambient train tracks background.'));
+      setWardrobeNotes(activeEvent.notes?.wardrobe_notes || (isTh ? 'เสื้อเชิ้ตทำงานรอยยับตามบท และสร้อยข้อมือแฮนด์เมด' : 'Worn work shirt with script wrinkles and handmade wristlet.'));
+      setProductionNotes(activeEvent.notes?.production_notes || (isTh ? 'ตรวจเช็กใบสั่งงาน ปิดเสียงโทรศัพท์ในกองถ่าย ประสานงานรถรับส่งนักแสดง' : 'Check call sheets, enforce quiet on set, coordinate talent transport.'));
+      setAssignedCrewIds(activeEvent.crew_assigned || []);
+      setCastCallSchedules(activeEvent.notes?.cast_calls || [
+        { charName: 'พลอย', actorName: 'พลอย (นักแสดงหลัก)', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' },
+        { charName: 'ชายปริศนา', actorName: 'สมชาย (นักแสดงสมทบ)', pickupTime: '07:00 AM', hmwTime: '07:30 AM', onSetTime: '08:45 AM' }
+      ]);
+    } else {
+      setCallSheetDate(project?.start_date || new Date().toISOString().split('T')[0]);
+      setCrewCallTime('07:00 AM');
+      setShootCallTime('08:30 AM');
+      setLunchTime('12:30 PM');
+      setWrapTime('06:00 PM');
+      setShootLocation(isTh ? 'สถานีรถไฟพิษณุโลก / บนขบวนรถไฟ' : 'Phitsanulok Railway Station');
+      setMapsUrl('');
+      setHospitalInfo(isTh ? 'โรงพยาบาลศูนย์พิษณุโลก (โทร. 055-270-300)' : 'Phitsanulok Central Hospital (Tel. 055-270-300)');
+      setWeatherAlertText(isTh ? 'เมฆครึ้ม สภาพแสงโอเวอร์คาสต์ เหมาะกับการถ่ายฉากอารมณ์' : 'Overcast skies. Soft lighting ideal for emotional scenes.');
+      setGeneralNotes('');
+      setCameraNotes(isTh ? 'เช็กแพ็คเกจกล้อง เลนส์ การ์ดความจำ และระบบไฟสำรอง' : 'Verify camera packages, lenses, media, and power backups.');
+      setArtNotes(isTh ? 'เตรียมพร็อพหลักตามที่ระบุในบทภาพยนตร์' : 'Prepare props and set dressing as specified.');
+      setLightingNotes(isTh ? 'ติดตั้งไฟและแผงสะท้อนแสงตามทิศทางกล้อง' : 'Refer to camera setup guidelines and lighting plots.');
+      setSoundNotes(isTh ? 'เตรียมไมโครโฟนบูมและไมค์ลาวาเลียร์ให้พร้อม' : 'Ensure boom mics and lavaliers are prepped.');
+      setWardrobeNotes(isTh ? 'ตรวจเช็กเสื้อผ้าเครื่องแต่งกายของนักแสดง' : 'Pre-check cast costumes and makeup continuity.');
+      setProductionNotes(isTh ? 'ดูแลความเรียบร้อยทั่วไปในกองถ่ายและประสานเวลา' : 'Prepare call sheets and sync schedules with AD.');
+      setAssignedCrewIds([]);
+      setCastCallSchedules([
+        { charName: 'พลอย', actorName: 'พลอย (นักแสดงหลัก)', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' }
+      ]);
+    }
+  }, [activeEventId, selectedShootDay, project?.start_date, isTh]);
+
+  // Selected Scene Object resolver
   const activeScene = scenes.find(s => s.scene_number === selectedSceneNum) || scenes[0];
 
-  // Scheduler states linked with calendar events
-  const sceneEvents = (events || []).filter(e => e.scene_number === selectedSceneNum && e.type === 'shoot');
-  const [activeEventId, setActiveEventId] = useState(() => sceneEvents[0]?.id || 'new');
-  
-  const [schedDate, setSchedDate] = useState('');
-  const [schedLocation, setSchedLocation] = useState('');
-  const [schedCrewCall, setSchedCrewCall] = useState('07:00 AM');
-  const [schedShootCall, setSchedShootCall] = useState('08:30 AM');
-  const [schedLunchTime, setSchedLunchTime] = useState('12:30 PM');
-  const [schedWrapTime, setSchedWrapTime] = useState('06:00 PM');
-  const [schedGeneralNotesTh, setSchedGeneralNotesTh] = useState('');
-  const [schedGeneralNotesEn, setSchedGeneralNotesEn] = useState('');
-  const [schedCameraNotes, setSchedCameraNotes] = useState('');
-  const [schedArtNotes, setSchedArtNotes] = useState('');
-  const [schedLightingNotes, setSchedLightingNotes] = useState('');
-  const [schedSoundNotes, setSchedSoundNotes] = useState('');
-  const [schedWardrobeNotes, setSchedWardrobeNotes] = useState('');
-  const [schedProductionNotes, setSchedProductionNotes] = useState('');
-  const [schedCrewAssigned, setSchedCrewAssigned] = useState([]);
-  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
-
-  // Sync selection state with scene change
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const currentSceneEvents = (events || []).filter(e => e.scene_number === selectedSceneNum && e.type === 'shoot');
-    if (currentSceneEvents.length > 0) {
-      if (!currentSceneEvents.some(e => e.id === activeEventId)) {
-        setActiveEventId(currentSceneEvents[0].id);
-      }
-    } else {
-      setActiveEventId('new');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSceneNum, events]);
-
-  // Sync form inputs with selected event
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (activeEventId && activeEventId !== 'new') {
-      const evt = (events || []).find(e => e.id === activeEventId);
-      if (evt) {
-        setSchedDate(evt.date || '');
-        setSchedLocation(evt.location?.[language] || evt.location?.en || evt.location?.th || '');
-        setSchedCrewCall(evt.notes?.crew_call || '07:00 AM');
-        setSchedShootCall(evt.notes?.shooting_call || evt.time || '08:30 AM');
-        setSchedLunchTime(evt.notes?.lunch_time || '12:30 PM');
-        setSchedWrapTime(evt.notes?.wrap_time || '06:00 PM');
-        setSchedGeneralNotesTh(evt.notes?.th || '');
-        setSchedGeneralNotesEn(evt.notes?.en || '');
-        setSchedCameraNotes(evt.notes?.camera_notes || '');
-        setSchedArtNotes(evt.notes?.art_notes || '');
-        setSchedLightingNotes(evt.notes?.lighting_notes || '');
-        setSchedSoundNotes(evt.notes?.sound_notes || '');
-        setSchedWardrobeNotes(evt.notes?.wardrobe_notes || '');
-        setSchedProductionNotes(evt.notes?.production_notes || '');
-        setSchedCrewAssigned(evt.crew_assigned || []);
-        return;
-      }
-    }
-
-    // Default values for new shoot day
-    const resolvedRawDate = sceneDayMap[selectedSceneNum]?.rawDate;
-    setSchedDate(resolvedRawDate || new Date().toISOString().split('T')[0]);
-    setSchedLocation(activeScene?.location?.[language] || activeScene?.location?.en || activeScene?.location?.th || '');
-    setSchedCrewCall('07:00 AM');
-    setSchedShootCall('08:30 AM');
-    setSchedLunchTime('12:30 PM');
-    setSchedWrapTime('06:00 PM');
-    setSchedGeneralNotesTh('');
-    setSchedGeneralNotesEn('');
-    setSchedCameraNotes(activeScene?.tech_notes?.camera_notes?.[language] || activeScene?.tech_notes?.camera_notes?.en || activeScene?.tech_notes?.[language] || activeScene?.tech_notes?.en || '');
-    
-    const defaultArtNotes = activeScene 
-      ? `${language === 'th' ? 'อุปกรณ์:' : 'Props:'} ${activeScene.props?.[language] || activeScene.props?.en || '-'}, ${language === 'th' ? 'เสื้อผ้า:' : 'Wardrobe:'} ${activeScene.wardrobe?.[language] || activeScene.wardrobe?.en || '-'}`
-      : '';
-    setSchedArtNotes(activeScene?.tech_notes?.art_notes?.[language] || activeScene?.tech_notes?.art_notes?.en || defaultArtNotes);
-    setSchedLightingNotes(activeScene?.tech_notes?.lighting_notes?.[language] || activeScene?.tech_notes?.lighting_notes?.en || '');
-    setSchedSoundNotes(activeScene?.tech_notes?.sound_notes?.[language] || activeScene?.tech_notes?.sound_notes?.en || '');
-    setSchedWardrobeNotes(activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || '');
-    setSchedProductionNotes(activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || '');
-    setSchedCrewAssigned([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeEventId, selectedSceneNum]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  // Filter shots for active scene (supporting both database schema 'scene_id' and 'scene_number')
+  // Filter shots for selected scene
   const activeSceneShots = shotList.filter(s => 
     s.scene_id === selectedSceneNum || 
     s.scene_number === selectedSceneNum || 
@@ -212,91 +306,60 @@ export default function DocumentsHub({
     (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
   );
 
-  // Resolve crew for departments
-  const dp = crew.find(c => c.role.includes('Director of Photography') || c.role.includes('DP') || c.role.includes('DOP'));
-  const art = crew.find(c => c.role.includes('Production Designer') || c.role.includes('Designer') || c.role.includes('Art'));
-  const gaffer = crew.find(c => c.role.includes('Gaffer') || c.role.includes('Lighting'));
-  const soundRecordist = crew.find(c => c.role.toLowerCase().includes('sound') || c.role.toLowerCase().includes('mixer') || c.role.toLowerCase().includes('record'));
-  const wardrobeStylist = crew.find(c => c.role.toLowerCase().includes('makeup') || c.role.toLowerCase().includes('hair') || c.role.toLowerCase().includes('wardrobe') || c.role.toLowerCase().includes('stylist') || c.role.toLowerCase().includes('costume'));
-  const director = crew.find(c => c.role.toLowerCase().includes('director') || c.role.toLowerCase().includes('ad') || c.role.toLowerCase().includes('producer'));
+  // Save Call Sheet Form Updates into Calendar Event State
+  const handleSaveCallSheet = (e) => {
+    e.preventDefault();
+    const eventId = activeEvent?.id || `evt-day-${selectedShootDay}-${Date.now()}`;
+    const updatedEvent = {
+      id: eventId,
+      project_id: project?.id || `proj-${Date.now()}`,
+      title: {
+        th: `คิวกองถ่าย Day ${selectedShootDay}: ฉาก ${selectedSceneNum}`,
+        en: `Shoot Day ${selectedShootDay}: Scene ${selectedSceneNum}`
+      },
+      date: callSheetDate,
+      time: shootCallTime,
+      type: 'shoot',
+      location: { th: shootLocation, en: shootLocation },
+      scene_number: selectedSceneNum,
+      crew_assigned: assignedCrewIds,
+      notes: {
+        th: generalNotes,
+        en: generalNotes,
+        crew_call: crewCallTime,
+        shooting_call: shootCallTime,
+        lunch_time: lunchTime,
+        wrap_time: wrapTime,
+        maps_url: mapsUrl,
+        hospital_info: hospitalInfo,
+        weather_alert: weatherAlertText,
+        camera_notes: cameraNotes,
+        art_notes: artNotes,
+        lighting_notes: lightingNotes,
+        sound_notes: soundNotes,
+        wardrobe_notes: wardrobeNotes,
+        production_notes: productionNotes,
+        cast_calls: castCallSchedules
+      }
+    };
 
-  // Resolve active event schedule details
-  const currentEvent = (events || []).find(e => e.id === activeEventId) || null;
-  const callSheetDate = currentEvent ? currentEvent.date : '';
-  const formattedCallSheetDate = (() => {
-    if (!callSheetDate) return '';
-    try {
-      return new Date(callSheetDate).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-    } catch {
-      return callSheetDate;
+    const existingIndex = (events || []).findIndex(evt => evt.id === eventId);
+    let newEventsList;
+    if (existingIndex !== -1) {
+      newEventsList = [...events];
+      newEventsList[existingIndex] = updatedEvent;
+    } else {
+      newEventsList = [...(events || []), updatedEvent];
     }
-  })();
-  const crewCallTime = currentEvent?.notes?.crew_call || '07:00 AM';
-  const shootCallTime = currentEvent?.notes?.shooting_call || currentEvent?.time || '08:30 AM';
-  const lunchTime = currentEvent?.notes?.lunch_time || '12:30 PM';
-  const wrapTime = currentEvent?.notes?.wrap_time || '06:00 PM';
-  
-  const resolvedLocation = currentEvent?.location?.[language] || currentEvent?.location?.en || activeScene?.location?.[language] || 'TBD';
-  const resolvedCameraNotes = currentEvent?.notes?.camera_notes || activeScene?.tech_notes?.camera_notes?.[language] || activeScene?.tech_notes?.camera_notes?.en || activeScene?.tech_notes?.[language] || activeScene?.tech_notes?.en || (language === 'th' ? 'ตรวจสอบอุปกรณ์กล้อง เลนส์ การ์ดบันทึกข้อมูล และระบบไฟสำรอง' : 'Verify camera packages, lenses, media, and power backups.');
-  const resolvedArtNotes = currentEvent?.notes?.art_notes || activeScene?.tech_notes?.art_notes?.[language] || activeScene?.tech_notes?.art_notes?.en || (activeScene ? `${language === 'th' ? 'อุปกรณ์:' : 'Props:'} ${activeScene.props?.[language] || activeScene.props?.en || 'TBD'}. ${language === 'th' ? 'เสื้อผ้า:' : 'Wardrobe:'} ${activeScene.wardrobe?.[language] || activeScene.wardrobe?.en || 'TBD'}` : (language === 'th' ? 'เตรียมอุปกรณ์ประกอบฉากหลักและจัดฉากตามที่กำหนด' : 'Prepare props and set dressing as specified.'));
-  const resolvedLightingNotes = currentEvent?.notes?.lighting_notes || activeScene?.tech_notes?.lighting_notes?.[language] || activeScene?.tech_notes?.lighting_notes?.en || (language === 'th' ? 'ติดตั้งไฟและแผงสะท้อนแสงตามทิศทางกล้อง ตรวจสอบระบบจ่ายไฟ 220V ให้ปลอดภัย' : 'Refer to camera setup guidelines. Ensure 220V distro feeds are routed exterior.');
-  const resolvedSoundNotes = currentEvent?.notes?.sound_notes || activeScene?.tech_notes?.sound_notes?.[language] || activeScene?.tech_notes?.sound_notes?.en || (language === 'th' ? 'เตรียมไมโครโฟนบูมและไมค์ลาวาเลียร์ให้พร้อม ทดสอบระดับเสียงบรรยากาศ' : 'Ensure boom mics and lavaliers are prepped. Track ambient sound levels.');
-  const resolvedWardrobeNotes = currentEvent?.notes?.wardrobe_notes || activeScene?.tech_notes?.wardrobe_notes?.[language] || activeScene?.tech_notes?.wardrobe_notes?.en || (language === 'th' ? 'ตรวจเช็กเสื้อผ้าเครื่องแต่งกายของนักแสดงและคุมการแต่งหน้าทำผมให้ต่อเนื่อง' : 'Pre-check cast costumes and makeup continuity matching storyboard.');
-  const resolvedProductionNotes = currentEvent?.notes?.production_notes || activeScene?.tech_notes?.production_notes?.[language] || activeScene?.tech_notes?.production_notes?.en || (language === 'th' ? 'เตรียมใบสั่งงานกองถ่าย ดูแลความเรียบร้อยทั่วไปในกองถ่ายและประสานเวลา' : 'Prepare call sheets and script notes. Sync schedules with AD.');
-  
-  const assignedCrewMembers = (currentEvent?.crew_assigned || []).map(id => crew.find(c => c.id === id)).filter(Boolean);
 
-  // Filter assigned crew by department
-  const deptCameraCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('camera') || role.includes('photography') || role.includes('grip') || role.includes('dp') || role.includes('dop') || role.includes('focus') || role.includes('dit') || roleTh.includes('กล้อง') || roleTh.includes('ภาพ');
-  });
-
-  const deptArtCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('art') || role.includes('prop') || role.includes('design') || role.includes('set') || roleTh.includes('ศิลป์') || roleTh.includes('ประกอบฉาก');
-  });
-
-  const deptLightingCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('light') || role.includes('gaffer') || role.includes('electric') || role.includes('genny') || role.includes('spark') || roleTh.includes('ไฟ') || roleTh.includes('ช่างไฟ');
-  });
-
-  const deptSoundCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('sound') || role.includes('audio') || role.includes('mixer') || role.includes('boom') || role.includes('record') || roleTh.includes('เสียง');
-  });
-
-  const deptMakeupCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('makeup') || role.includes('hair') || role.includes('wardrobe') || role.includes('costume') || role.includes('stylist') || roleTh.includes('แต่งหน้า') || roleTh.includes('เสื้อผ้า') || roleTh.includes('ผม');
-  });
-
-  const deptProductionCrew = assignedCrewMembers.filter(c => {
-    const role = (c.role || '').toLowerCase();
-    const roleTh = (c.role_th || '').toLowerCase();
-    return role.includes('producer') || role.includes('director') || role.includes('ad') || role.includes('script') || role.includes('continuity') || role.includes('pa') || role.includes('assistant') || roleTh.includes('ดำเนิน') || roleTh.includes('กำกับ') || roleTh.includes('ประสาน') || roleTh.includes('บท');
-  });
-
-  // Handle PDF Print
-  const handlePrint = () => {
-    window.print();
+    if (setEvents) setEvents(newEventsList);
+    setIsCallSheetModalOpen(false);
   };
 
-  // Add new shot to list linked to selected scene
-  const handleAddShot = (e) => {
+  // Add new Shot to Shot List
+  const handleAddShotSubmit = (e) => {
     e.preventDefault();
-    if (!newShotNum || !newShotDescEn) return;
+    if (!newShotNum || (!newShotDescTh && !newShotDescEn)) return;
 
     const newShot = {
       id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -308,7 +371,7 @@ export default function DocumentsHub({
       size: newShotFraming,
       lens: newShotLens,
       movement: newShotMove,
-      equipment: newShotMove === 'Static' ? 'Tripod' : 'Dolly / Gimbal',
+      equipment: newShotMove === 'Static' ? 'Tripod' : 'Dolly / Gimbal / Rig',
       description: {
         th: newShotDescTh || newShotDescEn,
         en: newShotDescEn || newShotDescTh,
@@ -316,55 +379,30 @@ export default function DocumentsHub({
       }
     };
 
-    const newShots = [...shotList, newShot];
-    setShotList(newShots);
-    
+    const updatedShots = [...shotList, newShot];
+    setShotList(updatedShots);
     setNewShotNum('');
     setNewShotDescTh('');
     setNewShotDescEn('');
+    setIsShotModalOpen(false);
   };
 
-  // Delete shot from list
+  // Delete Shot
   const handleDeleteShot = (shotId) => {
-    if (window.confirm(language === 'th' ? 'ต้องการลบช็อตนี้ใช่หรือไม่?' : 'Are you sure you want to delete this shot?')) {
-      const newShots = shotList.filter(s => s.id !== shotId);
-      setShotList(newShots);
+    if (window.confirm(isTh ? 'ต้องการลบช็อตถ่ายทำนี้ใช่หรือไม่?' : 'Delete this shot item?')) {
+      setShotList(shotList.filter(s => s.id !== shotId));
     }
   };
 
-  // Add a quick storyboard panel
-  const handleAddStoryboardFrame = () => {
-    const defaultShotNum = `${selectedSceneNum}.${activeSceneShots.length + 1}`;
-    const newShot = {
-      id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      scene_id: selectedSceneNum,
-      scene_number: selectedSceneNum,
-      shotNum: defaultShotNum,
-      shot_number: defaultShotNum,
-      type: 'MCU',
-      size: 'MCU',
-      lens: '50mm',
-      movement: 'Static',
-      equipment: 'Tripod',
-      description: {
-        th: 'คำอธิบายแอ็คชั่นใหม่',
-        en: 'New action description',
-        image_url: ''
-      }
-    };
-    const newShots = [...shotList, newShot];
-    setShotList(newShots);
-  };
-
-  // Handle file uploads for storyboards, convert to base64
-  const handleImageUpload = (shotId, e) => {
+  // Upload Storyboard Image to Shot
+  const handleStoryboardImageUpload = (shotId, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64Data = event.target.result;
-      const newShots = shotList.map(s => {
+      const updatedShots = shotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
@@ -376,15 +414,15 @@ export default function DocumentsHub({
         }
         return s;
       });
-      setShotList(newShots);
+      setShotList(updatedShots);
     };
     reader.readAsDataURL(file);
   };
 
-  // Remove image from storyboard
-  const handleRemoveImage = (shotId) => {
-    if (window.confirm(language === 'th' ? 'ต้องการลบรูปภาพสตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Are you sure you want to remove this storyboard image?')) {
-      const newShots = shotList.map(s => {
+  // Remove Storyboard Image
+  const handleRemoveStoryboardImage = (shotId) => {
+    if (window.confirm(isTh ? 'ต้องการลบภาพสเก็ตช์สตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Remove storyboard image?')) {
+      const updatedShots = shotList.map(s => {
         if (s.id === shotId) {
           return {
             ...s,
@@ -396,1105 +434,681 @@ export default function DocumentsHub({
         }
         return s;
       });
-      setShotList(newShots);
+      setShotList(updatedShots);
     }
   };
 
-  // Start editing shot details
-  const startEditing = (shot) => {
-    setEditingShot({ ...shot });
+  // Handle File Upload into Production Vault
+  const handleVaultFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setNewFileName(file.name);
+    setNewFileType(file.type);
+    setNewFileSize(`${(file.size / (1024 * 1024)).toFixed(2)} MB`);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setNewFileDataUrl(event.target.result);
+    };
+    reader.readAsDataURL(file);
   };
 
-  // Save the inline edited details
-  const saveEditedShot = () => {
-    if (!editingShot) return;
-    const newShots = shotList.map(s => {
-      if (s.id === editingShot.id) {
-        const num = editingShot.shotNum || editingShot.shot_number;
-        const sz = editingShot.type || editingShot.size;
-        return {
-          ...editingShot,
-          shotNum: num,
-          shot_number: num,
-          type: sz,
-          size: sz
-        };
-      }
-      return s;
-    });
-    setShotList(newShots);
-    setEditingShot(null);
-  };
-
-  const handleSaveSchedule = async (e) => {
+  const handleSaveVaultFile = (e) => {
     e.preventDefault();
-    if (!schedDate || !schedShootCall) return;
+    if (!newFileName) return;
 
-    const id = activeEventId === 'new' ? `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` : activeEventId;
-
-    const eventObj = {
-      id,
-      project_id: activeScene?.project_id || `proj-${Date.now()}`,
-      title: {
-        th: `ถ่ายทำฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}`,
-        en: `Shooting Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`
-      },
-      date: schedDate,
-      time: schedShootCall,
-      type: 'shoot',
-      location: { th: schedLocation, en: schedLocation },
-      scene_number: selectedSceneNum,
-      crew_assigned: schedCrewAssigned,
-      notes: {
-        th: schedGeneralNotesTh,
-        en: schedGeneralNotesEn,
-        crew_call: schedCrewCall,
-        shooting_call: schedShootCall,
-        lunch_time: schedLunchTime,
-        wrap_time: schedWrapTime,
-        camera_notes: schedCameraNotes,
-        art_notes: schedArtNotes,
-        lighting_notes: schedLightingNotes,
-        sound_notes: schedSoundNotes,
-        wardrobe_notes: schedWardrobeNotes,
-        production_notes: schedProductionNotes
-      }
+    const newVaultFile = {
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      name: newFileName,
+      category: newFileCategory,
+      desc: newFileDesc || (isTh ? 'เอกสารกองถ่ายอัปโหลดใหม่' : 'Uploaded document'),
+      uploadDate: new Date().toISOString().split('T')[0],
+      fileSize: newFileSize || '1.0 MB',
+      fileType: newFileType || 'application/pdf',
+      dataUrl: newFileDataUrl
     };
 
-    try {
-      let updatedEvents;
-      if (activeEventId === 'new') {
-        updatedEvents = [...(events || []), eventObj];
-      } else {
-        updatedEvents = (events || []).map(e => e.id === activeEventId ? eventObj : e);
-      }
-      
-      await setEvents(updatedEvents);
-      alert(language === 'th' ? 'บันทึกตารางถ่ายทำสำเร็จ!' : 'Shoot schedule saved successfully!');
-      setActiveEventId(id);
-      setIsSchedulerOpen(false);
-    } catch (err) {
-      alert("Failed to save schedule: " + err.message);
+    const updatedVaultList = [newVaultFile, ...vaultFiles];
+    saveVaultFiles(updatedVaultList);
+
+    setNewFileName('');
+    setNewFileCategory('contracts');
+    setNewFileDesc('');
+    setNewFileDataUrl('');
+    setIsFileUploadModalOpen(false);
+  };
+
+  const handleDeleteVaultFile = (fileId) => {
+    if (window.confirm(isTh ? 'ต้องการลบเอกสารนี้ออกจากคลังใช่หรือไม่?' : 'Delete this file from vault?')) {
+      const updated = vaultFiles.filter(f => f.id !== fileId);
+      saveVaultFiles(updated);
     }
   };
 
-  const handleDeleteSchedule = async () => {
-    if (activeEventId === 'new') return;
-    const confirmMsg = language === 'th' 
-      ? 'คุณต้องการลบตารางถ่ายทำนี้ใช่หรือไม่? (การลบจะลบออกจากปฏิทินด้วย)' 
-      : 'Are you sure you want to delete this shoot schedule? (It will be removed from calendar)';
-    
-    if (window.confirm(confirmMsg)) {
-      try {
-        const updatedEvents = (events || []).filter(e => e.id !== activeEventId);
-        await setEvents(updatedEvents);
-        setActiveEventId('new');
-        alert(language === 'th' ? 'ลบตารางถ่ายทำสำเร็จ!' : 'Shoot schedule deleted!');
-      } catch (err) {
-        alert("Failed to delete schedule: " + err.message);
-      }
-    }
-  };
+  // Filtered Vault Files List
+  const filteredVaultFiles = vaultFiles.filter(f => {
+    const matchCategory = vaultCategoryFilter === 'all' || f.category === vaultCategoryFilter;
+    const matchQuery = !vaultSearch || f.name.toLowerCase().includes(vaultSearch.toLowerCase()) || f.desc.toLowerCase().includes(vaultSearch.toLowerCase());
+    return matchCategory && matchQuery;
+  });
 
-  const weatherWarnings = {
-    Sunny: {
-      th: "☀️ อุณหภูมิสูง: เตรียมน้ำดื่มเสริมความเย็น และเต็นท์บังแดดให้นักแสดงและทีมงานภายนอก",
-      en: "☀️ High Temp Warning: Ensure hydration stations and sunshades are ready for outdoor shoot."
-    },
-    Cloudy: {
-      th: "☁️ เมฆครึ้ม: สภาพแสงไม่คงที่ Gaffer ควรเตรียมแผ่นสะท้อนแสงและไฟเสริมความเปรียบต่าง",
-      en: "☁️ Overcast Conditions: Unstable ambient light. Gaffer should prepare bounces and contrast lighting."
-    },
-    Rainy: {
-      th: "🌧️ ฝนตกหนัก: โลเคชั่นภายนอกมีความเสี่ยงสูง เตรียมผ้าใบคลุมกล้องและอุปกรณ์ไฟฟ้าด่วน!",
-      en: "🌧️ Rainy Forecast: High risk for exterior locations. Prepare rain covers and waterproof cable sleeves!"
-    },
-    Thunderstorm: {
-      th: "⛈️ พายุฝนฟ้าคะนอง: อันตราย! ควรงดใช้อุปกรณ์ไฟฟ้าภายนอกอาคารและสับเปลี่ยนไปซีนภายใน",
-      en: "⛈️ Thunderstorm Danger: Avoid operating electrical rigs outdoors. Switch to backup interior scenes."
-    }
-  };
+  // Scheduled Scenes list for active Shoot Day
+  const dayScheduledScenes = scenes.filter(s => 
+    s.tech_notes?.scheduling?.shootDay === selectedShootDay ||
+    (selectedShootDay === '1' && !s.tech_notes?.scheduling?.shootDay)
+  );
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      
-      {/* Dynamic Printing Style Hook (No Print) */}
-      <style>
-        {`
-          @media print {
-            @page {
-              size: ${printOrientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
-              margin: 18mm 15mm;
-            }
+    <div className="space-y-6 pb-20 no-print-padding font-sans">
+      {/* Dynamic Print Style Injector */}
+      <style>{`
+        @media print {
+          @page {
+            size: ${printOrientation === 'landscape' ? 'landscape' : 'portrait'};
+            margin: 10mm;
           }
-        `}
-      </style>
+          body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+          }
+          .no-print, nav, sidebar, header, button {
+            display: none !important;
+          }
+          .print-area {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .print-card {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #000000 !important;
+          }
+        }
+      `}</style>
 
-      {/* Title Hub & Documents Sub Navigation (No Print) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
+      {/* TOP HEADER: Production Document Hub Title & PDF Toolbar */}
+      <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-obsidian-800/80 no-print flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
-            <Bookmark size={24} className="text-gold-500" />
-            <span>{t('docs.hubTitle')}</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Generate and export shoot files
+          <div className="flex items-center gap-2 mb-1">
+            <span className="p-2 rounded-xl bg-gold-500/10 text-gold-500 border border-gold-500/20">
+              <Briefcase size={20} />
+            </span>
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-sans">
+              {isTh ? 'คลังเอกสารโปรดักชั่น & ระบบออกเอกสารกองถ่าย' : 'Production Documents & Call Sheet Suite'}
+            </h1>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-sans pl-1">
+            {isTh 
+              ? 'ศูนย์รวมการสร้าง จัดการ และออกเอกสารกองถ่ายมาตรฐานสากล (Call Sheets, Shot Lists, Storyboards, Breakdown Sheets & Vault Files)'
+              : 'Generate, manage, and export professional broadcast documents and project files.'}
           </p>
         </div>
 
+        {/* Global Toolbar Controls */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Sub Navigation Tabs */}
-          {!lockedTab && (
-            <div className="flex rounded-lg overflow-hidden border border-slate-200 dark:border-obsidian-800">
-              <button
-                onClick={() => setActiveSubTab('callsheet')}
-                className={`px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  activeSubTab === 'callsheet'
-                    ? 'bg-gold-500/10 text-gold-500 font-bold'
-                    : theme === 'dark'
-                      ? 'bg-obsidian-950 hover:bg-obsidian-800 text-slate-400'
-                      : 'bg-white hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <FileText size={14} />
-                <span>{t('docs.callSheet')}</span>
-              </button>
-              <button
-                onClick={() => setActiveSubTab('shotlist')}
-                className={`px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  activeSubTab === 'shotlist'
-                    ? 'bg-gold-500/10 text-gold-500 font-bold'
-                    : theme === 'dark'
-                      ? 'bg-obsidian-950 hover:bg-obsidian-800 text-slate-400'
-                      : 'bg-white hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <Video size={14} />
-                <span>{t('docs.shotList')}</span>
-              </button>
-              <button
-                onClick={() => setActiveSubTab('storyboard')}
-                className={`px-4 py-2.5 text-xs font-bold flex items-center gap-1.5 transition-all ${
-                  activeSubTab === 'storyboard'
-                    ? 'bg-gold-500/10 text-gold-500 font-bold'
-                    : theme === 'dark'
-                      ? 'bg-obsidian-950 hover:bg-obsidian-800 text-slate-400'
-                      : 'bg-white hover:bg-slate-50 text-slate-600'
-                }`}
-              >
-                <ImageIcon size={14} />
-                <span>Storyboards</span>
-              </button>
-            </div>
-          )}
-
-          {/* Print orientation switcher */}
-          <div className="flex items-center gap-2 border border-slate-200 dark:border-obsidian-800 rounded-lg p-1.5 bg-white dark:bg-obsidian-950 no-print">
-            <span className="text-[10px] font-bold text-slate-400 uppercase pl-1.5">{language === 'th' ? 'เลย์เอาต์พิมพ์:' : 'Print Layout:'}</span>
-            <select
-              value={printOrientation}
-              onChange={(e) => setPrintOrientation(e.target.value)}
-              className={`px-2 py-1 rounded text-xs font-semibold focus:outline-none ${
-                theme === 'dark' ? 'bg-obsidian-900 border-obsidian-850 text-white' : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
+          {/* Orientation Toggle */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintOrientation('portrait')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${printOrientation === 'portrait' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
-              <option value="portrait">{language === 'th' ? 'แนวตั้ง (Portrait)' : 'Portrait'}</option>
-              <option value="landscape">{language === 'th' ? 'แนวนอน (Landscape)' : 'Landscape'}</option>
-            </select>
+              {isTh ? 'แนวตั้ง (Portrait)' : 'Portrait'}
+            </button>
+            <button
+              onClick={() => setPrintOrientation('landscape')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${printOrientation === 'landscape' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {isTh ? 'แนวนอน (Landscape)' : 'Landscape'}
+            </button>
           </div>
 
+          {/* Export / Print PDF Button */}
           <button
-            onClick={handlePrint}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white shadow-sm hover:shadow-md transition-all"
+            onClick={() => window.print()}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-obsidian-950 font-black text-xs transition-all shadow-md hover:shadow-gold-500/20 active:scale-95 flex items-center gap-2 cursor-pointer font-sans"
           >
-            <Printer size={14} />
-            <span>{t('docs.generatePdf')}</span>
+            <Printer size={15} />
+            <span>{isTh ? 'พิมพ์เอกสาร / บันทึกเป็น PDF' : 'Print / Export PDF'}</span>
           </button>
         </div>
       </div>
 
-      {/* GLOBAL SCENE SELECTOR BAR (Available in all tabs) */}
-      {scenes.length > 0 && (
-        <div className="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 no-print border border-slate-200 dark:border-obsidian-800">
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <span className="text-xs font-bold text-slate-400 uppercase shrink-0">
-              {language === 'th' ? 'เลือกฉากถ่ายทำ:' : 'Select Scene:'}
-            </span>
-            <select
-              value={selectedSceneNum}
-              onChange={(e) => setSelectedSceneNum(e.target.value)}
-              className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-              }`}
-            >
-              {scenes.map(s => (
-                <option key={s.id} value={s.scene_number}>
-                  Scene {s.scene_number} - {s.setting} ({s.int_ext} / {s.day_night})
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="text-[11px] font-mono text-slate-400 flex items-center gap-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-gold-500 animate-pulse" />
-            <span>
-              {language === 'th' 
-                ? `สถานะ: ${activeScene?.status?.toUpperCase() || 'PENDING'}` 
-                : `Status: ${activeScene?.status?.toUpperCase() || 'PENDING'}`}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* DYNAMIC SHOOT SCHEDULER & CALL SHEET SETTINGS PANEL (No Print) */}
-      {activeSubTab === 'callsheet' && scenes.length > 0 && hasWriteAccess() && (
-        <div className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print space-y-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings size={16} className="text-gold-500" />
-              <h2 className="text-sm font-bold font-serif">
-                {language === 'th' ? 'ตัววางแผนกำหนดเวลาถ่ายทำและทีมงาน' : 'Shoot Schedule & Call Sheet Planner'}
-              </h2>
+      {/* TOP NAVIGATION: 3 MAJOR DOCUMENT CATEGORIES (หมวดหมู่ใหญ่) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 no-print">
+        {DOCUMENT_GROUPS.map((group) => {
+          const GroupIcon = group.icon;
+          return (
+            <div key={group.id} className={`glass-panel p-3.5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 border-l-4 ${group.color} space-y-2 shadow-xs`}>
+              <div className="flex items-center gap-2 text-xs font-black text-slate-800 dark:text-slate-200 font-sans">
+                <GroupIcon size={16} className="text-gold-500 shrink-0" />
+                <span className="truncate">{isTh ? group.titleTh : group.titleEn}</span>
+              </div>
+              <div className="flex flex-col gap-1.5 pt-1">
+                {group.tabs.map((tab) => {
+                  const TabIcon = tab.icon;
+                  const isActive = activeSubTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveSubTab(tab.id)}
+                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer font-sans text-left border ${
+                        isActive 
+                          ? 'bg-gold-500/20 border-gold-500/50 text-gold-500 dark:text-gold-400 shadow-xs' 
+                          : 'bg-white/40 dark:bg-obsidian-950/40 border-slate-200/60 dark:border-obsidian-800/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-obsidian-800/60'
+                      }`}
+                    >
+                      <TabIcon size={14} className={isActive ? 'text-gold-500' : 'text-slate-400'} />
+                      <span className="truncate">{isTh ? tab.labelTh : tab.labelEn}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <button
-              onClick={() => setIsSchedulerOpen(!isSchedulerOpen)}
-              className={`px-3 py-1 rounded text-[11px] font-bold border transition-colors ${
-                isSchedulerOpen 
-                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' 
-                  : 'bg-gold-500/10 border-gold-500/20 text-gold-500 hover:bg-gold-500/20'
-              }`}
-            >
-              {isSchedulerOpen 
-                ? (language === 'th' ? 'ปิดแผงควบคุม' : 'Close Planner') 
-                : (language === 'th' ? '⚙️ เปิดตั้งค่าคิวถ่ายทำ' : '⚙️ Open Shoot Planner')}
-            </button>
-          </div>
+          );
+        })}
+      </div>
 
-          {/* Date Selector for this Scene */}
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase">
-                {language === 'th' ? 'เลือกคิววันที่ถ่ายทำ:' : 'Select Target Shoot Day:'}
-              </span>
+      {/* ========================================================================= */}
+      {/* CATEGORY 1: PRE-PRODUCTION DOCUMENTS */}
+      {/* ========================================================================= */}
+      
+      {/* SUBTAB 1.1: DAILY CALL SHEET */}
+      {activeSubTab === 'callsheet' && (
+        <div className="space-y-5">
+          {/* Shoot Day Selector & Call Sheet Modal Trigger Bar */}
+          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
+                {isTh ? 'เลือกคิววันถ่ายทำ (Shoot Day):' : 'Select Shoot Day:'}
+              </label>
               <select
-                value={activeEventId}
-                onChange={(e) => setActiveEventId(e.target.value)}
-                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                }`}
+                value={selectedShootDay}
+                onChange={(e) => setSelectedShootDay(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
               >
-                {sceneEvents.map(e => (
-                  <option key={e.id} value={e.id}>
-                    🎥 {e.date} {e.time ? `[${e.time}]` : ''} ({e.location?.th || e.location?.en || 'TBD'})
+                {shootDaysList.map((day) => (
+                  <option key={day.dayNumber} value={day.dayNumber}>
+                    DAY {day.dayNumber} ({day.date || (isTh ? 'ยังไม่กำหนดวัน' : 'TBD')})
                   </option>
                 ))}
-                <option value="new">➕ {language === 'th' ? 'สร้างคิววันถ่ายทำใหม่...' : 'Schedule New Shoot Day...'}</option>
               </select>
             </div>
-            
-            {activeEventId === 'new' ? (
-              <span className="text-[10px] font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded animate-pulse">
-                ⚠️ {language === 'th' ? 'คิวฉากนี้ยังไม่ได้ถูกบรรจุลงในปฏิทิน' : 'Scene is draft: Not scheduled in Calendar yet'}
-              </span>
-            ) : (
-              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded">
-                ✓ {language === 'th' ? 'บันทึกในปฏิทินแล้ว' : 'Scheduled in Active Calendar'}
-              </span>
+
+            {hasWriteAccess() && (
+              <button
+                onClick={() => setIsCallSheetModalOpen(true)}
+                className="px-3.5 py-2 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-500 border border-gold-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer font-sans"
+              >
+                <Edit size={14} />
+                <span>{isTh ? '⚙️ แก้ไขข้อมูลใบสั่งงาน & กำหนดการ (Edit Call Sheet)' : '⚙️ Edit Call Sheet Details'}</span>
+              </button>
             )}
           </div>
 
-          {isSchedulerOpen && (
-            <form onSubmit={handleSaveSchedule} className="space-y-4 pt-3 border-t border-slate-200/50 dark:border-obsidian-800/40 animate-slideDown">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'วันที่ถ่ายทำ *' : 'Shoot Date *'}
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={schedDate}
-                    onChange={(e) => setSchedDate(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'เวลานัดหมายทีมงาน (Crew Call)' : 'Crew Call Time'}
-                  </label>
-                  <input
-                    type="text"
-                    value={schedCrewCall}
-                    onChange={(e) => setSchedCrewCall(e.target.value)}
-                    placeholder="e.g. 07:00 AM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'เวลาเริ่มถ่ายทำ (Shooting Call)' : 'Shooting Call Time'}
-                  </label>
-                  <input
-                    type="text"
-                    value={schedShootCall}
-                    onChange={(e) => setSchedShootCall(e.target.value)}
-                    placeholder="e.g. 08:30 AM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'เวลาพักรับประทานอาหาร (Lunch Time)' : 'Lunch Time'}
-                  </label>
-                  <input
-                    type="text"
-                    value={schedLunchTime}
-                    onChange={(e) => setSchedLunchTime(e.target.value)}
-                    placeholder="e.g. 12:30 PM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'เวลาเลิกกอง (Wrap Time)' : 'Wrap Time'}
-                  </label>
-                  <input
-                    type="text"
-                    value={schedWrapTime}
-                    onChange={(e) => setSchedWrapTime(e.target.value)}
-                    placeholder="e.g. 06:00 PM"
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
+          {/* STUDIOBINDER-STYLE CALL SHEET DOCUMENT PRINT PREVIEW */}
+          <div className="print-area print-card glass-panel p-8 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-6 text-slate-900 dark:text-slate-100 shadow-xl bg-white dark:bg-obsidian-950">
+            {/* Call Sheet Document Header */}
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pb-5 border-b-2 border-slate-900 dark:border-gold-500">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-gold-500 font-mono">
+                  PRODUCTION CALL SHEET
+                </span>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white font-sans mt-0.5">
+                  {project?.title?.[language] || project?.title?.th || project?.title?.en || (isTh ? 'ใบสั่งงานกองถ่ายประจำวัน' : 'Daily Call Sheet')}
+                </h1>
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans mt-1">
+                  {isTh ? `คิววันถ่ายทำที่: DAY ${selectedShootDay}` : `SHOOT DAY ${selectedShootDay}`} | {isTh ? 'ผู้กำกับ:' : 'Director:'} {project?.director?.[language] || project?.director?.th || '-'} | {isTh ? 'ผู้ดำเนินงานสร้าง:' : 'Producer:'} {project?.producer?.[language] || project?.producer?.th || '-'}
+                </p>
               </div>
 
-              {/* Department Notes */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'แผนกกล้อง & Grip (Camera & Grip)' : 'Camera & Grip Instructions'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedCameraNotes}
-                    onChange={(e) => setSchedCameraNotes(e.target.value)}
-                    placeholder="Lenses, setups, gear notes..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
+              <div className="text-right font-mono text-xs space-y-1 shrink-0">
+                <div className="px-3 py-1 rounded bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 font-bold inline-block">
+                  {isTh ? 'วันที่ถ่ายทำ (Date):' : 'DATE:'} <span className="text-gold-500">{callSheetDate || 'TBD'}</span>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'แผนกศิลปกรรม & Props (Art & Props)' : 'Art Department & Props'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedArtNotes}
-                    onChange={(e) => setSchedArtNotes(e.target.value)}
-                    placeholder="Props lists, scene setup..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'แผนกแสง & ไฟ (Lighting & Electric)' : 'Lighting & Electric Requirements'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedLightingNotes}
-                    onChange={(e) => setSchedLightingNotes(e.target.value)}
-                    placeholder="Gaffer specs, generator needs, dimmers..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'แผนกเสียง (Sound & Audio)' : 'Sound & Audio Instructions'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedSoundNotes}
-                    onChange={(e) => setSchedSoundNotes(e.target.value)}
-                    placeholder="Boom mic setup, radio frequencies..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'แผนกแต่งหน้า & เครื่องแต่งกาย (Makeup & Wardrobe)' : 'Makeup & Wardrobe Notes'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedWardrobeNotes}
-                    onChange={(e) => setSchedWardrobeNotes(e.target.value)}
-                    placeholder="Styling, costume presets..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                    {language === 'th' ? 'ฝ่ายผลิต & กำกับการแสดง (Production & Direction)' : 'Production & Direction Notes'}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={schedProductionNotes}
-                    onChange={(e) => setSchedProductionNotes(e.target.value)}
-                    placeholder="AD instructions, PA tasks, director cues..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {isTh ? 'สภาพอากาศ:' : 'Weather:'} {weatherAlertText || (isTh ? 'ปกติ' : 'Normal')}
                 </div>
               </div>
+            </div>
 
-              {/* Roster Assignment */}
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase">
-                  {language === 'th' ? 'มอบหมายทีมงานปฏิบัติหน้าที่ประจำวัน (คลิกเพื่อเลือก/ยกเลิก):' : 'Assign Crew Members (Click to toggle):'}
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-3 border border-slate-200 dark:border-obsidian-800/60 rounded-xl bg-slate-950/20">
-                  {crew.map(c => {
-                    const isAssigned = schedCrewAssigned.includes(c.id);
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => {
-                          if (isAssigned) {
-                            setSchedCrewAssigned(prev => prev.filter(id => id !== c.id));
-                          } else {
-                            setSchedCrewAssigned(prev => [...prev, c.id]);
-                          }
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                          isAssigned
-                            ? 'bg-gold-500/20 border-gold-500 text-gold-500 font-extrabold shadow-sm'
-                            : theme === 'dark'
-                              ? 'bg-obsidian-950 border-obsidian-850 hover:bg-obsidian-800 text-slate-400'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-600'
-                        }`}
-                      >
-                        {c.name[language] || c.name.en} ({language === 'th' ? c.role_th || c.role : c.role})
-                      </button>
-                    );
-                  })}
-                  {crew.length === 0 && (
-                    <p className="text-[10px] text-slate-400 italic">No crew available in roster. Add crew in Crew tab first.</p>
-                  )}
-                </div>
-              </div>
+            {/* Call Times Summary Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { labelTh: 'เวลาเปิดกอง (CREW CALL)', labelEn: 'CREW CALL TIME', val: crewCallTime, icon: Clock, color: 'border-l-gold-500' },
+                { labelTh: 'เริ่มถ่ายช็อตแรก (SHOOT CALL)', labelEn: 'SHOOTING CALL', val: shootCallTime, icon: Film, color: 'border-l-emerald-500' },
+                { labelTh: 'เวลากลางวัน (LUNCH BREAK)', labelEn: 'LUNCH TIME', val: lunchTime, icon: CloudSun, color: 'border-l-amber-500' },
+                { labelTh: 'เวลาเลิกกอง (EST. WRAP)', labelEn: 'ESTIMATED WRAP', val: wrapTime, icon: CheckCircle, color: 'border-l-purple-500' }
+              ].map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className={`p-3.5 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800 border-l-4 ${item.color}`}>
+                    <span className="text-[9px] font-black uppercase text-slate-400 font-mono flex items-center gap-1 mb-1">
+                      <Icon size={12} />
+                      <span>{isTh ? item.labelTh : item.labelEn}</span>
+                    </span>
+                    <span className="text-lg font-black font-mono text-slate-900 dark:text-slate-100 tracking-tight">
+                      {item.val}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
 
-              {/* Submit Buttons */}
-              <div className="flex justify-between items-center pt-2">
-                {activeEventId !== 'new' ? (
-                  <button
-                    type="button"
-                    onClick={handleDeleteSchedule}
-                    className="px-3.5 py-2 rounded-lg text-xs font-bold border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
+            {/* Location & Emergency Hospital Box */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800 space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                  <MapPin size={13} className="text-gold-500" />
+                  <span>{isTh ? 'สถานที่ถ่ายทำหลัก (SHOOT LOCATION)' : 'SHOOT LOCATION'}</span>
+                </span>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 font-sans leading-relaxed">
+                  {shootLocation}
+                </p>
+                {mapsUrl && (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-gold-500 hover:underline font-mono no-print"
                   >
-                    🗑️ {language === 'th' ? 'ลบคิววันถ่ายทำนี้' : 'Delete Day'}
-                  </button>
-                ) : <div />}
-
-                <div className="flex gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setIsSchedulerOpen(false)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                      theme === 'dark' ? 'bg-obsidian-800 hover:bg-obsidian-750 text-slate-350' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {language === 'th' ? 'ยกเลิก' : 'Cancel'}
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:opacity-95 shadow"
-                  >
-                    💾 {language === 'th' ? 'บันทึกตารางถ่ายทำ' : 'Save Shoot Schedule'}
-                  </button>
-                </div>
+                    <span>{isTh ? 'เปิดแผนที่ Google Maps →' : 'Open Google Maps Navigation →'}</span>
+                  </a>
+                )}
               </div>
-            </form>
-          )}
+
+              <div className="p-4 rounded-xl bg-red-500/5 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 space-y-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-red-500 font-mono flex items-center gap-1.5">
+                  <Hospital size={13} className="text-red-500" />
+                  <span>{isTh ? 'โรงพยาบาลใกล้ที่สุดกรณีฉุกเฉิน (NEAREST HOSPITAL)' : 'NEAREST HOSPITAL'}</span>
+                </span>
+                <p className="text-xs font-bold text-red-700 dark:text-red-300 font-sans leading-relaxed">
+                  {hospitalInfo}
+                </p>
+              </div>
+            </div>
+
+            {/* Scheduled Scenes Table for Shoot Day */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                <Clapperboard size={14} className="text-gold-500" />
+                <span>{isTh ? 'รายการฉากที่ถ่ายทำในวันนี้ (SCHEDULED SCENES)' : 'SCHEDULED SCENES'}</span>
+              </h3>
+
+              <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-xl">
+                <table className="w-full text-left text-xs font-sans">
+                  <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
+                    <tr>
+                      <th className="p-2.5 font-black">{isTh ? 'ฉาก' : 'SCENE'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'ประเภท' : 'I/E'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'สถานที่ตามบท' : 'SETTING'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'ช่วงเวลา' : 'DAY/NIGHT'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'ความยาว' : 'PAGES'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'เนื้อเรื่องย่อ' : 'SYNOPSIS'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'นักแสดงในฉาก' : 'CAST IDs'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
+                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : scenes.slice(0, 3)).map((sc) => (
+                      <tr key={sc.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                        <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc.scene_number}</td>
+                        <td className="p-2.5 font-bold font-mono">{sc.int_ext}</td>
+                        <td className="p-2.5 font-bold">{sc.setting}</td>
+                        <td className="p-2.5 font-bold font-mono">{sc.day_night}</td>
+                        <td className="p-2.5 font-mono">{sc.pages || '1/8'} pgs</td>
+                        <td className="p-2.5 max-w-xs truncate text-slate-600 dark:text-slate-300">
+                          {sc.description?.[language] || sc.description?.th || '-'}
+                        </td>
+                        <td className="p-2.5 font-mono font-bold text-purple-400">
+                          {sc.cast?.[language] || sc.cast?.th || '-'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Cast Schedule Call Sheet Table */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                <Users size={14} className="text-gold-500" />
+                <span>{isTh ? 'กำหนดเวลานักแสดง (CAST CALL TIMES)' : 'CAST CALL SCHEDULE'}</span>
+              </h3>
+
+              <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-xl">
+                <table className="w-full text-left text-xs font-sans">
+                  <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
+                    <tr>
+                      <th className="p-2.5 font-black">{isTh ? 'ตัวละคร' : 'CHARACTER'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'นักแสดง' : 'ACTOR NAME'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'เวลารถรับ (PICKUP)' : 'PICKUP'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'เวลาแต่งหน้าทำผม (HMW)' : 'HMW CALL'}</th>
+                      <th className="p-2.5 font-black">{isTh ? 'เวลาพร้อมหน้ากล้อง (ON SET)' : 'ON SET CALL'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80 font-mono">
+                    {castCallSchedules.map((c, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                        <td className="p-2.5 font-black text-gold-500">{c.charName}</td>
+                        <td className="p-2.5 font-sans font-bold">{c.actorName}</td>
+                        <td className="p-2.5 text-slate-400">{c.pickupTime}</td>
+                        <td className="p-2.5 text-amber-400">{c.hmwTime}</td>
+                        <td className="p-2.5 font-bold text-emerald-400">{c.onSetTime}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Departmental Technical Notes Grid */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                <Wrench size={14} className="text-gold-500" />
+                <span>{isTh ? 'ข้อกำหนดเทคนิคแยกตามแผนก (DEPARTMENTAL REQUIREMENTS)' : 'DEPARTMENTAL NOTES'}</span>
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-sans">
+                {[
+                  { title: isTh ? '📷 แผนกกล้อง & กริป' : 'CAMERA & GRIP', text: cameraNotes, color: 'border-l-blue-500' },
+                  { title: isTh ? '🎨 แผนกศิลปกรรม & พร็อพ' : 'ART & PROPS', text: artNotes, color: 'border-l-amber-500' },
+                  { title: isTh ? '💡 แผนกไฟ & กำลังไฟฟ้า' : 'LIGHTING & ELECTRIC', text: lightingNotes, color: 'border-l-yellow-500' },
+                  { title: isTh ? '🎙️ แผนกเสียง & เอฟเฟกต์' : 'SOUND DEPARTMENT', text: soundNotes, color: 'border-l-violet-500' },
+                  { title: isTh ? '👗 แผนกเสื้อผ้า & แต่งหน้า' : 'WARDROBE & HMW', text: wardrobeNotes, color: 'border-l-pink-500' },
+                  { title: isTh ? '📋 ฝ่ายจัดการกองถ่าย & AD' : 'PRODUCTION & AD', text: productionNotes, color: 'border-l-emerald-500' }
+                ].map((dept, idx) => (
+                  <div key={idx} className={`p-3.5 rounded-xl bg-slate-50 dark:bg-obsidian-900/50 border border-slate-200 dark:border-obsidian-800 border-l-4 ${dept.color} space-y-1.5`}>
+                    <span className="text-[10px] font-black uppercase text-slate-400 font-mono block">
+                      {dept.title}
+                    </span>
+                    <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-300">
+                      {dept.text || '-'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Department Crew Roster */}
+            <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-obsidian-800">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono flex items-center gap-1.5">
+                <Users size={14} className="text-gold-500" />
+                <span>{isTh ? 'รายชื่อทีมงานที่ปฏิบัติหน้าที่ (CREW ROSTER)' : 'CREW ROSTER'}</span>
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs font-sans">
+                {(crew.length > 0 ? crew : [
+                  { name: 'ธนบดี กองศรี', role: 'Producer' },
+                  { name: 'ผู้กำกับหลัก', role: 'Director' },
+                  { name: 'ผู้ช่วยผู้กำกับ 1', role: '1st AD' },
+                  { name: 'ผู้กำกับภาพ', role: 'DP' }
+                ]).map((member, idx) => (
+                  <div key={idx} className="p-2 rounded-lg bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800/60">
+                    <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{member.name}</div>
+                    <div className="text-[10px] font-mono text-gold-500 truncate">{member.role}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* CALL SHEET VIEW */}
-      {activeSubTab === 'callsheet' && (
-        scenes.length === 0 ? (
-          <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
-            <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
-              <FileText size={32} />
-            </div>
-            <h3 className="text-lg font-bold font-serif">{language === 'th' ? 'ยังไม่มีฉากสำหรับสร้างใบสั่งงาน (Call Sheet)' : 'No Scenes for Call Sheet'}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-              {language === 'th' 
-                ? 'กรุณาเพิ่มฉากถ่ายทำในส่วน "บทถ่ายทำ" ก่อนเพื่อนำข้อมูลมาสร้างเอกสารใบสั่งงาน' 
-                : 'Please add a scene in the Script Breakdown tab first to generate call sheets.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6 animate-fadeIn">
-            {/* CALL SHEET TEMPLATE BODY (Ready for PDF Print) */}
-            <div className={`p-8 md:p-12 rounded-xl border glass-panel shadow-md space-y-8 print-container ${
-              theme === 'dark' ? 'border-obsidian-800 bg-obsidian-950/20' : 'border-slate-200 bg-white'
-            }`}>
-              
-              {/* Header & Main Info Card */}
-              <div className="print-card space-y-6">
-                {/* Header metadata */}
-                <div className="border-b-2 border-slate-900 dark:border-slate-100 pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <p className="text-[10px] font-bold text-gold-500 tracking-widest uppercase">Production Document</p>
-                    <h2 className="text-2xl font-serif font-black tracking-tight">
-                      {t('docs.callSheetHeader')}{sceneDayMap[selectedSceneNum]?.day ? ` - DAY ${sceneDayMap[selectedSceneNum].day}` : ''}
-                    </h2>
-                    <p className="text-xs text-slate-400 mt-0.5">Scene {activeScene?.scene_number} | Setting: {activeScene?.setting}</p>
-                  </div>
-                  <div className="text-right font-mono text-xs space-y-0.5">
-                    <p>
-                      <span className="text-slate-400">{language === 'th' ? 'วันถ่ายทำ (Shoot Date):' : 'Date:'}</span>{' '}
-                      {formattedCallSheetDate || sceneDayMap[selectedSceneNum]?.dateStr || (language === 'th' ? 'ยังไม่ได้ระบุ' : 'TBD')}
-                    </p>
-                    <p><span className="text-slate-400">Weather:</span> {weather} ({weatherWarnings[weather] ? 'Risk Checked' : 'Clear'})</p>
-                  </div>
-                </div>
-
-                {/* Key Schedule Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
-                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.crewCallTime')}</p>
-                    <p className="text-xl font-extrabold font-mono mt-0.5 text-gold-500">{crewCallTime}</p>
-                  </div>
-                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.shootingCall')}</p>
-                    <p className="text-xl font-extrabold font-mono mt-0.5">{shootCallTime}</p>
-                  </div>
-                  <div className="border-r border-slate-200 dark:border-obsidian-800 pr-4 pl-0 md:pl-4">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.lunchTime')}</p>
-                    <p className="text-xl font-extrabold font-mono mt-0.5 text-slate-400">{lunchTime}</p>
-                  </div>
-                  <div className="pl-0 md:pl-4">
-                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t('docs.wrapTime')}</p>
-                    <p className="text-xl font-extrabold font-mono mt-0.5">{wrapTime}</p>
-                  </div>
-                </div>
-
-                {/* Weather Alert Integration */}
-                <div className={`p-4 rounded-lg border text-xs flex gap-2.5 items-start ${
-                  weather === 'Rainy' || weather === 'Thunderstorm'
-                    ? 'bg-red-500/10 border-red-500/20 text-red-500'
-                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
-                }`}>
-                  <CloudSun size={16} className="shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold">{t('docs.weatherForecast')}: {weather}</p>
-                    <p className="mt-1 leading-relaxed">{weatherWarnings[weather]?.[language] || 'Clear weather forecast.'}</p>
-                  </div>
-                </div>
-
-                {/* Map Link / Coordinates Block */}
-                <div className={`p-4 rounded-lg border text-xs space-y-2 ${
-                  theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800/80' : 'bg-slate-50 border-slate-200'
-                }`}>
-                  <p className="font-bold flex items-center gap-1">
-                    <MapPin size={12} className="text-gold-500" />
-                    <span>{t('docs.mapLocation')}</span>
-                  </p>
-                  <p className="text-slate-400">📍 {resolvedLocation}</p>
-                  <a 
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(resolvedLocation)}`}
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="inline-block mt-1 font-semibold text-gold-500 hover:underline no-print"
-                  >
-                    Open Google Maps Navigation →
-                  </a>
-                </div>
-              </div>
-
-              {/* Scene & Tagged Elements Card */}
-              <div className="print-card space-y-6">
-                {/* Shoot Scene Specific details */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                    Scene Specific Breakdown Info
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                    <div>
-                      <p className="text-slate-400 font-bold mb-1">SCENE DESCRIPTION</p>
-                      <p className="leading-relaxed font-medium">{activeScene?.description?.[language] || activeScene?.description?.en || 'TBD'}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 font-bold mb-1">CAST & TALENT</p>
-                      <p className="leading-relaxed font-medium">{activeScene?.cast?.[language] || activeScene?.cast?.en || 'TBD'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tagged Breakdown Elements */}
-                {activeScene?.tech_notes?.scene_elements?.length > 0 && (
-                  <div className="space-y-3 pt-2">
-                    <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                      {language === 'th' ? 'อุปกรณ์และองค์ประกอบฝ่ายต่าง ๆ (Tagged Elements)' : 'Production & Breakdown Elements'}
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {ELEMENT_CATEGORIES.map(category => {
-                        const elements = (activeScene.tech_notes.scene_elements || []).filter(el => el.category === category.id);
-                        if (elements.length === 0) return null;
-                        return (
-                          <div key={category.id} className={`p-3 rounded-lg border text-left ${
-                            theme === 'dark' ? 'bg-obsidian-950/20 border-obsidian-800' : 'bg-slate-50/50 border-slate-150'
-                          }`}>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase mb-1.5 flex items-center gap-1.5">
-                              <span className={`w-1.5 h-1.5 rounded-full ${category.dotColor}`} />
-                              <span>{language === 'th' ? category.labelTh : category.label}</span>
-                            </p>
-                            <ul className="text-xs space-y-1 pl-3 list-disc text-slate-650 dark:text-slate-350">
-                              {elements.map(i => (
-                                <li key={i.id}>
-                                  {i.name} {i.qty > 1 && <span className="font-mono text-[10px] opacity-75">(x{i.qty})</span>}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Department Tech Requirements Card */}
-              <div className="print-card space-y-4">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                  {t('docs.techRequirements')}
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-                  {/* Camera / Grip */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Camera size={12} />
-                      <span>CAMERA & GRIP (DP: {dp?.name?.[language] || dp?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedCameraNotes}
-                    </p>
-                    {deptCameraCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptCameraCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Art Department */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Clapperboard size={12} />
-                      <span>ART & PROPS (Designer: {art?.name?.[language] || art?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedArtNotes}
-                    </p>
-                    {deptArtCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptArtCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Electric / Lights */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Wrench size={12} />
-                      <span>LIGHTING & ELECTRIC (Gaffer: {gaffer?.name?.[language] || gaffer?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedLightingNotes}
-                    </p>
-                    {deptLightingCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptLightingCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Sound & Audio */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Volume2 size={12} />
-                      <span>SOUND & AUDIO (Mixer: {soundRecordist?.name?.[language] || soundRecordist?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedSoundNotes}
-                    </p>
-                    {deptSoundCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptSoundCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Makeup & Wardrobe */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Sparkles size={12} />
-                      <span>MAKEUP & WARDROBE (Stylist: {wardrobeStylist?.name?.[language] || wardrobeStylist?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedWardrobeNotes}
-                    </p>
-                    {deptMakeupCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptMakeupCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Production & Scripts */}
-                  <div className={`p-4 rounded-lg border ${
-                    theme === 'dark' ? 'bg-obsidian-950/40 border-obsidian-800/40' : 'bg-slate-50/50 border-slate-100'
-                  }`}>
-                    <p className="font-bold text-gold-500 flex items-center gap-1.5 mb-2">
-                      <Briefcase size={12} />
-                      <span>PRODUCTION & DIRECTION (AD: {director?.name?.[language] || director?.name?.en || 'TBD'})</span>
-                    </p>
-                    <p className="leading-relaxed text-slate-750 dark:text-slate-300 font-medium whitespace-pre-line">
-                      {resolvedProductionNotes}
-                    </p>
-                    {deptProductionCrew.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-obsidian-800/60 text-[10px] text-slate-400">
-                        <span className="font-bold">{language === 'th' ? 'ผู้ปฏิบัติงาน:' : 'Crew:'} </span>
-                        {deptProductionCrew.map(c => `${c.name[language] || c.name.en} (${language === 'th' ? c.role_th || c.role : c.role})`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Assigned Crew List Card */}
-              <div className="print-card space-y-3">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                  {language === 'th' ? 'ทีมงานปฏิบัติหน้าที่ประจำวัน (Assigned Crew)' : 'Assigned Crew Roster'}
-                </h3>
-                {assignedCrewMembers.length === 0 ? (
-                  <p className="text-xs text-slate-450 italic">{language === 'th' ? 'ยังไม่ได้ระบุทีมงานปฏิบัติหน้าที่' : 'No crew members assigned to this shoot day.'}</p>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
-                    {assignedCrewMembers.map(c => (
-                      <div 
-                        key={c.id} 
-                        className={`p-2 rounded-lg border flex items-center gap-2 ${
-                          theme === 'dark' ? 'bg-obsidian-950 border-obsidian-850' : 'bg-slate-50 border-slate-150'
-                        }`}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-gold-500/10 text-gold-500 flex items-center justify-center font-bold text-[9px] shrink-0">
-                          {c.name.en?.split(' ').map(n => n[0]).join('') || '??'}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold truncate">{c.name[language] || c.name.en}</p>
-                          <p className="text-[9px] text-slate-400 truncate">{language === 'th' ? c.role_th || c.role : c.role}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Camera Shot List Card */}
-              <div className="print-card space-y-3">
-                <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                  {t('docs.cameraShotList')}
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className={`border-b text-xs font-bold uppercase tracking-wider ${
-                        theme === 'dark' ? 'bg-obsidian-900/50 border-obsidian-800/40 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-                      }`}>
-                        <th className="py-2 px-3 w-16">{t('docs.shotNum')}</th>
-                        <th className="py-2 px-3 w-20">{t('docs.framing')}</th>
-                        <th className="py-2 px-3 w-20">{t('docs.lens')}</th>
-                        <th className="py-2 px-3 w-24">{t('docs.movement')}</th>
-                        <th className="py-2 px-3 w-28">{t('docs.equipment')}</th>
-                        <th className="py-2 px-3">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40 text-xs">
-                      {activeSceneShots.length === 0 ? (
-                        <tr>
-                          <td colSpan="6" className="py-4 text-center text-slate-400 italic">
-                            {language === 'th' ? 'ไม่มีรายการช็อตสำหรับฉากนี้' : 'No shots defined for this scene.'}
-                          </td>
-                        </tr>
-                      ) : (
-                        activeSceneShots.map((shot, idx) => (
-                          <tr key={shot.id || idx} className="hover:bg-slate-100/20 dark:hover:bg-obsidian-850/10">
-                            <td className="py-2.5 px-3 font-mono font-bold text-gold-500">{shot.shotNum || shot.shot_number}</td>
-                            <td className="py-2.5 px-3 font-semibold">{shot.type || shot.size}</td>
-                            <td className="py-2.5 px-3 font-mono">{shot.lens}</td>
-                            <td className="py-2.5 px-3">{shot.movement}</td>
-                            <td className="py-2.5 px-3 text-slate-400">{shot.equipment}</td>
-                            <td className="py-2.5 px-3 text-slate-600 dark:text-slate-300 font-medium">
-                              {shot.description?.[language] || shot.description?.en || ''}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Storyboard Visual References Card */}
-              {activeSceneShots.some(s => s.description?.image_url) && (
-                <div className="print-card space-y-4 page-break-before">
-                  <h3 className="text-sm font-bold font-serif uppercase tracking-wider border-b pb-1 border-slate-200 dark:border-obsidian-800">
-                    {language === 'th' ? 'ภาพสตอรี่บอร์ดอ้างอิงกองถ่าย' : 'Visual Storyboard References'}
-                  </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {activeSceneShots.filter(s => s.description?.image_url).map((shot, idx) => (
-                      <div 
-                        key={shot.id || idx} 
-                        className={`rounded-lg border p-2 space-y-2 overflow-hidden ${
-                          theme === 'dark' ? 'border-obsidian-800 bg-obsidian-950/30' : 'border-slate-200 bg-slate-50'
-                        }`}
-                      >
-                        <div className="h-24 overflow-hidden rounded bg-slate-900 flex items-center justify-center">
-                          <img 
-                            src={shot.description.image_url} 
-                            alt={`Shot ${shot.shotNum || shot.shot_number}`}
-                            className="w-full h-full object-cover" 
-                          />
-                        </div>
-                        <div className="text-[10px] space-y-0.5 font-mono">
-                          <p className="font-bold text-gold-500">SHOT {shot.shotNum || shot.shot_number}</p>
-                          <p className="text-slate-400 font-semibold">{shot.type || shot.size} | {shot.lens}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+      {/* SUBTAB 1.2: SCENE BREAKDOWN SHEET */}
+      {activeSubTab === 'breakdown' && (
+        <div className="space-y-5">
+          {/* Scene Selector */}
+          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
+                {isTh ? 'เลือกฉากแจกแจงบท (Select Scene):' : 'Select Scene:'}
+              </label>
+              <select
+                value={selectedSceneNum}
+                onChange={(e) => setSelectedSceneNum(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
+              >
+                {scenes.map((s) => (
+                  <option key={s.id} value={s.scene_number}>
+                    Scene {s.scene_number} - {s.setting}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
-        )
+
+          {/* Breakdown Sheet Document Card */}
+          <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-5 bg-white dark:bg-obsidian-950 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-gold-500">
+              <div>
+                <span className="text-[10px] font-black uppercase text-gold-500 font-mono">SCENE BREAKDOWN SHEET</span>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans">
+                  {isTh ? `ใบแจกแจงฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Breakdown Sheet - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}
+                </h2>
+              </div>
+              <span className="text-xs font-mono font-bold px-3 py-1 rounded bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800">
+                {activeScene?.pages || '1/8'} PAGES
+              </span>
+            </div>
+
+            {/* Scene Header Details Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-sans text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
+                <span className="text-[9px] font-black text-slate-400 font-mono block">SCENE NUMBER</span>
+                <span className="font-black text-gold-500 font-mono text-sm">SCENE {selectedSceneNum}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
+                <span className="text-[9px] font-black text-slate-400 font-mono block">INT / EXT</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 font-mono text-sm">{activeScene?.int_ext || 'INT'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
+                <span className="text-[9px] font-black text-slate-400 font-mono block">DAY / NIGHT</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 font-mono text-sm">{activeScene?.day_night || 'DAY'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800">
+                <span className="text-[9px] font-black text-slate-400 font-mono block">LOCATION</span>
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate block">{activeScene?.location?.[language] || activeScene?.location?.th || '-'}</span>
+              </div>
+            </div>
+
+            {/* Scene Synopsis */}
+            {activeScene?.description?.[language] && (
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/40 border border-slate-200 dark:border-obsidian-800 space-y-1">
+                <span className="text-[10px] font-black uppercase text-slate-400 font-mono">SCENE SYNOPSIS</span>
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-sans leading-relaxed">
+                  {activeScene.description[language]}
+                </p>
+              </div>
+            )}
+
+            {/* Tagged Breakdown Elements Category Badges */}
+            <div className="space-y-3 pt-2">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 font-mono">
+                {isTh ? 'องค์ประกอบฉากที่แจกแจงได้ (TAGGED ELEMENTS)' : 'TAGGED BREAKDOWN ELEMENTS'}
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-sans">
+                {ELEMENT_CATEGORIES.map((cat) => {
+                  const items = activeScene?.tech_notes?.scene_elements?.filter(e => e.category === cat.id) || [];
+                  return (
+                    <div key={cat.id} className="p-3.5 rounded-xl bg-slate-50 dark:bg-obsidian-900/50 border border-slate-200 dark:border-obsidian-800 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${cat.dotColor}`} />
+                        <span className="font-black text-slate-800 dark:text-slate-200">{isTh ? cat.labelTh : cat.label}</span>
+                        <span className="text-[10px] font-mono text-slate-400">({items.length})</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {items.length > 0 ? (
+                          items.map((it, idx) => (
+                            <span key={idx} className={`px-2 py-0.5 rounded text-[11px] font-bold border ${cat.color}`}>
+                              {it.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[11px] text-slate-400 italic font-sans">{isTh ? '- ไม่มี -' : '- None -'}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* SHOT LIST VIEW */}
-      {activeSubTab === 'shotlist' && (
-        <div className="space-y-6">
-          {/* Add Shot Form (No Print) */}
-          {hasWriteAccess() && (
-            <div className="glass-panel p-5 rounded-xl space-y-4 no-print border border-slate-200 dark:border-obsidian-800">
-              <h2 className="text-sm font-bold font-serif flex items-center gap-1.5">
-                <Plus size={16} className="text-gold-500" />
-                <span>
-                  {language === 'th' 
-                    ? `เพิ่มช็อตกล้องสำหรับฉากที่ ${selectedSceneNum}` 
-                    : `Add Camera Shot for Scene ${selectedSceneNum}`}
-                </span>
+      {/* SUBTAB 1.3: ONE-LINER SHOOTING SCHEDULE REPORT */}
+      {activeSubTab === 'schedule_report' && (
+        <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
+          <div className="flex items-center justify-between pb-3 border-b-2 border-gold-500">
+            <div>
+              <span className="text-[10px] font-black uppercase text-gold-500 font-mono">ONE-LINER SHOOTING SCHEDULE SUMMARY</span>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans">
+                {isTh ? 'รายงานสรุปตารางคิวกองถ่าย (Shooting Schedule Report)' : 'One-Liner Shooting Schedule Summary'}
               </h2>
-
-              <form onSubmit={handleAddShot} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot # *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 1A"
-                    value={newShotNum}
-                    onChange={(e) => setNewShotNum(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Framing / Size</label>
-                  <select
-                    value={newShotFraming}
-                    onChange={(e) => setNewShotFraming(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <option value="ECU">ECU (Extreme Close Up)</option>
-                    <option value="CU">CU (Close Up)</option>
-                    <option value="MCU">MCU (Medium Close Up)</option>
-                    <option value="MS">MS (Medium Shot)</option>
-                    <option value="WS">WS (Wide Shot)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lens</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 50mm prime"
-                    value={newShotLens}
-                    onChange={(e) => setNewShotLens(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Movement</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Static / Dolly Push"
-                    value={newShotMove}
-                    onChange={(e) => setNewShotMove(e.target.value)}
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">รายละเอียดช็อต (ภาษาไทย)</label>
-                  <input
-                    type="text"
-                    value={newShotDescTh}
-                    onChange={(e) => setNewShotDescTh(e.target.value)}
-                    placeholder="กล้องจับภาพที่หน้าตา..."
-                    className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div className="md:col-span-2 flex items-end gap-3">
-                  <div className="flex-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot Action Description (EN) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newShotDescEn}
-                      onChange={(e) => setNewShotDescEn(e.target.value)}
-                      placeholder="Camera tracks characters reaction..."
-                      className={`w-full px-3 py-1.5 rounded-lg border text-xs focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                        theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                      }`}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:from-gold-500 shadow-sm shrink-0 h-9"
-                  >
-                    Add Shot
-                  </button>
-                </div>
-              </form>
             </div>
-          )}
+            <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+              {scenes.length} {isTh ? 'ฉากทั้งหมด' : 'Total Scenes'}
+            </span>
+          </div>
 
-          {/* Shot List Table */}
-          <div className="glass-panel rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-obsidian-800 print-container">
-            <div className="p-4 border-b border-inherit bg-slate-50/50 dark:bg-obsidian-900/30 flex justify-between items-center">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                {language === 'th' ? `รายการช็อตของฉากที่ ${selectedSceneNum}` : `Shot List for Scene ${selectedSceneNum}`}
-              </h3>
-              <p className="text-[10px] text-slate-400 font-mono">
-                {activeSceneShots.length} Shots
-              </p>
+          <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-xl">
+            <table className="w-full text-left text-xs font-sans">
+              <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
+                <tr>
+                  <th className="p-3 font-black">{isTh ? 'ฉาก' : 'SCENE'}</th>
+                  <th className="p-3 font-black">{isTh ? 'ประเภท' : 'I/E'}</th>
+                  <th className="p-3 font-black">{isTh ? 'สถานที่ตามบท' : 'SETTING'}</th>
+                  <th className="p-3 font-black">{isTh ? 'ช่วงเวลา' : 'DAY/NIGHT'}</th>
+                  <th className="p-3 font-black">{isTh ? 'ความยาว' : 'PAGES'}</th>
+                  <th className="p-3 font-black">{isTh ? 'สถานที่ถ่ายทำ' : 'LOCATION'}</th>
+                  <th className="p-3 font-black">{isTh ? 'นักแสดง' : 'CAST'}</th>
+                  <th className="p-3 font-black">{isTh ? 'สถานะ' : 'STATUS'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
+                {scenes.map((sc) => (
+                  <tr key={sc.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                    <td className="p-3 font-mono font-black text-gold-500">SCENE {sc.scene_number}</td>
+                    <td className="p-3 font-mono font-bold">{sc.int_ext}</td>
+                    <td className="p-3 font-bold">{sc.setting}</td>
+                    <td className="p-3 font-mono">{sc.day_night}</td>
+                    <td className="p-3 font-mono">{sc.pages || '1/8'} pgs</td>
+                    <td className="p-3 text-slate-600 dark:text-slate-300">{sc.location?.[language] || sc.location?.th || '-'}</td>
+                    <td className="p-3 font-mono font-bold text-purple-400">{sc.cast?.[language] || sc.cast?.th || '-'}</td>
+                    <td className="p-3 uppercase font-mono text-[10px] font-bold">
+                      <span className={`px-2 py-0.5 rounded ${sc.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-400'}`}>
+                        {sc.status || 'pending'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* CATEGORY 2: SHOOTING & VISUAL SUITE */}
+      {/* ========================================================================= */}
+
+      {/* SUBTAB 2.1: SHOT LIST GENERATOR */}
+      {activeSubTab === 'shotlist' && (
+        <div className="space-y-5">
+          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
+                {isTh ? 'เลือกฉากถ่ายทำ (Select Scene):' : 'Select Scene:'}
+              </label>
+              <select
+                value={selectedSceneNum}
+                onChange={(e) => setSelectedSceneNum(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
+              >
+                {scenes.map((s) => (
+                  <option key={s.id} value={s.scene_number}>
+                    Scene {s.scene_number} - {s.setting} ({s.int_ext} / {s.day_night})
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className={`border-b text-xs font-bold uppercase tracking-wider ${
-                    theme === 'dark' ? 'bg-obsidian-900/50 border-obsidian-800/40 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-500'
-                  }`}>
-                    <th className="py-3.5 px-4 w-20">{t('docs.shotNum')}</th>
-                    <th className="py-3.5 px-4 w-28">{t('docs.framing')}</th>
-                    <th className="py-3.5 px-4 w-28">{t('docs.lens')}</th>
-                    <th className="py-3.5 px-4 w-32">{t('docs.movement')}</th>
-                    <th className="py-3.5 px-4 w-36">{t('docs.equipment')}</th>
-                    <th className="py-3.5 px-4">Description</th>
-                    {hasWriteAccess() && <th className="py-3.5 px-4 w-24 text-right no-print">Actions</th>}
+
+            {hasWriteAccess() && (
+              <button
+                onClick={() => setIsShotModalOpen(true)}
+                className="px-3.5 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer font-sans shadow-xs"
+              >
+                <Plus size={15} />
+                <span>{isTh ? 'เพิ่มช็อตถ่ายทำใหม่' : 'Add New Shot'}</span>
+              </button>
+            )}
+          </div>
+
+          <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-obsidian-800">
+              <div>
+                <span className="text-[10px] font-black uppercase text-gold-500 font-mono">SHOT LIST DOCUMENT</span>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans">
+                  {isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}
+                </h2>
+              </div>
+              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
+                {activeSceneShots.length} {isTh ? 'ช็อตในฉากนี้' : 'Shots'}
+              </span>
+            </div>
+
+            <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-xl">
+              <table className="w-full text-left text-xs font-sans">
+                <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
+                  <tr>
+                    <th className="p-3 font-black">SHOT #</th>
+                    <th className="p-3 font-black">{isTh ? 'ขนาดภาพ (FRAMING)' : 'FRAMING'}</th>
+                    <th className="p-3 font-black">{isTh ? 'การเคลื่อนกล้อง' : 'MOVEMENT'}</th>
+                    <th className="p-3 font-black">{isTh ? 'เลนส์' : 'LENS'}</th>
+                    <th className="p-3 font-black">{isTh ? 'อุปกรณ์' : 'EQUIPMENT'}</th>
+                    <th className="p-3 font-black">{isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง' : 'ACTION / CAMERA NOTES'}</th>
+                    <th className="p-3 font-black no-print">{isTh ? 'จัดการ' : 'ACTIONS'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40 text-xs">
-                  {activeSceneShots.length === 0 ? (
-                    <tr>
-                      <td colSpan={hasWriteAccess() ? 7 : 6} className="py-8 text-center text-slate-400 italic">
-                        {language === 'th' ? 'ยังไม่มีช็อตในฉากนี้ กดเพิ่มช็อตด้านบน' : 'No shots defined for this scene. Add a shot above.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    activeSceneShots.map((shot, idx) => (
-                      <tr key={shot.id || idx} className="hover:bg-slate-100/20 dark:hover:bg-obsidian-850/10">
-                        <td className="py-3.5 px-4 font-mono font-bold text-gold-500">{shot.shotNum || shot.shot_number}</td>
-                        <td className="py-3.5 px-4 font-semibold">{shot.type || shot.size}</td>
-                        <td className="py-3.5 px-4 font-mono">{shot.lens}</td>
-                        <td className="py-3.5 px-4">{shot.movement}</td>
-                        <td className="py-3.5 px-4 text-slate-400">{shot.equipment}</td>
-                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
-                          {shot.description?.[language] || shot.description?.en || ''}
+                <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
+                  {activeSceneShots.length > 0 ? (
+                    activeSceneShots.map((shot) => (
+                      <tr key={shot.id} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                        <td className="p-3 font-mono font-black text-gold-500">
+                          {shot.shotNum || shot.shot_number || `${selectedSceneNum}.1`}
                         </td>
-                        {hasWriteAccess() && (
-                          <td className="py-3.5 px-4 text-right space-x-1.5 no-print">
-                            <button
-                              onClick={() => startEditing(shot)}
-                              className="p-1 hover:text-gold-500 transition-colors inline-block"
-                              title="Edit Shot"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteShot(shot.id)}
-                              className="p-1 hover:text-red-500 transition-colors inline-block"
-                              title="Delete Shot"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        )}
+                        <td className="p-3 font-mono font-bold">{shot.type || shot.size || 'MCU'}</td>
+                        <td className="p-3 font-mono">{shot.movement || 'Static'}</td>
+                        <td className="p-3 font-mono">{shot.lens || '50mm'}</td>
+                        <td className="p-3 font-mono text-slate-400">{shot.equipment || 'Tripod'}</td>
+                        <td className="p-3 text-slate-700 dark:text-slate-200">
+                          {shot.description?.[language] || shot.description?.th || shot.description?.en || '-'}
+                        </td>
+                        <td className="p-3 no-print">
+                          <button
+                            onClick={() => handleDeleteShot(shot.id)}
+                            className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
+                            title="Delete Shot"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
                       </tr>
                     ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center text-slate-400 text-xs font-sans">
+                        {isTh ? 'ยังไม่มีรายการช็อตถ่ายทำในฉากนี้ กดปุ่ม "+ เพิ่มช็อตถ่ายทำใหม่" ด้านบนเพื่อเริ่มบันทึก' : 'No shots added for this scene yet. Click "+ Add New Shot" to get started.'}
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
@@ -1503,321 +1117,528 @@ export default function DocumentsHub({
         </div>
       )}
 
-      {/* STORYBOARD VIEW */}
+      {/* SUBTAB 2.2: STORYBOARDS & PREVIS GALLERY */}
       {activeSubTab === 'storyboard' && (
-        scenes.length === 0 ? (
-          <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
-            <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
-              <ImageIcon size={32} />
+        <div className="space-y-5">
+          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">
+                {isTh ? 'เลือกฉากสตอรี่บอร์ด:' : 'Select Storyboard Scene:'}
+              </label>
+              <select
+                value={selectedSceneNum}
+                onChange={(e) => setSelectedSceneNum(e.target.value)}
+                className="px-3 py-1.5 rounded-lg border text-xs font-bold bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-mono cursor-pointer"
+              >
+                {scenes.map((s) => (
+                  <option key={s.id} value={s.scene_number}>
+                    Scene {s.scene_number} - {s.setting}
+                  </option>
+                ))}
+              </select>
             </div>
-            <h3 className="text-lg font-bold font-serif">{language === 'th' ? 'ยังไม่มีฉากสำหรับแสดงสตอรี่บอร์ด' : 'No Scenes for Storyboards'}</h3>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-              {language === 'th' 
-                ? 'กรุณาเพิ่มฉากถ่ายทำในส่วน "บทถ่ายทำ" ก่อนเพื่อเปิดดูภาพสตอรี่บอร์ด' 
-                : 'Please add a scene in the Script Breakdown tab first to view storyboards.'}
-            </p>
           </div>
-        ) : (
-          <div className="space-y-6 animate-fadeIn">
-            {/* Storyboard toolbar */}
-            <div className="flex justify-between items-center no-print">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">
-                {language === 'th' ? `สตอรี่บอร์ดของฉากที่ ${selectedSceneNum}` : `Storyboard Cards for Scene ${selectedSceneNum}`}
-              </h3>
-              {hasWriteAccess() && (
-                <button
-                  onClick={handleAddStoryboardFrame}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gold-500/10 text-gold-500 hover:bg-gold-500/20 border border-gold-500/20 transition-all"
-                >
-                  <Plus size={14} />
-                  <span>{language === 'th' ? 'เพิ่มการ์ดสตอรี่บอร์ด' : 'Add Storyboard Panel'}</span>
-                </button>
-              )}
+
+          <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-obsidian-800">
+              <div>
+                <span className="text-[10px] font-black uppercase text-gold-500 font-mono">STORYBOARD GALLERY</span>
+                <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans">
+                  {isTh ? `สตอรี่บอร์ด - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Storyboard Gallery - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}
+                </h2>
+              </div>
             </div>
 
-            {activeSceneShots.length === 0 ? (
-              <div className="glass-panel p-12 text-center rounded-xl space-y-4 max-w-xl mx-auto border border-dashed border-slate-300 dark:border-obsidian-800 animate-fadeIn">
-                <div className="inline-flex p-3 rounded-full bg-gold-500/10 text-gold-500">
-                  <Camera size={32} />
-                </div>
-                <h3 className="text-sm font-bold font-serif">
-                  {language === 'th' ? 'ยังไม่มีช็อตสำหรับทำสตอรี่บอร์ดในฉากนี้' : 'No Storyboard panels defined for this scene'}
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
-                  {language === 'th'
-                    ? 'สตอรี่บอร์ดจะเชื่อมโยงกับ Shot List โดยตรง คุณสามารถสร้างช็อตแรกได้ที่นี่เลย'
-                    : 'Storyboard cards link directly to your Shot List. Start creating shots right here!'}
-                </p>
-                {hasWriteAccess() && (
-                  <button
-                    onClick={handleAddStoryboardFrame}
-                    className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white shadow"
-                  >
-                    + {language === 'th' ? 'เพิ่มช็อตแรกในฉากนี้' : 'Create First Scene Shot'}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 print-container">
-                {activeSceneShots.map((shot, idx) => {
-                  const shotImage = shot.description?.image_url;
-                  
-                  return (
-                    <div 
-                      key={shot.id || idx} 
-                      className={`rounded-xl border overflow-hidden glass-panel flex flex-col group transition-all duration-300 hover:shadow-lg ${
-                        theme === 'dark' ? 'border-obsidian-800 bg-obsidian-900/40' : 'border-slate-200 bg-white'
-                      }`}
-                    >
-                      {/* Storyboard Frame Drawing / Reference image */}
-                      <div className="h-48 relative bg-slate-950 flex items-center justify-center overflow-hidden border-b border-inherit">
-                        {shotImage ? (
-                          <img 
-                            src={shotImage} 
-                            alt={`Shot ${shot.shotNum || shot.shot_number} drawing`}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                          />
-                        ) : (
-                          <>
-                            {/* Sleek Camera grid/viewfinder sketch fallback */}
-                            <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:16px_16px]" />
-                            <div className="absolute w-8 h-8 border-l border-t border-slate-700 top-6 left-6" />
-                            <div className="absolute w-8 h-8 border-r border-t border-slate-700 top-6 right-6" />
-                            <div className="absolute w-8 h-8 border-l border-b border-slate-700 bottom-6 left-6" />
-                            <div className="absolute w-8 h-8 border-r border-b border-slate-700 bottom-6 right-6" />
-                            
-                            <div className="relative text-center space-y-2 z-10 p-4">
-                              <Camera size={24} className="mx-auto text-slate-600 animate-pulse" />
-                              <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-                                {shot.type || shot.size || 'MCU'}
-                              </p>
-                              <p className="text-[9px] text-slate-600 italic">
-                                {language === 'th' ? 'ไม่มีรูปภาพ (กดอัพโหลดเพื่อใส่รูปภาพร่าง)' : 'No sketch (Upload frame sketch)'}
-                              </p>
-                            </div>
-                          </>
-                        )}
-
-                        {/* Floating quick actions overlay for write access (No Print) */}
-                        {hasWriteAccess() && (
-                          <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 no-print z-20">
-                            
-                            {/* File Upload Label */}
-                            <label className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 text-[11px] font-bold">
-                              <Upload size={14} />
-                              <span>{shotImage ? (language === 'th' ? 'เปลี่ยนรูป' : 'Change') : (language === 'th' ? 'อัพโหลด' : 'Upload')}</span>
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                onChange={(e) => handleImageUpload(shot.id, e)} 
-                                className="hidden" 
-                              />
-                            </label>
-
-                            {/* Remove Image Button */}
-                            {shotImage && (
-                              <button
-                                onClick={() => handleRemoveImage(shot.id)}
-                                className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-lg transition-all hover:scale-105"
-                                title="Remove Image"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-
-                            {/* Quick edit parameters */}
-                            <button
-                              onClick={() => startEditing(shot)}
-                              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all hover:scale-105 flex items-center gap-1.5 text-[11px] font-bold"
-                            >
-                              <Edit size={14} />
-                              <span>{language === 'th' ? 'แก้ไข' : 'Edit'}</span>
-                            </button>
-                          </div>
-                        )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeSceneShots.map((shot, idx) => (
+                <div key={shot.id} className="p-4 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800 space-y-3">
+                  <div className="relative aspect-video rounded-lg bg-slate-200 dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 overflow-hidden flex items-center justify-center group">
+                    {shot.description?.image_url ? (
+                      <img 
+                        src={shot.description.image_url} 
+                        alt={`Storyboard Shot ${shot.shotNum}`} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-4 space-y-1 text-slate-400">
+                        <ImageIcon size={24} className="mx-auto" />
+                        <span className="text-[11px] block font-sans">{isTh ? 'ยังไม่มีรูปภาพสเก็ตช์' : 'No sketch image uploaded'}</span>
                       </div>
+                    )}
 
-                      {/* Storyboard caption info */}
-                      <div className="p-4 flex-1 space-y-2 flex flex-col justify-between">
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-gold-500 font-mono tracking-wider">
-                              SHOT {shot.shotNum || shot.shot_number}
-                            </span>
-                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                              theme === 'dark' ? 'bg-obsidian-950 text-slate-400' : 'bg-slate-100 text-slate-600'
-                            }`}>
-                              {shot.type || shot.size} | {shot.lens}
-                            </span>
-                          </div>
-                          
-                          <p className="text-xs font-semibold leading-relaxed text-slate-800 dark:text-slate-200">
-                            {shot.description?.[language] || shot.description?.en || ''}
-                          </p>
-                        </div>
-                        
-                        <div className="pt-2 border-t border-slate-200/50 dark:border-obsidian-800/40 text-[9px] font-mono text-slate-400 flex justify-between items-center">
-                          <span>CAM: {shot.movement}</span>
-                          <span>EQ: {shot.equipment}</span>
-                        </div>
-                      </div>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 no-print">
+                      <label className="px-3 py-1.5 rounded-lg bg-gold-500 text-obsidian-950 font-black text-xs cursor-pointer hover:bg-gold-400 transition-all flex items-center gap-1 font-sans">
+                        <Upload size={13} />
+                        <span>{isTh ? 'อัปโหลดรูป' : 'Upload Sketch'}</span>
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleStoryboardImageUpload(shot.id, e)} 
+                        />
+                      </label>
+                      {shot.description?.image_url && (
+                        <button
+                          onClick={() => handleRemoveStoryboardImage(shot.id)}
+                          className="p-1.5 rounded-lg bg-red-500 text-white font-bold text-xs hover:bg-red-600 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )
-      )}
+                  </div>
 
-      {/* STORYBOARD / SHOT INLINE EDIT MODAL overlay */}
-      {editingShot && (
-        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fadeIn no-print">
-          <div className={`w-full max-w-lg p-6 rounded-2xl border shadow-2xl relative ${
-            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-white' : 'bg-white border-slate-200 text-slate-900'
-          }`}>
-            
-            {/* Header */}
-            <h3 className="text-base font-bold font-serif mb-5 flex items-center gap-2 pb-2 border-b border-slate-200/60 dark:border-obsidian-800/60">
-              <Edit size={18} className="text-gold-500" />
-              <span>{language === 'th' ? 'แก้ไขคุณสมบัติช็อตและสตอรี่บอร์ด' : 'Edit Shot & Storyboard Card'}</span>
-            </h3>
+                  <div className="flex items-center justify-between font-mono text-xs border-b border-slate-200 dark:border-obsidian-800/80 pb-2">
+                    <span className="font-black text-gold-500">SHOT {shot.shotNum || `${selectedSceneNum}.${idx + 1}`}</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-obsidian-800 font-bold">{shot.type || 'MCU'} | {shot.lens || '50mm'}</span>
+                  </div>
 
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot Number *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editingShot.shotNum || editingShot.shot_number || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditingShot(prev => ({ ...prev, shotNum: val, shot_number: val }));
-                    }}
-                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  />
+                  <p className="text-xs text-slate-700 dark:text-slate-300 font-sans leading-relaxed min-h-[40px]">
+                    {shot.description?.[language] || shot.description?.th || shot.description?.en || '-'}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Framing / Size</label>
-                  <select
-                    value={editingShot.type || editingShot.size || 'MCU'}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setEditingShot(prev => ({ ...prev, type: val, size: val }));
-                    }}
-                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                    }`}
-                  >
-                    <option value="ECU">ECU (Extreme Close Up)</option>
-                    <option value="CU">CU (Close Up)</option>
-                    <option value="MCU">MCU (Medium Close Up)</option>
-                    <option value="MS">MS (Medium Shot)</option>
-                    <option value="WS">WS (Wide Shot)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lens</label>
-                  <input
-                    type="text"
-                    value={editingShot.lens || ''}
-                    onChange={(e) => setEditingShot(prev => ({ ...prev, lens: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Movement</label>
-                  <input
-                    type="text"
-                    value={editingShot.movement || ''}
-                    onChange={(e) => setEditingShot(prev => ({ ...prev, movement: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Camera Equipment</label>
-                  <input
-                    type="text"
-                    value={editingShot.equipment || ''}
-                    onChange={(e) => setEditingShot(prev => ({ ...prev, equipment: e.target.value }))}
-                    className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                      theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">คำอธิบายภาพช็อต (TH)</label>
-                <textarea
-                  rows={2}
-                  value={editingShot.description?.th || ''}
-                  onChange={(e) => setEditingShot(prev => ({
-                    ...prev,
-                    description: { ...prev.description, th: e.target.value }
-                  }))}
-                  placeholder="กล้องถ่ายภาพเคลื่อนไหวช้า..."
-                  className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                  }`}
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Shot Action Description (EN) *</label>
-                <textarea
-                  rows={2}
-                  required
-                  value={editingShot.description?.en || ''}
-                  onChange={(e) => setEditingShot(prev => ({
-                    ...prev,
-                    description: { ...prev.description, en: e.target.value }
-                  }))}
-                  placeholder="Camera slowly pans to reveal..."
-                  className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-gold-500 ${
-                    theme === 'dark' ? 'bg-obsidian-950 border-obsidian-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-                  }`}
-                />
-              </div>
+              ))}
             </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-2.5 mt-6 pt-3 border-t border-slate-200/60 dark:border-obsidian-800/60">
-              <button
-                onClick={() => setEditingShot(null)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                  theme === 'dark' ? 'bg-obsidian-800 hover:bg-obsidian-750 text-slate-300' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                }`}
-              >
-                {language === 'th' ? 'ยกเลิก' : 'Cancel'}
-              </button>
-              <button
-                onClick={saveEditedShot}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-gradient-to-r from-gold-600 to-amber-500 text-white hover:opacity-90 shadow-sm"
-              >
-                {language === 'th' ? 'บันทึกการแก้ไข' : 'Save Changes'}
-              </button>
-            </div>
-
           </div>
         </div>
       )}
 
+      {/* ========================================================================= */}
+      {/* CATEGORY 3: PRODUCTION FILE VAULT */}
+      {/* ========================================================================= */}
+
+      {/* SUBTAB 3.1: FILE VAULT & ATTACHMENTS ARCHIVE */}
+      {activeSubTab === 'file_vault' && (
+        <div className="space-y-5">
+          <div className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 no-print space-y-3 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={isTh ? 'ค้นหาชื่อไฟล์เอกสาร...' : 'Search file vault...'}
+                  value={vaultSearch}
+                  onChange={(e) => setVaultSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-lg border text-xs bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-gold-500 font-sans"
+                />
+              </div>
+
+              {hasWriteAccess() && (
+                <button
+                  onClick={() => setIsFileUploadModalOpen(true)}
+                  className="px-4 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer font-sans shadow-xs shrink-0"
+                >
+                  <Upload size={15} />
+                  <span>{isTh ? 'อัปโหลดไฟล์เอกสารเข้าคลัง' : 'Upload Production File'}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+              {FILE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setVaultCategoryFilter(cat.id)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer font-sans shrink-0 ${
+                    vaultCategoryFilter === cat.id 
+                      ? 'bg-gold-500/20 text-gold-500 border border-gold-500/40' 
+                      : 'bg-slate-100 dark:bg-obsidian-900 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 border border-transparent'
+                  }`}
+                >
+                  {isTh ? cat.labelTh : cat.labelEn}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredVaultFiles.length > 0 ? (
+              filteredVaultFiles.map((file) => (
+                <div key={file.id} className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 space-y-3 hover:border-gold-500/40 transition-all shadow-xs flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="p-2.5 rounded-lg bg-gold-500/10 text-gold-500 border border-gold-500/20 shrink-0">
+                        <FileText size={20} />
+                      </div>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 text-slate-400">
+                        {file.fileSize}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 font-sans leading-snug line-clamp-2">
+                      {file.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-sans leading-relaxed line-clamp-2">
+                      {file.desc}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 dark:border-obsidian-800/80 flex items-center justify-between text-xs font-mono">
+                    <span className="text-slate-400 text-[10px]">{file.uploadDate}</span>
+
+                    <div className="flex items-center gap-2">
+                      {file.dataUrl && (
+                        <a
+                          href={file.dataUrl}
+                          download={file.name}
+                          className="p-1.5 rounded-lg text-gold-500 hover:bg-gold-500/10 transition-all cursor-pointer"
+                          title="Download File"
+                        >
+                          <Download size={15} />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => handleDeleteVaultFile(file.id)}
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
+                        title="Delete File"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full glass-panel p-12 text-center text-slate-400 text-xs font-sans rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-2">
+                <FolderPlus size={32} className="mx-auto text-slate-400 opacity-60" />
+                <p>{isTh ? 'ยังไม่มีไฟล์เอกสารในคลังประเภทนี้ กดปุ่ม "อัปโหลดไฟล์เอกสารเข้าคลัง" เพื่อเริ่มบันทึกไฟล์' : 'No documents in this category. Click "Upload Production File" to add files.'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODALS */}
+      {/* 1. CALL SHEET MODAL */}
+      {isCallSheetModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print overflow-y-auto">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-3xl w-full space-y-5 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative max-h-[90vh] overflow-y-auto scrollbar-thin">
+            <button 
+              onClick={() => setIsCallSheetModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h2 className="text-lg font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
+              <Edit size={18} className="text-gold-500" />
+              <span>{isTh ? `⚙️ แก้ไขข้อมูลใบสั่งงานกองถ่าย - DAY ${selectedShootDay}` : `⚙️ Edit Call Sheet - DAY ${selectedShootDay}`}</span>
+            </h2>
+
+            <form onSubmit={handleSaveCallSheet} className="space-y-4 font-sans text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'วันที่ถ่ายทำ:' : 'Shoot Date:'}</label>
+                  <input
+                    type="date"
+                    value={callSheetDate}
+                    onChange={(e) => setCallSheetDate(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'เวลาเปิดกอง (Crew Call):' : 'Crew Call Time:'}</label>
+                  <input
+                    type="text"
+                    value={crewCallTime}
+                    onChange={(e) => setCrewCallTime(e.target.value)}
+                    placeholder="e.g. 07:00 AM"
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'เริ่มถ่ายช็อตแรก:' : 'Shooting Call:'}</label>
+                  <input
+                    type="text"
+                    value={shootCallTime}
+                    onChange={(e) => setShootCallTime(e.target.value)}
+                    placeholder="e.g. 08:30 AM"
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'เวลาเลิกกอง:' : 'Wrap Time:'}</label>
+                  <input
+                    type="text"
+                    value={wrapTime}
+                    onChange={(e) => setWrapTime(e.target.value)}
+                    placeholder="e.g. 06:00 PM"
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'สถานที่ถ่ายทำหลัก:' : 'Shoot Location:'}</label>
+                  <input
+                    type="text"
+                    value={shootLocation}
+                    onChange={(e) => setShootLocation(e.target.value)}
+                    placeholder="e.g. สถานีรถไฟพิษณุโลก"
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'โรงพยาบาลใกล้ที่สุดกรณีฉุกเฉิน:' : 'Nearest Hospital:'}</label>
+                  <input
+                    type="text"
+                    value={hospitalInfo}
+                    onChange={(e) => setHospitalInfo(e.target.value)}
+                    placeholder="e.g. โรงพยาบาลศูนย์พิษณุโลก โทร 055-270-300"
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-obsidian-800">
+                <span className="font-bold text-gold-500 block">{isTh ? 'ข้อกำหนดเทคนิคแยกตามแผนก:' : 'Departmental Requirements:'}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">{isTh ? '📷 แผนกกล้อง & กริป:' : 'Camera Notes:'}</label>
+                    <textarea
+                      rows={2}
+                      value={cameraNotes}
+                      onChange={(e) => setCameraNotes(e.target.value)}
+                      className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">{isTh ? '🎨 แผนกศิลปกรรม & พร็อพ:' : 'Art Notes:'}</label>
+                    <textarea
+                      rows={2}
+                      value={artNotes}
+                      onChange={(e) => setArtNotes(e.target.value)}
+                      className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">{isTh ? '💡 แผนกไฟ:' : 'Lighting Notes:'}</label>
+                    <textarea
+                      rows={2}
+                      value={lightingNotes}
+                      onChange={(e) => setLightingNotes(e.target.value)}
+                      className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">{isTh ? '🎙️ แผนกเสียง:' : 'Sound Notes:'}</label>
+                    <textarea
+                      rows={2}
+                      value={soundNotes}
+                      onChange={(e) => setSoundNotes(e.target.value)}
+                      className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCallSheetModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {isTh ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {isTh ? 'บันทึกใบสั่งงาน' : 'Save Call Sheet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. NEW SHOT CREATOR MODAL */}
+      {isShotModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+            <button 
+              onClick={() => setIsShotModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h2 className="text-lg font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
+              <Plus size={18} className="text-gold-500" />
+              <span>{isTh ? `เพิ่มช็อตถ่ายทำใหม่ - ฉากที่ ${selectedSceneNum}` : `Add New Shot - Scene ${selectedSceneNum}`}</span>
+            </h2>
+
+            <form onSubmit={handleAddShotSubmit} className="space-y-3 font-sans text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">SHOT #:</label>
+                  <input
+                    type="text"
+                    placeholder={`e.g. ${selectedSceneNum}.1`}
+                    value={newShotNum}
+                    onChange={(e) => setNewShotNum(e.target.value)}
+                    required
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'ขนาดภาพ (Framing):' : 'Framing:'}</label>
+                  <select
+                    value={newShotFraming}
+                    onChange={(e) => setNewShotFraming(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['ECU', 'CU', 'MCU', 'MS', 'MLS', 'WS', 'EWS'].map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'ระยะเลนส์ (Lens):' : 'Lens:'}</label>
+                  <select
+                    value={newShotLens}
+                    onChange={(e) => setNewShotLens(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['18mm', '24mm', '35mm', '50mm', '85mm', '105mm', '70-200mm'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'การเคลื่อนกล้อง:' : 'Movement:'}</label>
+                  <select
+                    value={newShotMove}
+                    onChange={(e) => setNewShotMove(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['Static', 'Pan', 'Tilt', 'Dolly', 'Steadicam', 'Handheld', 'Drone'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง:' : 'Action Description:'}</label>
+                <textarea
+                  rows={3}
+                  value={newShotDescTh}
+                  onChange={(e) => setNewShotDescTh(e.target.value)}
+                  placeholder={isTh ? 'ระบุการเคลื่อนไหวของนักแสดงหรือมุมกล้อง...' : 'Describe action and camera movement...'}
+                  required
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => setIsShotModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {isTh ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {isTh ? 'บันทึกช็อต' : 'Save Shot'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. PRODUCTION FILE UPLOAD MODAL */}
+      {isFileUploadModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+            <button 
+              onClick={() => setIsFileUploadModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h2 className="text-lg font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
+              <Upload size={18} className="text-gold-500" />
+              <span>{isTh ? 'อัปโหลดไฟล์เอกสารเข้าคลังโปรดักชั่น' : 'Upload Production File to Vault'}</span>
+            </h2>
+
+            <form onSubmit={handleSaveVaultFile} className="space-y-3 font-sans text-xs">
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'เลือกไฟล์จากเครื่อง:' : 'Select File:'}</label>
+                <input
+                  type="file"
+                  onChange={handleVaultFileUpload}
+                  required
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'ชื่อไฟล์เอกสาร:' : 'Document Name:'}</label>
+                <input
+                  type="text"
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  placeholder="e.g. สัญญาเช่าอุปกรณ์กล้องหลัก.pdf"
+                  required
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'หมวดหมู่เอกสาร:' : 'File Category:'}</label>
+                <select
+                  value={newFileCategory}
+                  onChange={(e) => setNewFileCategory(e.target.value)}
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                >
+                  {FILE_CATEGORIES.filter(c => c.id !== 'all').map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {isTh ? cat.labelTh : cat.labelEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'คำอธิบายเพิ่มเติม:' : 'Description:'}</label>
+                <textarea
+                  rows={2}
+                  value={newFileDesc}
+                  onChange={(e) => setNewFileDesc(e.target.value)}
+                  placeholder={isTh ? 'ระบุรายละเอียดสั้นๆ ของเอกสารนี้...' : 'Brief note about this document...'}
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => setIsFileUploadModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {isTh ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {isTh ? 'บันทึกเข้าคลัง' : 'Save to Vault'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

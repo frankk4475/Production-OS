@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
+import { api } from '../services/api';
 import { 
   FileText, 
   Sparkles, 
@@ -132,6 +133,38 @@ export default function ScriptEditor() {
 
     return () => clearTimeout(timer);
   }, [blocks, saveScriptBlocks]);
+
+  // Keep latest blocks ref up-to-date
+  const latestBlocksRef = useRef(blocks);
+  useEffect(() => {
+    latestBlocksRef.current = blocks;
+  }, [blocks]);
+
+  // Secondary Debounced Full Sync (2.5 seconds after typing stops)
+  useEffect(() => {
+    if (!localChangeRef.current) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await saveScriptBlocks(latestBlocksRef.current, false); // Perform full background breakdown sync
+      } catch (err) {
+        console.error("Full background auto-sync failed:", err);
+      }
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [blocks, saveScriptBlocks]);
+
+  // Save immediately on unmount if there are unsaved changes
+  useEffect(() => {
+    return () => {
+      if (localChangeRef.current && project?.id) {
+        api.saveScript(project.id, latestBlocksRef.current, false).catch(err => {
+          console.error("Unmount save failed:", err);
+        });
+      }
+    };
+  }, [project?.id]);
 
   // Sync refs array size
   useEffect(() => {
