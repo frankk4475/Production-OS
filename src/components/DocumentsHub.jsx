@@ -165,7 +165,7 @@ function DocumentsHubContent({
 
   // Active Shoot Day / Event resolver
   const shootDaysList = (() => {
-    const shootEvents = safeEvents.filter(e => e.type === 'shoot');
+    const shootEvents = safeEvents.filter(e => e && e.type === 'shoot');
     if (shootEvents.length > 0) {
       return shootEvents.map((evt, idx) => ({
         dayNumber: String(idx + 1),
@@ -181,7 +181,7 @@ function DocumentsHubContent({
 
   // Current active Shoot Day event object & primitive ID for memoized effects
   const activeShootDayItem = shootDaysList.find(d => d.dayNumber === selectedShootDay) || shootDaysList[0];
-  const activeEvent = safeEvents.find(e => e.id === activeShootDayItem?.eventId || e.scene_number === selectedSceneNum);
+  const activeEvent = safeEvents.find(e => e && (e.id === activeShootDayItem?.eventId || String(e.scene_number) === String(selectedSceneNum)));
   const activeEventId = activeEvent?.id || '';
 
   // Call Sheet Edit Form States
@@ -219,32 +219,35 @@ function DocumentsHubContent({
     try {
       const stored = localStorage.getItem(`prod_vault_files_${project.id}`);
       if (stored) {
-        setVaultFiles(JSON.parse(stored));
-      } else {
-        const defaultFiles = [
-          {
-            id: 'file-1',
-            name: isTh ? 'สัญญาอนุญาตใช้สถานที่ถ่ายทำ (Location Release Form)' : 'Location Release Form.pdf',
-            category: 'permits',
-            desc: isTh ? 'เอกสารอนุญาตถ่ายทำสถานที่หลัก' : 'Main location shooting permit',
-            uploadDate: new Date().toISOString().split('T')[0],
-            fileSize: '1.4 MB',
-            fileType: 'application/pdf',
-            dataUrl: ''
-          },
-          {
-            id: 'file-2',
-            name: isTh ? 'ผังการตั้งไฟและตำแหน่งกล้อง Scene 1' : 'Lighting Plot Scene 1.png',
-            category: 'plans',
-            desc: isTh ? 'Floor plan & Gaffer lighting diagram' : 'Floor plan & Gaffer lighting diagram',
-            uploadDate: new Date().toISOString().split('T')[0],
-            fileSize: '2.8 MB',
-            fileType: 'image/png',
-            dataUrl: ''
-          }
-        ];
-        setVaultFiles(defaultFiles);
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setVaultFiles(parsed);
+          return;
+        }
       }
+      const defaultFiles = [
+        {
+          id: 'file-1',
+          name: isTh ? 'สัญญาอนุญาตใช้สถานที่ถ่ายทำ (Location Release Form)' : 'Location Release Form.pdf',
+          category: 'permits',
+          desc: isTh ? 'เอกสารอนุญาตถ่ายทำสถานที่หลัก' : 'Main location shooting permit',
+          uploadDate: new Date().toISOString().split('T')[0],
+          fileSize: '1.4 MB',
+          fileType: 'application/pdf',
+          dataUrl: ''
+        },
+        {
+          id: 'file-2',
+          name: isTh ? 'ผังการตั้งไฟและตำแหน่งกล้อง Scene 1' : 'Lighting Plot Scene 1.png',
+          category: 'plans',
+          desc: isTh ? 'Floor plan & Gaffer lighting diagram' : 'Floor plan & Gaffer lighting diagram',
+          uploadDate: new Date().toISOString().split('T')[0],
+          fileSize: '2.8 MB',
+          fileType: 'image/png',
+          dataUrl: ''
+        }
+      ];
+      setVaultFiles(defaultFiles);
     } catch (e) {
       console.error('Failed to load file vault:', e);
     }
@@ -281,8 +284,8 @@ function DocumentsHubContent({
       setSoundNotes(activeEvent.notes?.sound_notes || (isTh ? 'ติดไมค์ลาวาเลียร์นักแสดงหลัก 2 ท่าน และใช้ไมค์บูมเก็บเสียงบรรยากาศ' : 'Lav two lead actors. Boom mic for ambient train tracks background.'));
       setWardrobeNotes(activeEvent.notes?.wardrobe_notes || (isTh ? 'เสื้อเชิ้ตทำงานรอยยับตามบท และสร้อยข้อมือแฮนด์เมด' : 'Worn work shirt with script wrinkles and handmade wristlet.'));
       setProductionNotes(activeEvent.notes?.production_notes || (isTh ? 'ตรวจเช็กใบสั่งงาน ปิดเสียงโทรศัพท์ในกองถ่าย ประสานงานรถรับส่งนักแสดง' : 'Check call sheets, enforce quiet on set, coordinate talent transport.'));
-      setAssignedCrewIds(activeEvent.crew_assigned || []);
-      setCastCallSchedules(activeEvent.notes?.cast_calls || [
+      setAssignedCrewIds(Array.isArray(activeEvent.crew_assigned) ? activeEvent.crew_assigned : []);
+      setCastCallSchedules(Array.isArray(activeEvent.notes?.cast_calls) ? activeEvent.notes.cast_calls : [
         { charName: 'พลอย', actorName: 'พลอย (นักแสดงหลัก)', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' },
         { charName: 'ชายปริศนา', actorName: 'สมชาย (นักแสดงสมทบ)', pickupTime: '07:00 AM', hmwTime: '07:30 AM', onSetTime: '08:45 AM' }
       ]);
@@ -311,14 +314,16 @@ function DocumentsHubContent({
   }, [activeEventId, selectedShootDay, project?.start_date, isTh, language]);
 
   // Selected Scene Object resolver
-  const activeScene = safeScenes.find(s => String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
+  const activeScene = safeScenes.find(s => s && String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
 
   // Filter shots for selected scene
   const activeSceneShots = safeShotList.filter(s => 
-    String(s.scene_id) === String(selectedSceneNum) || 
-    String(s.scene_number) === String(selectedSceneNum) || 
-    String(s.sceneNum) === String(selectedSceneNum) ||
-    (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
+    s && (
+      String(s.scene_id) === String(selectedSceneNum) || 
+      String(s.scene_number) === String(selectedSceneNum) || 
+      String(s.sceneNum) === String(selectedSceneNum) ||
+      (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
+    )
   );
 
   // Save Call Sheet Form Updates into Calendar Event State
@@ -358,7 +363,7 @@ function DocumentsHubContent({
       }
     };
 
-    const existingIndex = safeEvents.findIndex(evt => evt.id === eventId);
+    const existingIndex = safeEvents.findIndex(evt => evt && evt.id === eventId);
     let newEventsList;
     if (existingIndex !== -1) {
       newEventsList = [...safeEvents];
@@ -405,7 +410,7 @@ function DocumentsHubContent({
   // Delete Shot
   const handleDeleteShot = (shotId) => {
     if (window.confirm(isTh ? 'ต้องการลบช็อตถ่ายทำนี้ใช่หรือไม่?' : 'Delete this shot item?')) {
-      if (setShotList) setShotList(safeShotList.filter(s => s.id !== shotId));
+      if (setShotList) setShotList(safeShotList.filter(s => s && s.id !== shotId));
     }
   };
 
@@ -418,7 +423,7 @@ function DocumentsHubContent({
     reader.onload = (event) => {
       const base64Data = event.target.result;
       const updatedShots = safeShotList.map(s => {
-        if (s.id === shotId) {
+        if (s && s.id === shotId) {
           return {
             ...s,
             description: {
@@ -438,7 +443,7 @@ function DocumentsHubContent({
   const handleRemoveStoryboardImage = (shotId) => {
     if (window.confirm(isTh ? 'ต้องการลบภาพสเก็ตช์สตอรี่บอร์ดนี้ใช่หรือไม่?' : 'Remove storyboard image?')) {
       const updatedShots = safeShotList.map(s => {
-        if (s.id === shotId) {
+        if (s && s.id === shotId) {
           return {
             ...s,
             description: {
@@ -496,7 +501,8 @@ function DocumentsHubContent({
 
   const handleDeleteVaultFile = (fileId) => {
     if (window.confirm(isTh ? 'ต้องการลบเอกสารนี้ออกจากคลังใช่หรือไม่?' : 'Delete this file from vault?')) {
-      const updated = vaultFiles.filter(f => f.id !== fileId);
+      const safeV = Array.isArray(vaultFiles) ? vaultFiles : [];
+      const updated = safeV.filter(f => f && f.id !== fileId);
       saveVaultFiles(updated);
     }
   };
@@ -504,6 +510,7 @@ function DocumentsHubContent({
   // Filtered Vault Files List
   const safeVaultFiles = Array.isArray(vaultFiles) ? vaultFiles : [];
   const filteredVaultFiles = safeVaultFiles.filter(f => {
+    if (!f) return false;
     const matchCategory = vaultCategoryFilter === 'all' || f.category === vaultCategoryFilter;
     const matchQuery = !vaultSearch || (f.name && f.name.toLowerCase().includes(vaultSearch.toLowerCase())) || (f.desc && f.desc.toLowerCase().includes(vaultSearch.toLowerCase()));
     return matchCategory && matchQuery;
@@ -511,9 +518,18 @@ function DocumentsHubContent({
 
   // Scheduled Scenes list for active Shoot Day
   const dayScheduledScenes = safeScenes.filter(s => 
-    s.tech_notes?.scheduling?.shootDay === selectedShootDay ||
-    (selectedShootDay === '1' && !s.tech_notes?.scheduling?.shootDay)
+    s && (s.tech_notes?.scheduling?.shootDay === selectedShootDay ||
+    (selectedShootDay === '1' && !s.tech_notes?.scheduling?.shootDay))
   );
+
+  // Safe Element Category items resolver
+  const getCategoryElements = (categoryKey) => {
+    const rawElements = activeScene?.tech_notes?.scene_elements;
+    const safeElements = Array.isArray(rawElements) ? rawElements : [];
+    return safeElements.filter(e => e && e.category === categoryKey);
+  };
+
+  const safeCastCallSchedules = Array.isArray(castCallSchedules) ? castCallSchedules : [];
 
   return (
     <div className="space-y-6 pb-20 no-print-padding font-sans">
@@ -803,7 +819,7 @@ function DocumentsHubContent({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80 font-mono">
-                    {castCallSchedules.map((c, idx) => (
+                    {safeCastCallSchedules.map((c, idx) => (
                       <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
                         <td className="p-2.5 font-black text-gold-500">{c.charName}</td>
                         <td className="p-2.5 font-sans font-bold">{c.actorName}</td>
@@ -939,7 +955,7 @@ function DocumentsHubContent({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-sans">
                 {ELEMENT_CATEGORIES.map((cat) => {
-                  const items = activeScene?.tech_notes?.scene_elements?.filter(e => e.category === cat.id) || [];
+                  const items = getCategoryElements(cat.id);
                   return (
                     <div key={cat.id} className="p-3.5 rounded-xl bg-slate-50 dark:bg-obsidian-900/50 border border-slate-200 dark:border-obsidian-800 space-y-2">
                       <div className="flex items-center gap-2">
