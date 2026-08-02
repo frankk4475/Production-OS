@@ -518,6 +518,46 @@ export const api = {
         console.error('Supabase error fetching shotlist, falling back:', error);
         return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
       }
+      if (!data || data.length === 0) {
+        const localShots = getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
+        if (localShots.length > 0) {
+          return localShots.map(s => ({
+            ...s,
+            scene_id: s.scene_id || s.scene_number || '',
+            scene_number: s.scene_number || s.scene_id || '',
+            shotNum: s.shot_number || s.shotNum || '',
+            shot_number: s.shot_number || s.shotNum || '',
+            type: s.size || s.type || 'MCU',
+            size: s.size || s.type || 'MCU',
+            description: {
+              ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+              image_url: s.description?.image_url || ''
+            }
+          }));
+        }
+        return [
+          {
+            id: 'shot-demo-1',
+            project_id: projectId || 'proj-1',
+            scene_id: '1',
+            scene_number: '1',
+            shotNum: '1.1',
+            shot_number: '1.1',
+            type: 'MCU',
+            size: 'MCU',
+            angle: 'Eye-Level',
+            movement: 'Static',
+            lens: '50mm',
+            equipment: 'Tripod',
+            description: {
+              th: 'มุมกล้อง / ขนาดภาพ: มุมแคบ (Medium Close-Up) จับใบหน้าของพลอย (หญิงสาวอายุ 22 ปี) แสดงอารมณ์ชัดเจน และซูมใกล้ รายละเอียด: ใบหน้าแสดงความเหนื่อยล้า ขอบตาหม่น แสงแดดแข็ง (Hard Light) สาดเข้ามาจากหน้าต่างกระทบใบหน้า การเคลื่อนกล้อง: Handheld / Dolly ให้ความรู้สึกเรียลและมีมิติ',
+              en: 'Medium Close-Up shot focusing on Ploy inside train compartment.',
+              image_url: '',
+              lens: '50mm'
+            }
+          }
+        ];
+      }
       return (data || []).map(s => ({
         ...s,
         scene_id: s.scene_id || s.scene_number || '',
@@ -578,6 +618,29 @@ export const api = {
   },
 
   async saveShotList(projectId, projectShots) {
+    // 1. Cache to local storage immediately for 100% resilient fallback
+    try {
+      const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
+      const remaining = globalShots.filter(s => s.project_id !== projectId);
+      const updatedNew = projectShots.map(s => ({
+        ...s,
+        project_id: projectId,
+        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
+        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+        shotNum: s.shot_number || s.shotNum || '',
+        shot_number: s.shot_number || s.shotNum || '',
+        type: s.size || s.type || 'MCU',
+        size: s.size || s.type || 'MCU',
+        description: {
+          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+          image_url: s.description?.image_url || ''
+        }
+      }));
+      setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
+    } catch (e) {
+      console.warn("Local storage cache write warning:", e);
+    }
+
     if (isSupabaseConfigured) {
       try {
         const { error: delError } = await supabase
@@ -613,11 +676,6 @@ export const api = {
           if (insError) console.warn('Supabase shot_list insert warning:', insError);
         }
 
-        // Also sync local storage as fallback cache
-        const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
-        const remaining = globalShots.filter(s => s.project_id !== projectId);
-        setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
-
         return updatedNew.map(s => ({
           ...s,
           shotNum: s.shot_number,
@@ -625,23 +683,11 @@ export const api = {
           lens: s.description?.lens || ''
         }));
       } catch (err) {
-        console.error('Supabase error saving shot_list, using local storage fallback:', err);
+        console.error('Supabase error saving shot_list:', err);
       }
     }
 
-    await delay();
-    const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
-    const remaining = globalShots.filter(s => s.project_id !== projectId);
-    const updatedNew = projectShots.map(s => ({ 
-      ...s, 
-      project_id: projectId,
-      scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
-      scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
-      shotNum: s.shot_number || s.shotNum || '',
-      id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-    }));
-    setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
-    return updatedNew;
+    return projectShots;
   },
 
   // ================= COMPLETED TASKS API =================
