@@ -347,14 +347,29 @@ function DocumentsHubContent({
   // Selected Scene Object resolver
   const activeScene = safeScenes.find(s => s && String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
 
-  // Filter shots for selected scene
+  // Filter shots for selected scene with multi-key resolver
   const activeSceneShots = safeShotList.filter(s => {
     if (!s) return false;
-    const sceneIdMatch = s.scene_id && String(s.scene_id) === String(selectedSceneNum);
-    const sceneNumMatch = s.scene_number && String(s.scene_number) === String(selectedSceneNum);
-    const sceneShortMatch = s.sceneNum && String(s.sceneNum) === String(selectedSceneNum);
-    const fallbackFirstScene = !s.scene_id && !s.scene_number && !s.sceneNum && (String(selectedSceneNum) === '1' || String(selectedSceneNum) === String(safeScenes[0]?.scene_number || '1'));
-    return sceneIdMatch || sceneNumMatch || sceneShortMatch || fallbackFirstScene;
+    const curSceneNumStr = String(selectedSceneNum || '1');
+    const curSceneIdStr = activeScene?.id ? String(activeScene.id) : null;
+
+    // 1. Match scene_id (UUID or Scene Number string)
+    if (s.scene_id && (String(s.scene_id) === curSceneNumStr || (curSceneIdStr && String(s.scene_id) === curSceneIdStr))) return true;
+
+    // 2. Match scene_number
+    if (s.scene_number && String(s.scene_number) === curSceneNumStr) return true;
+
+    // 3. Match sceneNum
+    if (s.sceneNum && String(s.sceneNum) === curSceneNumStr) return true;
+
+    // 4. Match shot_number prefix (e.g. shot_number "1.1" matches scene_number "1")
+    const shotNumStr = String(s.shot_number || s.shotNum || '');
+    if (shotNumStr && (shotNumStr.startsWith(`${curSceneNumStr}.`) || shotNumStr === curSceneNumStr)) return true;
+
+    // 5. Fallback for Scene 1 if no scene markers exist
+    if (!s.scene_id && !s.scene_number && !s.sceneNum && curSceneNumStr === '1') return true;
+
+    return false;
   });
 
   // Save Call Sheet Form Updates into Calendar Event State
@@ -429,7 +444,7 @@ function DocumentsHubContent({
 
     const newShot = {
       id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      scene_id: String(selectedSceneNum),
+      scene_id: activeScene?.id ? String(activeScene.id) : String(selectedSceneNum),
       scene_number: String(selectedSceneNum),
       shotNum: finalShotNum,
       shot_number: finalShotNum,

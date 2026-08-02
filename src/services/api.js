@@ -649,11 +649,13 @@ export const api = {
           .eq('project_id', projectId);
         if (delError) console.warn('Supabase shot_list delete warning:', delError);
 
+        const isValidUuid = (val) => typeof val === 'string' && val.length >= 30 && val.includes('-');
+
         const updatedNew = projectShots.map(s => ({
           id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           project_id: projectId,
-          scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
-          scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+          scene_id: isValidUuid(s.scene_id) ? s.scene_id : null,
+          scene_number: String(s.scene_number || s.sceneNum || s.scene_id || '1'),
           shot_number: String(s.shot_number || s.shotNum || ''),
           size: s.size || s.type || 'MCU',
           angle: s.angle || '',
