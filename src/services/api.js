@@ -35,23 +35,44 @@ const STORAGE_KEYS = {
   PRODUCTION_REPORTS: 'prod_api_production_reports'
 };
 
+const DEFAULT_PROJECTS = [
+  {
+    id: 'proj-1',
+    title: { th: 'รอยจางที่ยังคงจำ (แต่เธอ...ผู้เหนื่อยล้า)', en: 'Fading Memories' },
+    status: 'pre-prod',
+    director: { th: 'ธนบดี กองศรี', en: 'Thanabodee Kongsri' },
+    producer: { th: 'ทีมงานสร้าง Production OS', en: 'Production OS Team' },
+    client: 'Studio Control',
+    current_weather: 'Sunny',
+    weather_detail: 'แสงแดดจัดเตรียมอุปกรณ์กันแสง',
+    start_date: new Date().toISOString().split('T')[0],
+    deadline: '2026-12-31',
+    total_budget: '฿500,000',
+    completion_percentage: 45,
+    created_at: new Date().toISOString()
+  }
+];
+
 export const api = {
   // ================= PROJECT API =================
   async getProjects() {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: true });
-      if (error) {
-        console.error('Supabase error fetching projects, falling back:', error);
-        return getDbData(STORAGE_KEYS.PROJECTS);
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: true });
+        if (!error && data && data.length > 0) {
+          return data;
+        }
+      } catch (err) {
+        console.warn('Supabase error fetching projects, falling back:', err);
       }
-      return data || [];
-    } else {
-      await delay();
-      return getDbData(STORAGE_KEYS.PROJECTS);
     }
+    const local = getDbData(STORAGE_KEYS.PROJECTS);
+    if (local && local.length > 0) return local;
+    setDbData(STORAGE_KEYS.PROJECTS, DEFAULT_PROJECTS);
+    return DEFAULT_PROJECTS;
   },
 
   async createProject(projectData) {
@@ -284,25 +305,42 @@ export const api = {
 
   // ================= SCENE BREAKDOWN API =================
   async getScenes(projectId) {
-    if (isSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('scenes')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('scene_number', { ascending: true });
-      if (error) {
-        console.error('Supabase error fetching scenes, falling back:', error);
-        return getDbData(STORAGE_KEYS.SCENES).filter(s => s.project_id === projectId);
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('scenes')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('scene_number', { ascending: true });
+        if (!error && data && data.length > 0) {
+          return data.map(scene => ({
+            ...scene,
+            pages: scene.tech_notes?.pages || scene.pages || '1/8'
+          }));
+        }
+      } catch (err) {
+        console.warn('Supabase error fetching scenes, falling back:', err);
       }
-      return (data || []).map(scene => ({
-        ...scene,
-        pages: scene.tech_notes?.pages || scene.pages || '1/8'
-      }));
-    } else {
-      await delay();
-      const scenes = getDbData(STORAGE_KEYS.SCENES);
-      return scenes.filter(s => s.project_id === projectId);
     }
+    const scenes = getDbData(STORAGE_KEYS.SCENES);
+    const filtered = scenes.filter(s => s.project_id === projectId);
+    if (filtered.length > 0) return filtered;
+
+    return [
+      {
+        id: 'scene-1',
+        project_id: projectId || 'proj-1',
+        scene_number: '1',
+        setting: 'ตู้รถไฟ',
+        int_ext: 'INT',
+        day_night: 'DAY',
+        description: { th: 'พลอย หญิงสาววัย 22 ปี นั่งเหม่อมองออกไปนอกหน้าต่างรถไฟ ใบหน้าเต็มไปด้วยความเหนื่อยล้าจากการทำงานหนัก', en: 'Ploy sits looking out the train window.' },
+        cast: { th: 'พลอย (แสดงโดย มิ้นท์)', en: 'Ploy' },
+        location: { th: 'สถานีรถไฟหัวลำโพง - ตู้โดยสาร 3', en: 'Hua Lamphong Train Station' },
+        pages: '3/8',
+        status: 'pending'
+      }
+    ];
   },
 
   async createScene(sceneData) {
