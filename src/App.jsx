@@ -47,7 +47,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets', 'calendar'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -60,7 +60,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets', 'calendar'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {

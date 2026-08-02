@@ -142,6 +142,12 @@ function DocumentsHubContent({
   // Active Major Document Tab State
   const [activeSubTab, setActiveSubTab] = useState(() => lockedTab || 'callsheet');
 
+  useEffect(() => {
+    if (lockedTab) {
+      setActiveSubTab(lockedTab);
+    }
+  }, [lockedTab]);
+
   // Selected Scene Number (for Scene Breakdown, Shot List, Storyboard tabs)
   const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (safeScenes[0]?.scene_number || '1'));
   
@@ -579,16 +585,22 @@ function DocumentsHubContent({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="p-2 rounded-xl bg-gold-500/10 text-gold-500 border border-gold-500/20">
-              <Briefcase size={20} />
+              {lockedTab === 'shotlist' ? <Video size={20} /> : lockedTab === 'storyboard' ? <ImageIcon size={20} /> : <Briefcase size={20} />}
             </span>
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-sans">
-              {isTh ? 'คลังเอกสารโปรดักชั่น & ระบบออกเอกสารกองถ่าย' : 'Production Documents & Call Sheet Suite'}
+              {lockedTab === 'shotlist' 
+                ? (isTh ? 'รายการช็อตถ่ายทำ (Shot List Management)' : 'Shot List Management')
+                : lockedTab === 'storyboard'
+                  ? (isTh ? 'สตอรี่บอร์ด & สเก็ตช์ (Storyboards & Previs)' : 'Storyboards & Previs')
+                  : (isTh ? 'คลังเอกสารโปรดักชั่น & ระบบออกเอกสารกองถ่าย' : 'Production Documents & Call Sheet Suite')}
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-sans pl-1">
-            {isTh 
-              ? 'ศูนย์รวมการสร้าง จัดการ และออกเอกสารกองถ่ายมาตรฐานสากล (Call Sheets, Shot Lists, Storyboards, Breakdown Sheets & Vault Files)'
-              : 'Generate, manage, and export professional broadcast documents and project files.'}
+            {lockedTab === 'shotlist'
+              ? (isTh ? 'จัดการรายการช็อตถ่ายทำ กำหนดขนาดภาพ การเคลื่อนกล้อง เลนส์ และอุปกรณ์กองถ่ายรายฉาก' : 'Manage camera shot lists, framing sizes, lens choices, and movement notes per scene.')
+              : lockedTab === 'storyboard'
+                ? (isTh ? 'จัดการภาพร่างสเก็ตช์ภาพสตอรี่บอร์ดและการวางแผนงานภาพรายฉาก' : 'Manage storyboard sketch frames, shot visuals, and previs layout per scene.')
+                : (isTh ? 'ศูนย์รวมการสร้าง จัดการ และออกเอกสารกองถ่ายมาตรฐานสากล (Call Sheets, Breakdown Sheets & Vault Files)' : 'Generate, manage, and export professional broadcast documents and project files.')}
           </p>
         </div>
 
@@ -621,40 +633,42 @@ function DocumentsHubContent({
         </div>
       </div>
 
-      {/* TOP NAVIGATION: 3 MAJOR DOCUMENT CATEGORIES (หมวดหมู่ใหญ่) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 no-print">
-        {DOCUMENT_GROUPS.map((group) => {
-          const GroupIcon = group.icon;
-          return (
-            <div key={group.id} className={`glass-panel p-3.5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 border-l-4 ${group.color} space-y-2 shadow-xs`}>
-              <div className="flex items-center gap-2 text-xs font-black text-slate-800 dark:text-slate-200 font-sans">
-                <GroupIcon size={16} className="text-gold-500 shrink-0" />
-                <span className="truncate">{isTh ? group.titleTh : group.titleEn}</span>
+      {/* TOP NAVIGATION: 2 MAJOR DOCUMENT CATEGORIES (Show only when inside Document Hub, not locked standalone tabs) */}
+      {!lockedTab && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 no-print">
+          {DOCUMENT_GROUPS.map((group) => {
+            const GroupIcon = group.icon;
+            return (
+              <div key={group.id} className={`glass-panel p-3.5 rounded-xl border border-slate-200 dark:border-obsidian-800/80 border-l-4 ${group.color} space-y-2 shadow-xs`}>
+                <div className="flex items-center gap-2 text-xs font-black text-slate-800 dark:text-slate-200 font-sans">
+                  <GroupIcon size={16} className="text-gold-500 shrink-0" />
+                  <span className="truncate">{isTh ? group.titleTh : group.titleEn}</span>
+                </div>
+                <div className="flex flex-col gap-1.5 pt-1">
+                  {group.tabs.map((tab) => {
+                    const TabIcon = tab.icon;
+                    const isActive = activeSubTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveSubTab(tab.id)}
+                        className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer font-sans text-left border ${
+                          isActive 
+                            ? 'bg-gold-500/20 border-gold-500/50 text-gold-500 dark:text-gold-400 shadow-xs' 
+                            : 'bg-white/40 dark:bg-obsidian-950/40 border-slate-200/60 dark:border-obsidian-800/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-obsidian-800/60'
+                        }`}
+                      >
+                        <TabIcon size={14} className={isActive ? 'text-gold-500' : 'text-slate-400'} />
+                        <span className="truncate">{isTh ? tab.labelTh : tab.labelEn}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5 pt-1">
-                {group.tabs.map((tab) => {
-                  const TabIcon = tab.icon;
-                  const isActive = activeSubTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveSubTab(tab.id)}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer font-sans text-left border ${
-                        isActive 
-                          ? 'bg-gold-500/20 border-gold-500/50 text-gold-500 dark:text-gold-400 shadow-xs' 
-                          : 'bg-white/40 dark:bg-obsidian-950/40 border-slate-200/60 dark:border-obsidian-800/60 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-obsidian-800/60'
-                      }`}
-                    >
-                      <TabIcon size={14} className={isActive ? 'text-gold-500' : 'text-slate-400'} />
-                      <span className="truncate">{isTh ? tab.labelTh : tab.labelEn}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* CATEGORY 1: PRE-PRODUCTION DOCUMENTS */}
