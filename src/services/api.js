@@ -560,8 +560,8 @@ export const api = {
       }
       return (data || []).map(s => ({
         ...s,
-        scene_id: s.scene_id || s.scene_number || '',
-        scene_number: s.scene_number || s.scene_id || '',
+        scene_id: s.scene_id || s.description?.scene_number || s.scene_number || '',
+        scene_number: s.description?.scene_number || s.scene_number || s.scene_id || '',
         shotNum: s.shot_number || s.shotNum || '',
         shot_number: s.shot_number || s.shotNum || '',
         type: s.size || s.type || 'MCU',
@@ -655,7 +655,6 @@ export const api = {
           id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           project_id: projectId,
           scene_id: isValidUuid(s.scene_id) ? s.scene_id : null,
-          scene_number: String(s.scene_number || s.sceneNum || s.scene_id || '1'),
           shot_number: String(s.shot_number || s.shotNum || ''),
           size: s.size || s.type || 'MCU',
           angle: s.angle || '',
@@ -666,7 +665,8 @@ export const api = {
             th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
             en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
             image_url: s.description?.image_url || '',
-            lens: s.lens || s.description?.lens || ''
+            lens: s.lens || s.description?.lens || '',
+            scene_number: String(s.scene_number || s.sceneNum || s.scene_id || '1')
           },
           cast_assigned: s.cast_assigned || []
         }));
@@ -675,7 +675,10 @@ export const api = {
           const { error: insError } = await supabase
             .from('shot_list')
             .insert(updatedNew);
-          if (insError) console.warn('Supabase shot_list insert warning:', insError);
+          if (insError) {
+            console.error('Supabase shot_list insert error:', insError);
+            throw insError;
+          }
         }
 
         return updatedNew.map(s => ({
