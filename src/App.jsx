@@ -171,6 +171,7 @@ function MainApp() {
       case 'docs':
         return (
           <DocumentsHub
+            key={currentProjectId}
             scenes={activeScenes}
             crew={activeCrew}
             weather={weather}
@@ -184,6 +185,7 @@ function MainApp() {
       case 'shotlist':
         return (
           <DocumentsHub
+            key={currentProjectId}
             scenes={activeScenes}
             crew={activeCrew}
             weather={weather}
@@ -198,6 +200,7 @@ function MainApp() {
       case 'storyboard':
         return (
           <DocumentsHub
+            key={currentProjectId}
             scenes={activeScenes}
             crew={activeCrew}
             weather={weather}

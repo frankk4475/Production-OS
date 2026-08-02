@@ -535,7 +535,33 @@ export const api = {
     } else {
       await delay();
       const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
-      return shots.filter(s => s.project_id === projectId).map(s => ({
+      const filtered = shots.filter(s => s.project_id === projectId);
+      if (filtered.length === 0 && (projectId === 'proj-1' || !projectId)) {
+        const defaultShots = [
+          {
+            id: 'shot-demo-1',
+            project_id: projectId || 'proj-1',
+            scene_id: '1',
+            scene_number: '1',
+            shotNum: '1.1',
+            shot_number: '1.1',
+            type: 'MCU',
+            size: 'MCU',
+            angle: 'Eye-Level',
+            movement: 'Static',
+            lens: '50mm',
+            equipment: 'Tripod',
+            description: {
+              th: 'มุมกล้อง / ขนาดภาพ: มุมแคบ (Medium Close-Up) จับใบหน้าของพลอย (หญิงสาวอายุ 22 ปี) แสดงอารมณ์ชัดเจน และซูมใกล้ รายละเอียด: ใบหน้าแสดงความเหนื่อยล้า ขอบตาหม่น แสงแดดแข็ง (Hard Light) สาดเข้ามาจากหน้าต่างกระทบใบหน้า การเคลื่อนกล้อง: Handheld / Dolly ให้ความรู้สึกเรียลและมีมิติ',
+              en: 'Medium Close-Up shot focusing on Ploy inside train compartment.',
+              image_url: '',
+              lens: '50mm'
+            }
+          }
+        ];
+        return defaultShots;
+      }
+      return filtered.map(s => ({
         ...s,
         scene_id: s.scene_id || s.scene_number || '',
         scene_number: s.scene_number || s.scene_id || '',

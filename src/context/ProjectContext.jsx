@@ -532,17 +532,16 @@ export const ProjectProvider = ({ children }) => {
   // Shot List CRUD
   const saveShotList = async (projectShots) => {
     if (!currentProjectId) return;
+    // 1. Instantly update React state so UI updates with ZERO lag
+    setShotList(projectShots);
     try {
-      setIsLoading(true);
       const saved = await api.saveShotList(currentProjectId, projectShots);
-      setShotList(saved);
+      if (saved && Array.isArray(saved) && saved.length > 0) {
+        setShotList(saved);
+      }
       return saved;
     } catch (err) {
       console.error("Failed to save shot list:", err);
-      setError(err.message);
-      throw err;
-    } finally {
-      setIsLoading(false);
     }
   };
 
