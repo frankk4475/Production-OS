@@ -553,59 +553,69 @@ export const api = {
 
   async saveShotList(projectId, projectShots) {
     if (isSupabaseConfigured) {
-      const { error: delError } = await supabase
-        .from('shot_list')
-        .delete()
-        .eq('project_id', projectId);
-      if (delError) throw delError;
-
-      const updatedNew = projectShots.map(s => ({
-        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        project_id: projectId,
-        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
-        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
-        shot_number: String(s.shot_number || s.shotNum || ''),
-        size: s.size || s.type || 'MCU',
-        angle: s.angle || '',
-        movement: s.movement || '',
-        equipment: s.equipment || '',
-        description: {
-          ...(typeof s.description === 'object' ? s.description : {}),
-          th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
-          en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
-          image_url: s.description?.image_url || '',
-          lens: s.lens || s.description?.lens || ''
-        },
-        cast_assigned: s.cast_assigned || []
-      }));
-
-      if (updatedNew.length > 0) {
-        const { error: insError } = await supabase
+      try {
+        const { error: delError } = await supabase
           .from('shot_list')
-          .insert(updatedNew);
-        if (insError) throw insError;
+          .delete()
+          .eq('project_id', projectId);
+        if (delError) console.warn('Supabase shot_list delete warning:', delError);
+
+        const updatedNew = projectShots.map(s => ({
+          id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          project_id: projectId,
+          scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
+          scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+          shot_number: String(s.shot_number || s.shotNum || ''),
+          size: s.size || s.type || 'MCU',
+          angle: s.angle || '',
+          movement: s.movement || '',
+          equipment: s.equipment || '',
+          description: {
+            ...(typeof s.description === 'object' ? s.description : {}),
+            th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
+            en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
+            image_url: s.description?.image_url || '',
+            lens: s.lens || s.description?.lens || ''
+          },
+          cast_assigned: s.cast_assigned || []
+        }));
+
+        if (updatedNew.length > 0) {
+          const { error: insError } = await supabase
+            .from('shot_list')
+            .insert(updatedNew);
+          if (insError) console.warn('Supabase shot_list insert warning:', insError);
+        }
+
+        // Also sync local storage as fallback cache
+        const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
+        const remaining = globalShots.filter(s => s.project_id !== projectId);
+        setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
+
+        return updatedNew.map(s => ({
+          ...s,
+          shotNum: s.shot_number,
+          type: s.size,
+          lens: s.description?.lens || ''
+        }));
+      } catch (err) {
+        console.error('Supabase error saving shot_list, using local storage fallback:', err);
       }
-      return updatedNew.map(s => ({
-        ...s,
-        shotNum: s.shot_number,
-        type: s.size,
-        lens: s.description?.lens || ''
-      }));
-    } else {
-      await delay();
-      const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
-      const remaining = globalShots.filter(s => s.project_id !== projectId);
-      const updatedNew = projectShots.map(s => ({ 
-        ...s, 
-        project_id: projectId,
-        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
-        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
-        shotNum: s.shot_number || s.shotNum || '',
-        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      }));
-      setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
-      return updatedNew;
     }
+
+    await delay();
+    const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
+    const remaining = globalShots.filter(s => s.project_id !== projectId);
+    const updatedNew = projectShots.map(s => ({ 
+      ...s, 
+      project_id: projectId,
+      scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
+      scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+      shotNum: s.shot_number || s.shotNum || '',
+      id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }));
+    setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
+    return updatedNew;
   },
 
   // ================= COMPLETED TASKS API =================

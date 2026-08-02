@@ -234,6 +234,16 @@ function DocumentsHubContent({
   const [newShotDescEn, setNewShotDescEn] = useState('');
   const [isShotModalOpen, setIsShotModalOpen] = useState(false);
 
+  // Edit Shot Form States
+  const [editingShot, setEditingShot] = useState(null);
+  const [editShotNum, setEditShotNum] = useState('');
+  const [editShotFraming, setEditShotFraming] = useState('MCU');
+  const [editShotLens, setEditShotLens] = useState('50mm');
+  const [editShotMove, setEditShotMove] = useState('Static');
+  const [editShotDescTh, setEditShotDescTh] = useState('');
+  const [editShotDescEn, setEditShotDescEn] = useState('');
+  const [isEditShotModalOpen, setIsEditShotModalOpen] = useState(false);
+
   // Load Vault Files from LocalStorage
   useEffect(() => {
     if (!project?.id) return;
@@ -397,25 +407,40 @@ function DocumentsHubContent({
     setIsCallSheetModalOpen(false);
   };
 
-  // Add new Shot to Shot List
+  // Open Create Shot Modal with Auto Shot Number
+  const handleOpenAddShotModal = () => {
+    const nextNum = `${selectedSceneNum}.${activeSceneShots.length + 1}`;
+    setNewShotNum(nextNum);
+    setNewShotFraming('MCU');
+    setNewShotLens('50mm');
+    setNewShotMove('Static');
+    setNewShotDescTh('');
+    setNewShotDescEn('');
+    setIsShotModalOpen(true);
+  };
+
+  // Add new Shot to Shot List (Non-blocking default values)
   const handleAddShotSubmit = (e) => {
     e.preventDefault();
-    if (!newShotNum || (!newShotDescTh && !newShotDescEn)) return;
+
+    const finalShotNum = newShotNum || `${selectedSceneNum}.${activeSceneShots.length + 1}`;
+    const finalDescTh = newShotDescTh || newShotDescEn || `มุมกล้อง / ขนาดภาพ ${newShotFraming} (${newShotMove})`;
+    const finalDescEn = newShotDescEn || newShotDescTh || `Camera Shot ${newShotFraming} (${newShotMove})`;
 
     const newShot = {
       id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       scene_id: String(selectedSceneNum),
       scene_number: String(selectedSceneNum),
-      shotNum: newShotNum,
-      shot_number: newShotNum,
+      shotNum: finalShotNum,
+      shot_number: finalShotNum,
       type: newShotFraming,
       size: newShotFraming,
       lens: newShotLens,
       movement: newShotMove,
       equipment: newShotMove === 'Static' ? 'Tripod' : 'Dolly / Gimbal / Rig',
       description: {
-        th: newShotDescTh || newShotDescEn,
-        en: newShotDescEn || newShotDescTh,
+        th: finalDescTh,
+        en: finalDescEn,
         image_url: ''
       }
     };
@@ -426,6 +451,51 @@ function DocumentsHubContent({
     setNewShotDescTh('');
     setNewShotDescEn('');
     setIsShotModalOpen(false);
+  };
+
+  // Open Edit Shot Modal
+  const handleOpenEditShotModal = (shot) => {
+    if (!shot) return;
+    setEditingShot(shot);
+    setEditShotNum(shot.shotNum || shot.shot_number || `${selectedSceneNum}.1`);
+    setEditShotFraming(shot.type || shot.size || 'MCU');
+    setEditShotLens(shot.lens || shot.description?.lens || '50mm');
+    setEditShotMove(shot.movement || 'Static');
+    setEditShotDescTh(formatTextValue(shot.description, 'th', ''));
+    setEditShotDescEn(formatTextValue(shot.description, 'en', ''));
+    setIsEditShotModalOpen(true);
+  };
+
+  // Submit Edit Shot
+  const handleEditShotSubmit = (e) => {
+    e.preventDefault();
+    if (!editingShot) return;
+
+    const updatedShots = safeShotList.map(s => {
+      if (s && s.id === editingShot.id) {
+        return {
+          ...s,
+          shotNum: editShotNum || s.shotNum || s.shot_number,
+          shot_number: editShotNum || s.shot_number || s.shotNum,
+          type: editShotFraming,
+          size: editShotFraming,
+          lens: editShotLens,
+          movement: editShotMove,
+          equipment: editShotMove === 'Static' ? 'Tripod' : 'Dolly / Gimbal / Rig',
+          description: {
+            ...(typeof s.description === 'object' ? s.description : {}),
+            th: editShotDescTh || editShotDescEn || formatTextValue(s.description, 'th', '-'),
+            en: editShotDescEn || editShotDescTh || formatTextValue(s.description, 'en', '-'),
+            lens: editShotLens
+          }
+        };
+      }
+      return s;
+    });
+
+    if (setShotList) setShotList(updatedShots);
+    setIsEditShotModalOpen(false);
+    setEditingShot(null);
   };
 
   // Delete Shot
@@ -1121,7 +1191,7 @@ function DocumentsHubContent({
 
             {hasWriteAccess && (
               <button
-                onClick={() => setIsShotModalOpen(true)}
+                onClick={handleOpenAddShotModal}
                 className="px-3.5 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer font-sans shadow-xs"
               >
                 <Plus size={15} />
@@ -1171,13 +1241,22 @@ function DocumentsHubContent({
                           {formatTextValue(shot.description, language, '-')}
                         </td>
                         <td className="p-3 no-print">
-                          <button
-                            onClick={() => handleDeleteShot(shot.id)}
-                            className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
-                            title="Delete Shot"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleOpenEditShotModal(shot)}
+                              className="p-1 rounded text-gold-500 hover:bg-gold-500/10 cursor-pointer transition-all"
+                              title={isTh ? "แก้ไขช็อตถ่ายทำ" : "Edit Shot"}
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteShot(shot.id)}
+                              className="p-1 rounded text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
+                              title={isTh ? "ลบช็อตถ่ายทำ" : "Delete Shot"}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1267,8 +1346,17 @@ function DocumentsHubContent({
                   </div>
 
                   <div className="flex items-center justify-between font-mono text-xs border-b border-slate-200 dark:border-obsidian-800/80 pb-2">
-                    <span className="font-black text-gold-500">SHOT {shot.shotNum || `${selectedSceneNum}.${idx + 1}`}</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-obsidian-800 font-bold">{shot.type || 'MCU'} | {shot.lens || '50mm'}</span>
+                    <span className="font-black text-gold-500">SHOT {shot.shotNum || shot.shot_number || `${selectedSceneNum}.${idx + 1}`}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-2 py-0.5 rounded bg-slate-200 dark:bg-obsidian-800 font-bold">{shot.type || shot.size || 'MCU'} | {shot.lens || '50mm'}</span>
+                      <button
+                        onClick={() => handleOpenEditShotModal(shot)}
+                        className="p-1 rounded text-gold-500 hover:bg-gold-500/10 cursor-pointer transition-all no-print"
+                        title={isTh ? "แก้ไขช็อต" : "Edit Shot"}
+                      >
+                        <Edit size={13} />
+                      </button>
+                    </div>
                   </div>
 
                   <p className="text-xs text-slate-700 dark:text-slate-300 font-sans leading-relaxed min-h-[40px]">
@@ -1615,8 +1703,7 @@ function DocumentsHubContent({
                   rows={3}
                   value={newShotDescTh}
                   onChange={(e) => setNewShotDescTh(e.target.value)}
-                  placeholder={isTh ? 'ระบุการเคลื่อนไหวของนักแสดงหรือมุมกล้อง...' : 'Describe action and camera movement...'}
-                  required
+                  placeholder={isTh ? 'ระบุการเคลื่อนไหวของนักแสดงหรือมุมกล้อง (เว้นว่างไว้เพื่อใส่ค่าอัตโนมัติ)...' : 'Describe action and camera movement (leave blank for default)...'}
                   className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
                 />
               </div>
@@ -1634,6 +1721,106 @@ function DocumentsHubContent({
                   className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
                 >
                   {isTh ? 'บันทึกช็อต' : 'Save Shot'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2.1 EDIT SHOT MODAL */}
+      {isEditShotModalOpen && editingShot && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+            <button 
+              onClick={() => { setIsEditShotModalOpen(false); setEditingShot(null); }}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h2 className="text-lg font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
+              <Edit size={18} className="text-gold-500" />
+              <span>{isTh ? `แก้ไขข้อมูลช็อตถ่ายทำ - SHOT ${editShotNum}` : `Edit Shot Details - SHOT ${editShotNum}`}</span>
+            </h2>
+
+            <form onSubmit={handleEditShotSubmit} className="space-y-3 font-sans text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">SHOT #:</label>
+                  <input
+                    type="text"
+                    value={editShotNum}
+                    onChange={(e) => setEditShotNum(e.target.value)}
+                    required
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'ขนาดภาพ (Framing):' : 'Framing:'}</label>
+                  <select
+                    value={editShotFraming}
+                    onChange={(e) => setEditShotFraming(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['ECU', 'CU', 'MCU', 'MS', 'MLS', 'WS', 'EWS'].map(f => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'ระยะเลนส์ (Lens):' : 'Lens:'}</label>
+                  <select
+                    value={editShotLens}
+                    onChange={(e) => setEditShotLens(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['18mm', '24mm', '35mm', '50mm', '85mm', '105mm', '70-200mm'].map(l => (
+                      <option key={l} value={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'การเคลื่อนกล้อง:' : 'Movement:'}</label>
+                  <select
+                    value={editShotMove}
+                    onChange={(e) => setEditShotMove(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    {['Static', 'Pan', 'Tilt', 'Dolly', 'Steadicam', 'Handheld', 'Drone'].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง:' : 'Action Description:'}</label>
+                <textarea
+                  rows={3}
+                  value={editShotDescTh}
+                  onChange={(e) => setEditShotDescTh(e.target.value)}
+                  placeholder={isTh ? 'ระบุการเคลื่อนไหวของนักแสดงหรือมุมกล้อง...' : 'Describe action and camera movement...'}
+                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditShotModalOpen(false); setEditingShot(null); }}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-500 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {isTh ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {isTh ? 'บันทึกการแก้ไข' : 'Save Changes'}
                 </button>
               </div>
             </form>
