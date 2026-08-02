@@ -150,6 +150,12 @@ function DocumentsHubContent({
 
   // Selected Scene Number (for Scene Breakdown, Shot List, Storyboard tabs)
   const [selectedSceneNum, setSelectedSceneNum] = useState(initialSceneNum || (safeScenes[0]?.scene_number || '1'));
+
+  useEffect(() => {
+    if (safeScenes.length > 0 && (!selectedSceneNum || !safeScenes.some(s => String(s.scene_number) === String(selectedSceneNum)))) {
+      setSelectedSceneNum(String(safeScenes[0].scene_number));
+    }
+  }, [safeScenes, selectedSceneNum]);
   
   // Selected Shoot Day Number (for Call Sheet tab)
   const [selectedShootDay, setSelectedShootDay] = useState('1');
@@ -332,14 +338,14 @@ function DocumentsHubContent({
   const activeScene = safeScenes.find(s => s && String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
 
   // Filter shots for selected scene
-  const activeSceneShots = safeShotList.filter(s => 
-    s && (
-      String(s.scene_id) === String(selectedSceneNum) || 
-      String(s.scene_number) === String(selectedSceneNum) || 
-      String(s.sceneNum) === String(selectedSceneNum) ||
-      (!s.scene_id && !s.scene_number && !s.sceneNum && selectedSceneNum === '1')
-    )
-  );
+  const activeSceneShots = safeShotList.filter(s => {
+    if (!s) return false;
+    const sceneIdMatch = s.scene_id && String(s.scene_id) === String(selectedSceneNum);
+    const sceneNumMatch = s.scene_number && String(s.scene_number) === String(selectedSceneNum);
+    const sceneShortMatch = s.sceneNum && String(s.sceneNum) === String(selectedSceneNum);
+    const fallbackFirstScene = !s.scene_id && !s.scene_number && !s.sceneNum && (String(selectedSceneNum) === '1' || String(selectedSceneNum) === String(safeScenes[0]?.scene_number || '1'));
+    return sceneIdMatch || sceneNumMatch || sceneShortMatch || fallbackFirstScene;
+  });
 
   // Save Call Sheet Form Updates into Calendar Event State
   const handleSaveCallSheet = (e) => {
@@ -398,8 +404,8 @@ function DocumentsHubContent({
 
     const newShot = {
       id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      scene_id: selectedSceneNum,
-      scene_number: selectedSceneNum,
+      scene_id: String(selectedSceneNum),
+      scene_number: String(selectedSceneNum),
       shotNum: newShotNum,
       shot_number: newShotNum,
       type: newShotFraming,
@@ -429,29 +435,55 @@ function DocumentsHubContent({
     }
   };
 
-  // Upload Storyboard Image to Shot
-  const handleStoryboardImageUpload = (shotId, e) => {
+  // Upload Storyboard Image to Shot with Canvas Auto-Compression
+  const handleStoryboardImageUpload = async (shotId, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Data = event.target.result;
+    try {
+      // Compress image using HTML5 Canvas
+      const compressedBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            const maxWidth = 1000;
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.75));
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
       const updatedShots = safeShotList.map(s => {
         if (s && s.id === shotId) {
           return {
             ...s,
+            scene_id: String(s.scene_id || s.scene_number || selectedSceneNum),
+            scene_number: String(s.scene_number || s.scene_id || selectedSceneNum),
             description: {
               ...(typeof s.description === 'object' ? s.description : { th: s.description || '' }),
-              image_url: base64Data
+              image_url: compressedBase64
             }
           };
         }
         return s;
       });
       if (setShotList) setShotList(updatedShots);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Failed to compress and upload storyboard image:", err);
+    }
   };
 
   // Remove Storyboard Image

@@ -520,17 +520,33 @@ export const api = {
       }
       return (data || []).map(s => ({
         ...s,
-        shotNum: s.shot_number,
-        type: s.size,
-        lens: s.lens || s.description?.lens || ''
+        scene_id: s.scene_id || s.scene_number || '',
+        scene_number: s.scene_number || s.scene_id || '',
+        shotNum: s.shot_number || s.shotNum || '',
+        shot_number: s.shot_number || s.shotNum || '',
+        type: s.size || s.type || 'MCU',
+        size: s.size || s.type || 'MCU',
+        lens: s.lens || s.description?.lens || '',
+        description: {
+          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+          image_url: s.description?.image_url || ''
+        }
       }));
     } else {
       await delay();
       const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
       return shots.filter(s => s.project_id === projectId).map(s => ({
         ...s,
-        shotNum: s.shot_number || s.shotNum,
-        type: s.size || s.type
+        scene_id: s.scene_id || s.scene_number || '',
+        scene_number: s.scene_number || s.scene_id || '',
+        shotNum: s.shot_number || s.shotNum || '',
+        shot_number: s.shot_number || s.shotNum || '',
+        type: s.size || s.type || 'MCU',
+        size: s.size || s.type || 'MCU',
+        description: {
+          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+          image_url: s.description?.image_url || ''
+        }
       }));
     }
   },
@@ -546,9 +562,10 @@ export const api = {
       const updatedNew = projectShots.map(s => ({
         id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         project_id: projectId,
-        scene_id: s.scene_id || null,
-        shot_number: s.shot_number || s.shotNum || '',
-        size: s.size || s.type || '',
+        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
+        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+        shot_number: String(s.shot_number || s.shotNum || ''),
+        size: s.size || s.type || 'MCU',
         angle: s.angle || '',
         movement: s.movement || '',
         equipment: s.equipment || '',
@@ -556,6 +573,7 @@ export const api = {
           ...(typeof s.description === 'object' ? s.description : {}),
           th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
           en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
+          image_url: s.description?.image_url || '',
           lens: s.lens || s.description?.lens || ''
         },
         cast_assigned: s.cast_assigned || []
@@ -580,9 +598,10 @@ export const api = {
       const updatedNew = projectShots.map(s => ({ 
         ...s, 
         project_id: projectId,
-        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        shot_number: s.shot_number || s.shotNum || '',
-        size: s.size || s.type || ''
+        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
+        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
+        shotNum: s.shot_number || s.shotNum || '',
+        id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       }));
       setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
       return updatedNew;
