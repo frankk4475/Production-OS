@@ -48,6 +48,21 @@ export default function Dashboard({ setCurrentTab }) {
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCloudModalOpen, setIsCloudModalOpen] = useState(false);
+  const [cloudUrlInput, setCloudUrlInput] = useState(() => localStorage.getItem('prod_supabase_url') || '');
+  const [cloudKeyInput, setCloudKeyInput] = useState(() => localStorage.getItem('prod_supabase_anon_key') || '');
+
+  const handleSaveCloudConfig = (e) => {
+    e.preventDefault();
+    if (cloudUrlInput) localStorage.setItem('prod_supabase_url', cloudUrlInput.trim());
+    else localStorage.removeItem('prod_supabase_url');
+
+    if (cloudKeyInput) localStorage.setItem('prod_supabase_anon_key', cloudKeyInput.trim());
+    else localStorage.removeItem('prod_supabase_anon_key');
+
+    alert(language === 'th' ? 'บันทึกการตั้งค่าการเชื่อมต่อคลาวด์เรียบร้อย กำลังรีโหลดหน้าเว็บเพื่อเริ่มต้นการซิงค์...' : 'Cloud configuration saved. Reloading...');
+    window.location.reload();
+  };
   
   // Fields for editing project
   const [editNameTh, setEditNameTh] = useState('');
@@ -868,13 +883,24 @@ export default function Dashboard({ setCurrentTab }) {
             </div>
           </div>
 
-          {/* Database Backup Controls */}
+          {/* Database Backup & Cloud Sync Controls */}
           <div className="glass-panel p-5 rounded-xl space-y-4">
-            <h2 className="text-sm font-bold font-serif flex items-center gap-2">
-              <Database size={15} className="text-gold-500" />
-              <span>{language === 'th' ? 'การจัดเก็บสำรองข้อมูลสตูดิโอ' : 'Database OS Backup'}</span>
+            <h2 className="text-sm font-bold font-serif flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Database size={15} className="text-gold-500" />
+                <span>{language === 'th' ? 'การจัดเก็บและซิงค์ข้อมูลคลาวด์' : 'Database & Cloud Sync'}</span>
+              </span>
             </h2>
             <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsCloudModalOpen(true)}
+                className="w-full py-2 px-3 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-500 border border-gold-500/20 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                <Sparkles size={13} />
+                <span>{language === 'th' ? '⚡ ตั้งค่าการเชื่อมต่อ Cloud (Supabase)' : '⚡ Connect Cloud Database'}</span>
+              </button>
+
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={onExportData}
@@ -883,13 +909,13 @@ export default function Dashboard({ setCurrentTab }) {
                   }`}
                 >
                   <Download size={12} />
-                  <span>{language === 'th' ? 'ส่งออกไฟล์' : 'Export DB'}</span>
+                  <span>{language === 'th' ? 'ส่งออกไฟล์ (JSON)' : 'Export DB'}</span>
                 </button>
                 <label className={`py-2 px-3 rounded-lg border text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   theme === 'dark' ? 'border-obsidian-800 hover:bg-obsidian-800 text-slate-300' : 'border-slate-200 hover:bg-slate-50 text-slate-700 shadow-xs'
                 }`}>
                   <Upload size={12} />
-                  <span>{language === 'th' ? 'นำเข้าไฟล์' : 'Import DB'}</span>
+                  <span>{language === 'th' ? 'นำเข้าไฟล์ (JSON)' : 'Import DB'}</span>
                   <input type="file" accept=".json" onChange={handleFileChange} className="hidden" />
                 </label>
               </div>
@@ -1265,6 +1291,71 @@ export default function Dashboard({ setCurrentTab }) {
                     {t('breakdown.save')}
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cloud Connection Settings Modal */}
+      {isCloudModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fadeIn">
+          <div className={`w-full max-w-lg rounded-xl shadow-2xl overflow-hidden border p-6 space-y-4 ${
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <div className="flex items-center justify-between border-b border-inherit pb-3">
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <Database size={18} className="text-gold-500" />
+                <span>{language === 'th' ? 'ตั้งค่าการเชื่อมต่อ Cloud Database (Supabase)' : 'Cloud Database Settings'}</span>
+              </h2>
+              <button onClick={() => setIsCloudModalOpen(false)} className="text-slate-400 hover:text-white p-1">
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCloudConfig} className="space-y-4 text-xs font-sans">
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">SUPABASE URL:</label>
+                <input
+                  type="text"
+                  placeholder="https://xxxx.supabase.co"
+                  value={cloudUrlInput}
+                  onChange={(e) => setCloudUrlInput(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-400 mb-1">SUPABASE ANON / PUBLISHABLE KEY:</label>
+                <input
+                  type="password"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5c..."
+                  value={cloudKeyInput}
+                  onChange={(e) => setCloudKeyInput(e.target.value)}
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                />
+              </div>
+
+              <div className="p-3 rounded-lg bg-gold-500/10 border border-gold-500/20 text-slate-300 text-[11px] leading-relaxed">
+                {language === 'th' 
+                  ? '💡 คำแนะนำ: นำ URL และ Anon Key จาก Supabase Dashboard (Project Settings > API) มาวางเพื่อเชื่อมต่อฐานข้อมูลคลาวด์กลาง ทำให้ซิงค์ข้อมูลตรงกันทุกเบราว์เซอร์และทุกอุปกรณ์'
+                  : '💡 Enter active Supabase URL & Anon Key to sync database across devices.'}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-inherit">
+                <button
+                  type="button"
+                  onClick={() => setIsCloudModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-obsidian-800 text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-800"
+                >
+                  {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400"
+                >
+                  {language === 'th' ? 'บันทึกและเชื่อมต่อคลาวด์' : 'Save & Connect Cloud'}
+                </button>
               </div>
             </form>
           </div>
