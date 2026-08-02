@@ -58,12 +58,43 @@ export const api = {
   async getProjects() {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase
+        const { data: dbProjects, error: projErr } = await supabase
           .from('projects')
           .select('*')
           .order('created_at', { ascending: true });
-        if (!error && data && data.length > 0) {
-          return data;
+        
+        let projectsList = (dbProjects && dbProjects.length > 0) ? [...dbProjects] : [];
+
+        // Check scenes table to ensure any project_ids with existing scenes are discovered
+        const { data: dbScenes } = await supabase.from('scenes').select('project_id');
+        if (dbScenes && dbScenes.length > 0) {
+          const sceneProjectIds = [...new Set(dbScenes.map(s => s.project_id).filter(Boolean))];
+          sceneProjectIds.forEach((pId, idx) => {
+            if (!projectsList.some(p => p.id === pId)) {
+              projectsList.push({
+                id: pId,
+                title: { 
+                  th: idx === 0 ? 'รอยจางที่ยังคงจำ (โปรเจกต์ 1)' : `โปรเจกต์กองถ่าย (${pId})`, 
+                  en: `Production Project (${pId})` 
+                },
+                status: 'pre-prod',
+                director: { th: 'ธนบดี กองศรี', en: 'Thanabodee Kongsri' },
+                producer: { th: 'ทีมงานสร้าง Production OS', en: 'Production OS Team' },
+                client: 'Studio Control',
+                current_weather: 'Sunny',
+                weather_detail: 'แสงแดดจัดเตรียมอุปกรณ์กันแสง',
+                start_date: new Date().toISOString().split('T')[0],
+                deadline: '2026-12-31',
+                total_budget: '฿500,000',
+                completion_percentage: 45,
+                created_at: new Date().toISOString()
+              });
+            }
+          });
+        }
+
+        if (projectsList.length > 0) {
+          return projectsList;
         }
       } catch (err) {
         console.warn('Supabase error fetching projects, falling back:', err);
@@ -307,16 +338,35 @@ export const api = {
   async getScenes(projectId) {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('scenes')
           .select('*')
-          .eq('project_id', projectId)
           .order('scene_number', { ascending: true });
+        
+        if (projectId) {
+          query = query.eq('project_id', projectId);
+        }
+
+        const { data, error } = await query;
         if (!error && data && data.length > 0) {
           return data.map(scene => ({
             ...scene,
             pages: scene.tech_notes?.pages || scene.pages || '1/8'
           }));
+        }
+
+        // Fallback: If specific projectId returned no scenes, try fetching all scenes in Supabase
+        if (projectId) {
+          const { data: allScenes } = await supabase
+            .from('scenes')
+            .select('*')
+            .order('scene_number', { ascending: true });
+          if (allScenes && allScenes.length > 0) {
+            return allScenes.map(scene => ({
+              ...scene,
+              pages: scene.tech_notes?.pages || scene.pages || '1/8'
+            }));
+          }
         }
       } catch (err) {
         console.warn('Supabase error fetching scenes, falling back:', err);
@@ -325,6 +375,7 @@ export const api = {
     const scenes = getDbData(STORAGE_KEYS.SCENES);
     const filtered = scenes.filter(s => s.project_id === projectId);
     if (filtered.length > 0) return filtered;
+    if (scenes.length > 0) return scenes;
 
     return [
       {
