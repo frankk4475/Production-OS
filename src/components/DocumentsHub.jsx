@@ -36,6 +36,7 @@ import {
   Eye,
   AlertTriangle
 } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 
 const ELEMENT_CATEGORIES = [
   { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
@@ -520,13 +521,13 @@ function DocumentsHubContent({
     }
   };
 
-  // Upload Storyboard Image to Shot with Canvas Auto-Compression
+  // Upload Storyboard Image to Cloud Storage / Drive with Fallback
   const handleStoryboardImageUpload = async (shotId, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     try {
-      // Compress image using HTML5 Canvas
+      // 1. Compress image using HTML5 Canvas
       const compressedBase64 = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (evt) => {
@@ -551,6 +552,34 @@ function DocumentsHubContent({
         reader.readAsDataURL(file);
       });
 
+      let finalImageUrl = compressedBase64;
+
+      // 2. Upload to Supabase Cloud Storage bucket if available
+      if (isSupabaseConfigured && supabase) {
+        try {
+          const fileName = `storyboard-${shotId}-${Date.now()}.jpg`;
+          const res = await fetch(compressedBase64);
+          const blob = await res.blob();
+          
+          const { data: uploadData, error: uploadErr } = await supabase
+            .storage
+            .from('storyboards')
+            .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+          if (!uploadErr && uploadData) {
+            const { data: publicUrlData } = supabase
+              .storage
+              .from('storyboards')
+              .getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              finalImageUrl = publicUrlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn('Supabase storage upload fallback to base64:', storageErr);
+        }
+      }
+
       const updatedShots = safeShotList.map(s => {
         if (s && s.id === shotId) {
           return {
@@ -559,7 +588,7 @@ function DocumentsHubContent({
             scene_number: String(s.scene_number || s.scene_id || selectedSceneNum),
             description: {
               ...(typeof s.description === 'object' ? s.description : { th: s.description || '' }),
-              image_url: compressedBase64
+              image_url: finalImageUrl
             }
           };
         }
