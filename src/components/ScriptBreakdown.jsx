@@ -528,40 +528,62 @@ export default function ScriptBreakdown() {
                             <option value="completed" className="bg-obsidian-950 text-slate-450">{language === 'th' ? 'เสร็จสิ้น' : 'Completed'}</option>
                           </select>
                         </div>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs">
-                          <span className="text-slate-450 font-bold">{language === 'th' ? 'จำนวนความยาว:' : 'Length:'}</span>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
+                          <span className="text-slate-400 font-bold">{language === 'th' ? 'จำนวนความยาว:' : 'Length:'}</span>
                           <select
                             disabled={!hasWriteAccess()}
-                            value={activeScene.pages || '1/8'}
+                            value={(activeScene.pages || '1/8').replace(/\s*pgs?/i, '').trim() || '1/8'}
                             onChange={async (e) => {
                               const val = e.target.value;
-                              await updateScene({ ...activeScene, pages: val });
+                              await updateScene({ ...activeScene, pages: `${val} pgs` });
                             }}
-                            className={`px-2 py-0.5 rounded text-xs font-bold border focus:outline-none cursor-pointer ${
+                            className={`px-2 py-1 rounded-lg text-xs font-bold border focus:outline-none cursor-pointer font-mono ${
                               theme === 'dark' 
-                                ? 'bg-obsidian-950 border-obsidian-800 text-slate-200 focus:border-gold-500' 
-                                : 'bg-slate-50 border-slate-200 text-slate-800 focus:border-gold-500'
+                                ? 'bg-obsidian-950 border-obsidian-800 text-gold-400 focus:border-gold-500' 
+                                : 'bg-slate-50 border-slate-200 text-gold-600 focus:border-gold-500'
                             }`}
                           >
                             {['1/8', '2/8', '3/8', '4/8', '5/8', '6/8', '7/8', '1', '1 1/8', '1 2/8', '1 3/8', '1 4/8', '1 5/8', '1 6/8', '1 7/8', '2', '2 1/8', '2 2/8', '2 3/8', '2 4/8', '2 5/8', '2 6/8', '2 7/8', '3', '3 1/8', '3 2/8', '3 4/8', '4', '5', '6', '7', '8', '9', '10'].map(val => (
-                              <option key={val} value={val}>{val} {language === 'th' ? 'หน้าบท' : 'pgs'}</option>
+                              <option key={val} value={val}>{val} {language === 'th' ? 'หน้าบท (pgs)' : 'pgs'}</option>
                             ))}
                           </select>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (recalculatePageLengths) {
+                                await recalculatePageLengths();
+                              }
+                            }}
+                            className="px-2 py-1 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-500 border border-gold-500/30 text-[11px] font-bold transition-all cursor-pointer font-sans"
+                            title={language === 'th' ? 'คำนวณความยาวหน้าบทอัตโนมัติ' : 'Auto Calculate Page Lengths'}
+                          >
+                            <RefreshCw size={11} className="inline mr-1" />
+                            {language === 'th' ? 'คำนวณอัตโนมัติ' : 'Auto Calc'}
+                          </button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Scene Description Card */}
-                    {activeScene.description?.[language] && (
-                      <div className="mt-5 p-4 rounded-xl bg-slate-500/5 dark:bg-obsidian-950/20 border border-slate-205/30 dark:border-obsidian-850 shadow-inner">
-                        <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-450 dark:text-slate-400 mb-1.5">
+                    {/* Scene Description & Paragraph Info Card */}
+                    <div className="mt-5 p-4 rounded-xl bg-slate-500/5 dark:bg-obsidian-950/20 border border-slate-200/30 dark:border-obsidian-850 shadow-inner space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                           {language === 'th' ? 'เนื้อเรื่องย่อ / คำอธิบายฉาก (SCENE SYNOPSIS)' : 'SCENE SYNOPSIS'}
                         </h4>
-                        <p className="text-xs leading-relaxed text-slate-650 dark:text-slate-305 whitespace-pre-line font-serif">
+                        {activeScene.description?.[language] && (
+                          <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200 dark:bg-obsidian-900 px-2 py-0.5 rounded">
+                            {language === 'th' 
+                              ? `ประมาณ ${Math.max(1, activeScene.description[language].split('\n\n').filter(Boolean).length)} ย่อหน้า` 
+                              : `~${Math.max(1, activeScene.description[language].split('\n\n').filter(Boolean).length)} Paras`}
+                          </span>
+                        )}
+                      </div>
+                      {activeScene.description?.[language] && (
+                        <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-line font-serif">
                           {activeScene.description[language]}
                         </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* Breakdown Element Categories Card Grid */}
                     <div className="mt-6 space-y-4">

@@ -68,9 +68,25 @@ export default function ShootingSchedule() {
   } = useProject();
 
   const [activeTab, setActiveTab] = useState('board'); // 'board' (Stripboard) | 'boneyard' (Boneyard)
-  const [boardItems, setBoardItems] = useState([]);
+  const [boardItems, setBoardItems] = useState([]); // List of { type: 'scene'|'day_break', id, scene? }
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [shootDayModalScene, setShootDayModalScene] = useState(null);
+
+  const handleAssignShootDay = async (scene, dayNum) => {
+    const updated = {
+      ...scene,
+      tech_notes: {
+        ...(scene.tech_notes || {}),
+        scheduling: {
+          ...(scene.tech_notes?.scheduling || {}),
+          shootDay: String(dayNum)
+        }
+      }
+    };
+    await updateScene(updated);
+    setShootDayModalScene(null);
+  };
 
   // Load and construct schedule list from scenes
   useEffect(() => {
@@ -555,11 +571,11 @@ export default function ShootingSchedule() {
                         : (language === 'th' ? '○ รอถ่าย' : '○ Pending')}
                   </button>
                   <button 
-                    onClick={() => addDayBreak(index)} 
+                    onClick={() => setShootDayModalScene({ scene, index })} 
                     className="text-[9px] bg-slate-900 hover:bg-slate-800 text-gold-500 px-2 py-1 rounded-lg font-bold border border-slate-800 transition-all hover:scale-105"
-                    title={language === 'th' ? 'แทรกวันหยุดคิวถ่ายทำ' : 'Insert Day Break'}
+                    title={language === 'th' ? 'เลือกวันถ่ายทำ / แทรกวัน' : 'Select Shoot Day'}
                   >
-                    + {language === 'th' ? 'วันถ่ายทำ' : 'Day Break'}
+                    + {scene.tech_notes?.scheduling?.shootDay ? `DAY ${scene.tech_notes.scheduling.shootDay}` : (language === 'th' ? 'วันถ่ายทำ' : 'Day Break')}
                   </button>
                   <button 
                     onClick={() => moveToBoneyard(scene.id)} 
@@ -811,6 +827,65 @@ export default function ShootingSchedule() {
         </div>
       )}
 
+      {/* SHOOT DAY PICKER MODAL */}
+      {shootDayModalScene && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+            <button 
+              onClick={() => setShootDayModalScene(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+
+            <h3 className="text-base font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
+              <Calendar size={18} className="text-gold-500" />
+              <span>{language === 'th' ? `กำหนดคิววันถ่ายทำ - ฉากที่ ${shootDayModalScene.scene.scene_number}` : `Assign Shoot Day - Scene ${shootDayModalScene.scene.scene_number}`}</span>
+            </h3>
+
+            <p className="text-xs text-slate-400 font-sans">
+              {language === 'th' ? 'เลือกคิววันถ่ายทำ (Shoot Day) หรือแทรกเส้นคั่นแบ่งวันสำหรับฉากนี้' : 'Select a Shoot Day or insert a day break divider for this scene.'}
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 font-mono text-xs pt-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((dayNum) => (
+                <button
+                  key={dayNum}
+                  onClick={() => handleAssignShootDay(shootDayModalScene.scene, dayNum)}
+                  className={`p-3 rounded-xl border text-center font-black transition-all cursor-pointer ${
+                    String(shootDayModalScene.scene.tech_notes?.scheduling?.shootDay) === dayNum
+                      ? 'bg-gold-500 text-obsidian-950 border-gold-400 shadow-md'
+                      : 'bg-slate-100 dark:bg-obsidian-900 border-slate-200 dark:border-obsidian-800 text-slate-700 dark:text-slate-200 hover:border-gold-500/50'
+                  }`}
+                >
+                  DAY {dayNum}
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-3 border-t border-slate-200 dark:border-obsidian-800 flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  addDayBreak(shootDayModalScene.index);
+                  setShootDayModalScene(null);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-bold cursor-pointer font-sans"
+              >
+                + {language === 'th' ? 'แทรกเส้นคั่นแบ่งวัน (Day Break)' : 'Insert Day Break Divider'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShootDayModalScene(null)}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-400 text-xs font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer font-sans"
+              >
+                {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   Users,
   Film,
   FolderOpen,
+  Eye,
   AlertTriangle
 } from 'lucide-react';
 
@@ -155,6 +156,10 @@ function DocumentsHubContent({
   const [vaultCategoryFilter, setVaultCategoryFilter] = useState('all');
   const [vaultSearch, setVaultSearch] = useState('');
   const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState(false);
+
+  // Document Preview Modal State
+  const [previewFile, setPreviewFile] = useState(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   // File Upload Form State
   const [newFileName, setNewFileName] = useState('');
@@ -1281,8 +1286,8 @@ function DocumentsHubContent({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredVaultFiles.length > 0 ? (
               filteredVaultFiles.map((file) => (
-                <div key={file.id} className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 space-y-3 hover:border-gold-500/40 transition-all shadow-xs flex flex-col justify-between">
-                  <div className="space-y-2">
+                <div key={file.id} className="glass-panel p-4 rounded-xl border border-slate-200 dark:border-obsidian-800 space-y-3 hover:border-gold-500/40 transition-all shadow-xs flex flex-col justify-between group">
+                  <div className="space-y-2 cursor-pointer" onClick={() => { setPreviewFile(file); setIsPreviewModalOpen(true); }}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="p-2.5 rounded-lg bg-gold-500/10 text-gold-500 border border-gold-500/20 shrink-0">
                         <FileText size={20} />
@@ -1292,7 +1297,7 @@ function DocumentsHubContent({
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 font-sans leading-snug line-clamp-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 font-sans leading-snug line-clamp-2 group-hover:text-gold-500 transition-colors">
                       {file.name}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-sans leading-relaxed line-clamp-2">
@@ -1304,11 +1309,19 @@ function DocumentsHubContent({
                     <span className="text-slate-400 text-[10px]">{file.uploadDate}</span>
 
                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => { setPreviewFile(file); setIsPreviewModalOpen(true); }}
+                        className="p-1.5 rounded-lg text-gold-500 hover:bg-gold-500/10 transition-all cursor-pointer flex items-center gap-1 font-sans text-xs font-bold"
+                        title="View Document"
+                      >
+                        <Eye size={15} />
+                        <span className="text-[11px]">{isTh ? 'ดูเอกสาร' : 'View'}</span>
+                      </button>
                       {file.dataUrl && (
                         <a
                           href={file.dataUrl}
                           download={file.name}
-                          className="p-1.5 rounded-lg text-gold-500 hover:bg-gold-500/10 transition-all cursor-pointer"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-gold-500 hover:bg-gold-500/10 transition-all cursor-pointer"
                           title="Download File"
                         >
                           <Download size={15} />
@@ -1663,6 +1676,87 @@ function DocumentsHubContent({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. DOCUMENT PREVIEWER MODAL */}
+      {isPreviewModalOpen && previewFile && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 no-print">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-4xl w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-obsidian-800 pb-3">
+              <div className="flex items-center gap-2">
+                <FileText size={20} className="text-gold-500" />
+                <h2 className="text-base font-black text-slate-900 dark:text-white font-sans truncate max-w-md">
+                  {previewFile.name}
+                </h2>
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-obsidian-900 text-slate-400">
+                  {previewFile.fileSize}
+                </span>
+              </div>
+              <button 
+                onClick={() => { setIsPreviewModalOpen(false); setPreviewFile(null); }}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 p-2 scrollbar-thin">
+              {/* Render Preview Content Based on File Type */}
+              {previewFile.dataUrl && (previewFile.fileType?.includes('image') || previewFile.dataUrl.startsWith('data:image/') || previewFile.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)) ? (
+                <div className="flex items-center justify-center bg-obsidian-950 p-4 rounded-xl border border-slate-800 min-h-[300px]">
+                  <img src={previewFile.dataUrl} alt={previewFile.name} className="max-h-[60vh] max-w-full object-contain rounded-lg shadow-lg" />
+                </div>
+              ) : previewFile.dataUrl && (previewFile.fileType?.includes('pdf') || previewFile.dataUrl.startsWith('data:application/pdf') || previewFile.name?.endsWith('.pdf')) ? (
+                <div className="w-full h-[60vh] rounded-xl overflow-hidden border border-slate-800 bg-obsidian-950">
+                  <iframe src={previewFile.dataUrl} title={previewFile.name} className="w-full h-full border-none" />
+                </div>
+              ) : (
+                <div className="p-6 rounded-xl bg-slate-50 dark:bg-obsidian-900/60 border border-slate-200 dark:border-obsidian-800 space-y-3 font-sans">
+                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">DOCUMENT METADATA & SUMMARY</div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                    {previewFile.desc || (isTh ? 'ไม่มีคำอธิบายเพิ่มเติม' : 'No description provided')}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono pt-3 border-t border-slate-200 dark:border-obsidian-800">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">CATEGORY:</span>
+                      <span className="font-bold text-gold-500 uppercase">{previewFile.category}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">UPLOAD DATE:</span>
+                      <span className="font-bold">{previewFile.uploadDate}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">FILE TYPE:</span>
+                      <span className="font-bold truncate">{previewFile.fileType || 'Document'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-obsidian-800">
+              <span className="text-xs text-slate-400 font-mono">{isTh ? 'คลังจัดเก็บเอกสารกองถ่าย' : 'Production File Vault'}</span>
+              <div className="flex items-center gap-2">
+                {previewFile.dataUrl && (
+                  <a
+                    href={previewFile.dataUrl}
+                    download={previewFile.name}
+                    className="px-4 py-2 rounded-lg bg-gold-500 text-obsidian-950 hover:bg-gold-400 font-black text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Download size={14} />
+                    <span>{isTh ? 'ดาวน์โหลดไฟล์' : 'Download File'}</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => { setIsPreviewModalOpen(false); setPreviewFile(null); }}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer text-xs"
+                >
+                  {isTh ? 'ปิด' : 'Close'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

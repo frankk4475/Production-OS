@@ -137,6 +137,7 @@ function MainApp() {
             crew={activeCrew}
             setCurrentTab={handleSetTab}
             setTabParams={setTabParams}
+            setEvents={setEvents}
           />
         );
       case 'crew':
@@ -176,6 +177,34 @@ function MainApp() {
             initialSceneNum={tabParams?.sceneNum}
             shotList={activeShotList}
             setShotList={setShotList}
+            events={activeEvents}
+            setEvents={setEvents}
+          />
+        );
+      case 'shotlist':
+        return (
+          <DocumentsHub
+            scenes={activeScenes}
+            crew={activeCrew}
+            weather={weather}
+            initialSceneNum={tabParams?.sceneNum}
+            shotList={activeShotList}
+            setShotList={setShotList}
+            lockedTab="shotlist"
+            events={activeEvents}
+            setEvents={setEvents}
+          />
+        );
+      case 'storyboard':
+        return (
+          <DocumentsHub
+            scenes={activeScenes}
+            crew={activeCrew}
+            weather={weather}
+            initialSceneNum={tabParams?.sceneNum}
+            shotList={activeShotList}
+            setShotList={setShotList}
+            lockedTab="storyboard"
             events={activeEvents}
             setEvents={setEvents}
           />

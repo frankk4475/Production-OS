@@ -20,6 +20,8 @@ import {
   X,
   Layers,
   PenTool,
+  Video,
+  Image as ImageIcon,
   BookOpen,
   Clapperboard
 } from 'lucide-react';
@@ -136,6 +138,8 @@ export default function Layout({
         { id: 'storyOutline', label: t('nav.storyOutline'), icon: BookOpen },
         { id: 'script', label: t('nav.scriptEditor'), icon: PenTool },
         { id: 'breakdown', label: t('nav.scriptBreakdown'), icon: Layers },
+        { id: 'shotlist', label: language === 'th' ? 'รายการช็อตถ่ายทำ (Shot List)' : 'Shot List', icon: Video },
+        { id: 'storyboard', label: language === 'th' ? 'สตอรี่บอร์ด & สเก็ตช์ (Storyboards)' : 'Storyboards', icon: ImageIcon },
         { id: 'shootingSchedule', label: language === 'th' ? 'ตารางถ่ายทำ (Stripboard)' : 'Shooting Schedule', icon: Film },
         { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
         { id: 'crew', label: t('nav.crewPortal'), icon: Users },

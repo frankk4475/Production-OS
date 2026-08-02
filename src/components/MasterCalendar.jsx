@@ -15,10 +15,11 @@ import {
   Settings,
   RefreshCw,
   Check,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 
-export default function MasterCalendar({ events, crew, setCurrentTab, setTabParams }) {
+export default function MasterCalendar({ events = [], crew = [], setCurrentTab, setTabParams, setEvents }) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
 
@@ -34,6 +35,86 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
   const [isConnected, setIsConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState('');
+
+  // Add Event Form State
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newTitleTh, setNewTitleTh] = useState('');
+  const [newTitleEn, setNewTitleEn] = useState('');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newTime, setNewTime] = useState('08:30 AM');
+  const [newType, setNewType] = useState('shoot');
+  const [newLocation, setNewLocation] = useState('');
+  const [newNotes, setNewNotes] = useState('');
+
+  const handleCreateEventSubmit = (e) => {
+    e.preventDefault();
+    if (!newTitleTh && !newTitleEn) return;
+
+    const newEvt = {
+      id: `evt-custom-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      title: {
+        th: newTitleTh || newTitleEn,
+        en: newTitleEn || newTitleTh
+      },
+      date: newDate,
+      time: newTime,
+      type: newType,
+      location: { th: newLocation, en: newLocation },
+      notes: { th: newNotes, en: newNotes },
+      crew_assigned: []
+    };
+
+    const updated = [...(events || []), newEvt];
+    if (setEvents) setEvents(updated);
+
+    setNewTitleTh('');
+    setNewTitleEn('');
+    setNewLocation('');
+    setNewNotes('');
+    setIsAddModalOpen(false);
+  };
+
+  const openGoogleCalendarAddUrl = (evt) => {
+    if (!evt) return;
+    const title = evt.title?.th || evt.title?.en || evt.title || 'Production Event';
+    const location = evt.location?.th || evt.location?.en || '';
+    const details = evt.notes?.th || evt.notes?.en || `Type: ${evt.type || 'Shoot'}`;
+    const dateFormatted = (evt.date || new Date().toISOString().split('T')[0]).replace(/-/g, '');
+    const dates = `${dateFormatted}T080000Z/${dateFormatted}T180000Z`;
+
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+    window.open(url, '_blank');
+  };
+
+  const downloadIcsFile = (evt) => {
+    if (!evt) return;
+    const title = evt.title?.th || evt.title?.en || evt.title || 'Production Event';
+    const location = evt.location?.th || evt.location?.en || '';
+    const details = evt.notes?.th || evt.notes?.en || '';
+    const dateFormatted = (evt.date || new Date().toISOString().split('T')[0]).replace(/-/g, '');
+
+    const icsData = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Production OS//NONSGML v1.0//EN
+BEGIN:VEVENT
+UID:${evt.id || Date.now()}@production-os
+DTSTAMP:${dateFormatted}T000000Z
+DTSTART:${dateFormatted}T080000Z
+DTEND:${dateFormatted}T180000Z
+SUMMARY:${title}
+DESCRIPTION:${details}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.ics`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const loadCalendars = useCallback(async (token) => {
     try {
@@ -426,20 +507,29 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
 
           {/* Google Calendar Settings Button (Producers/ADs only) */}
           {hasWriteAccess() && (
-            <button
-              onClick={() => setIsGoogleModalOpen(true)}
-              className={`p-1.5 rounded-lg border flex items-center gap-1.5 transition-all text-xs font-bold ${
-                isConnected
-                  ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
-                  : theme === 'dark'
-                    ? 'border-obsidian-800 hover:bg-obsidian-800 text-slate-400'
-                    : 'border-slate-200 hover:bg-slate-100 text-slate-655'
-              }`}
-              title="Google Calendar Integration Settings"
-            >
-              <Settings size={15} className={isSyncing ? 'animate-spin text-gold-500' : ''} />
-              <span className="hidden sm:inline">Google Calendar</span>
-            </button>
+            <>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="px-3 py-1.5 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 text-xs transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Plus size={15} />
+                <span>{language === 'th' ? 'สร้างนัดหมาย / อีเว้นต์' : 'Add Event'}</span>
+              </button>
+              <button
+                onClick={() => setIsGoogleModalOpen(true)}
+                className={`p-1.5 rounded-lg border flex items-center gap-1.5 transition-all text-xs font-bold ${
+                  isConnected
+                    ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400'
+                    : theme === 'dark'
+                      ? 'border-obsidian-800 hover:bg-obsidian-800 text-slate-400'
+                      : 'border-slate-200 hover:bg-slate-100 text-slate-655'
+                }`}
+                title="Google Calendar Integration Settings"
+              >
+                <Settings size={15} className={isSyncing ? 'animate-spin text-gold-500' : ''} />
+                <span className="hidden sm:inline">Google Calendar</span>
+              </button>
+            </>
           )}
 
           {/* Prev/Next buttons */}
@@ -889,6 +979,26 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
                     </div>
                   </div>
 
+                  {/* Action Buttons: Sync to Google & Export .ics */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-200 dark:border-obsidian-800">
+                    <button
+                      type="button"
+                      onClick={() => openGoogleCalendarAddUrl(selectedEvent)}
+                      className="flex-1 py-2 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                    >
+                      <ExternalLink size={14} />
+                      <span>{language === 'th' ? 'ซิงก์สู่ Google Calendar' : 'Sync to Google Calendar'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadIcsFile(selectedEvent)}
+                      className="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-gold-400 border border-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                    >
+                      <CalendarIcon size={14} />
+                      <span>{language === 'th' ? 'ดาวน์โหลด .ics' : 'Export .ics'}</span>
+                    </button>
+                  </div>
+
                   {/* Action Button: Call Sheet */}
                   {selectedEvent.type === 'shoot' && selectedEvent.scene_number && (
                     <button
@@ -903,6 +1013,130 @@ export default function MasterCalendar({ events, crew, setCurrentTab, setTabPara
               )}
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE EVENT MODAL */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn no-print">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border p-6 space-y-4 ${
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <div className="flex items-center justify-between border-b border-inherit pb-3">
+              <h3 className="text-base font-black font-sans flex items-center gap-2">
+                <CalendarIcon size={18} className="text-gold-500" />
+                <span>{language === 'th' ? 'เพิ่มอีเว้นต์ / นัดหมายใหม่' : 'Add New Calendar Event'}</span>
+              </h3>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateEventSubmit} className="space-y-3 font-sans text-xs">
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ชื่องาน / นัดหมาย (ภาษาไทย):' : 'Event Title (TH):'}</label>
+                <input
+                  type="text"
+                  required
+                  value={newTitleTh}
+                  onChange={(e) => setNewTitleTh(e.target.value)}
+                  placeholder="e.g. ประชุมสรุปบทภาพยนตร์คิว 2"
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ชื่องาน / นัดหมาย (English):' : 'Event Title (EN):'}</label>
+                <input
+                  type="text"
+                  value={newTitleEn}
+                  onChange={(e) => setNewTitleEn(e.target.value)}
+                  placeholder="e.g. Script Review Meeting Day 2"
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'วันที่:' : 'Date:'}</label>
+                  <input
+                    type="date"
+                    required
+                    value={newDate}
+                    onChange={(e) => setNewDate(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'เวลา:' : 'Time:'}</label>
+                  <input
+                    type="text"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    placeholder="e.g. 08:30 AM"
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ประเภทงาน:' : 'Event Type:'}</label>
+                  <select
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-bold"
+                  >
+                    <option value="shoot">{language === 'th' ? '🎬 ถ่ายทำ (Shoot Day)' : 'Shoot Day'}</option>
+                    <option value="prep">{language === 'th' ? '🛠️ เตรียมงาน (Prep Day)' : 'Prep Day'}</option>
+                    <option value="meeting">{language === 'th' ? '💬 ประชุมทีม (Meeting)' : 'Meeting'}</option>
+                    <option value="casting">{language === 'th' ? '🎭 แคสติ้งนักแสดง (Casting)' : 'Casting'}</option>
+                    <option value="post">{language === 'th' ? '🖥️ โพสต์โปรดักชั่น (Post-Prod)' : 'Post Production'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'สถานที่:' : 'Location:'}</label>
+                  <input
+                    type="text"
+                    value={newLocation}
+                    onChange={(e) => setNewLocation(e.target.value)}
+                    placeholder="e.g. Studio A, Bangkok"
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'บันทึกเพิ่มเติม:' : 'Notes:'}</label>
+                <textarea
+                  rows={2}
+                  value={newNotes}
+                  onChange={(e) => setNewNotes(e.target.value)}
+                  placeholder={language === 'th' ? 'รายละเอียดงาน นัดหมาย หรือสิ่งที่ต้องเตรียม...' : 'Meeting notes, agenda, or prep details...'}
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {language === 'th' ? 'สร้างอีเว้นต์' : 'Create Event'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -269,6 +269,19 @@ export default function UserManager({ hideHeader = false }) {
         </div>
       )}
 
+      {/* Role & Admin Policy Notice */}
+      <div className="p-4 rounded-xl bg-gold-500/10 border border-gold-500/30 text-xs text-slate-300 font-sans space-y-1">
+        <div className="flex items-center gap-2 font-bold text-gold-400">
+          <Shield size={16} />
+          <span>{language === 'th' ? 'โครงสร้างสิทธิ์การใช้งาน (Separation of System Admin & Department Roles)' : 'Access Control Policy'}</span>
+        </div>
+        <p className="text-[11px] text-slate-400 leading-relaxed">
+          {language === 'th'
+            ? '👑 สิทธิ์แอดมิน (System Admin): สามารถตั้งค่าโปรเจกต์ แต่งตั้งแอดมินคนอื่น และจัดการตรวจสอบระบบได้ทั้งหมด | 💼 สิทธิ์ตำแหน่งงาน (Department Role): กำหนดความรับผิดชอบตามแผนก ทีมงานทุกคนสามารถเข้าดูหน้าจอการทำงานเพื่อประสานงานร่วมกันได้'
+            : '👑 Admin Access holds system management privileges. Department roles define daily workflow responsibilities without blocking project viewing.'}
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
         {/* CREATE ACCOUNT PANEL */}

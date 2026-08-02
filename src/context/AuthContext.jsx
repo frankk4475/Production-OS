@@ -242,12 +242,17 @@ export const AuthProvider = ({ children }) => {
     window.location.hash = '#/login';
   };
 
+  const isAdmin = () => {
+    return !!user?.is_admin || user?.email?.toLowerCase() === 'admin@production.com';
+  };
+
   const hasWriteAccess = () => {
-    return ['Producer', '1st_AD', 'Director', 'Production_Manager', 'Screenwriter'].includes(user?.role) || !!user?.is_admin || user?.email?.toLowerCase() === 'admin@production.com';
+    return ['Producer', '1st_AD', 'Director', 'Production_Manager', 'Screenwriter'].includes(user?.role) || isAdmin();
   };
 
   const isCrewOrTalent = () => {
-    return !hasWriteAccess();
+    // Only collapse navigation if specifically designated as talent without project department role
+    return user?.role === 'Talent' && !isAdmin();
   };
 
   return (
@@ -256,6 +261,7 @@ export const AuthProvider = ({ children }) => {
       users,
       login, 
       logout, 
+      isAdmin,
       hasWriteAccess, 
       isCrewOrTalent,
       isFirstTimeSetup,
