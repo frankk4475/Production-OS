@@ -682,6 +682,21 @@ function DocumentsHubContent({
         }
       `}</style>
 
+      {/* Active Project Sync Status Banner */}
+      <div className="glass-panel p-3.5 rounded-xl border border-gold-500/30 bg-gold-500/10 no-print flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+        <div className="flex items-center gap-2.5">
+          <span className="px-2.5 py-1 rounded-md text-[10px] font-black font-mono bg-gold-500 text-obsidian-950 uppercase tracking-wide shrink-0">
+            {isTh ? 'โปรเจกต์ที่เปิดอยู่' : 'ACTIVE PROJECT'}
+          </span>
+          <span className="text-xs font-black text-slate-900 dark:text-white font-sans truncate">
+            🎬 {formatTextValue(project?.title, language, isTh ? 'โปรเจกต์กองถ่าย' : 'Production Project')}
+          </span>
+        </div>
+        <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
+          {isTh ? '💡 หากดูบนเบราว์เซอร์อื่น โปรดเลือกชื่อโปรเจกต์ที่เมนูด้านบนให้ตรงกัน' : '💡 Select the same project name in the top bar across browsers'}
+        </div>
+      </div>
+
       {/* TOP HEADER: Production Document Hub Title & PDF Toolbar */}
       <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-obsidian-800/80 no-print flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
         <div>
