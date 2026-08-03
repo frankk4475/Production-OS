@@ -27,6 +27,7 @@ import {
   CheckCircle,
   X,
   Download,
+  FileSpreadsheet,
   FolderPlus,
   Search,
   User,
@@ -751,6 +752,189 @@ function DocumentsHubContent({
     return safeElements.filter(e => e && e.category === categoryKey);
   };
 
+  // Direct Excel (.csv / .xls) Spreadsheet Exporter with UTF-8 BOM
+  const exportShotListToExcel = () => {
+    if (!activeSceneShots || activeSceneShots.length === 0) {
+      alert(isTh ? 'ไม่มีข้อมูลช็อตในฉากนี้สำหรับส่งออก' : 'No shots to export in this scene');
+      return;
+    }
+
+    const headers = [
+      'SHOT #',
+      'ขนาดภาพ (Framing)',
+      'มุมกล้อง (Camera Angle)',
+      'การเคลื่อนกล้อง & ทิศทาง (Movement)',
+      'ระยะเลนส์ (Lens)',
+      'อุปกรณ์กล้อง (Equipment)',
+      'รายละเอียดแอคชั่น / มุมกล้อง / บล็อกกิ้ง (Action Details)'
+    ];
+
+    const rows = activeSceneShots.map(shot => [
+      `"${shot.shotNum || shot.shot_number || ''}"`,
+      `"${shot.framing || ''}"`,
+      `"${shot.camera_angle || shot.angle || 'Eye-Level'}"`,
+      `"${shot.camera_movement || shot.movement || 'Static'}"`,
+      `"${shot.lens || ''}"`,
+      `"${shot.equipment || 'Tripod'}"`,
+      `"${(shot.description?.th || shot.description || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `ShotList_Scene_${selectedSceneNum}_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Dedicated Print Document Popup Generator (Clean 100% Margined Print Document Engine)
+  const handlePrintDocument = () => {
+    const printWin = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const docTitle = formatTextValue(project?.title, language, 'PRODUCTION OS PROJECT');
+    const dateStr = new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let rowsHtml = '';
+    activeSceneShots.forEach(shot => {
+      rowsHtml += `
+        <tr>
+          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold; font-family:monospace;">${shot.shotNum || shot.shot_number || ''}</td>
+          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold;">${shot.framing || '-'}</td>
+          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.camera_angle || shot.angle || 'Eye-Level'}</td>
+          <td style="border:1px solid #334155; padding:8px;">${shot.camera_movement || shot.movement || 'Static'}</td>
+          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.lens || '-'}</td>
+          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.equipment || 'Tripod'}</td>
+          <td style="border:1px solid #334155; padding:8px; line-height:1.4;">${shot.description?.th || shot.description || '-'}</td>
+        </tr>
+      `;
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${docTitle} - Shot List Scene ${selectedSceneNum}</title>
+        <meta charset="utf-8">
+        <style>
+          @page {
+            size: ${printPaperSize} ${printOrientation};
+            margin: 20mm 15mm 20mm 15mm;
+          }
+          body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 0;
+            padding: 35px 30px;
+            box-sizing: border-box;
+          }
+          .doc-header {
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 24px;
+          }
+          .doc-badge {
+            font-size: 11px;
+            font-weight: 900;
+            background: #0f172a;
+            color: #fbbf24;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+          }
+          .doc-title {
+            font-size: 22px;
+            font-weight: 900;
+            margin: 10px 0 6px 0;
+            color: #0f172a;
+          }
+          .doc-meta {
+            font-size: 13px;
+            color: #475569;
+            margin-top: 4px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 12px;
+            table-layout: fixed;
+          }
+          th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+            border: 1px solid #334155;
+            padding: 10px 8px;
+          }
+          tr {
+            page-break-inside: avoid;
+          }
+          .col-shot { width: 8%; }
+          .col-framing { width: 10%; }
+          .col-angle { width: 12%; }
+          .col-move { width: 14%; }
+          .col-lens { width: 8%; }
+          .col-eq { width: 12%; }
+          .col-desc { width: 36%; }
+        </style>
+      </head>
+      <body>
+        <div class="doc-header">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="doc-badge">${docTitle}</span>
+              <span style="font-size:11px; font-weight:bold; color:#64748b; margin-left:10px;">• SHOT LIST DOCUMENT (A4)</span>
+            </div>
+            <div style="font-size:12px; font-weight:bold; color:#64748b;">${dateStr}</div>
+          </div>
+          <h1 class="doc-title">${isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}</h1>
+          <div class="doc-meta">
+            ${activeScene?.int_ext || 'INT/EXT'} • ${activeScene?.day_night || 'DAY/NIGHT'} • ${isTh ? 'สถานที่:' : 'Location:'} ${activeScene?.location?.th || activeScene?.setting || 'TBD'} • Total Shots: ${activeSceneShots.length}
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th class="col-shot">SHOT #</th>
+              <th class="col-framing">${isTh ? 'ขนาดภาพ' : 'FRAMING'}</th>
+              <th class="col-angle">${isTh ? 'มุมกล้อง' : 'ANGLE'}</th>
+              <th class="col-move">${isTh ? 'การเคลื่อนกล้อง & ทิศทาง' : 'MOVEMENT'}</th>
+              <th class="col-lens">${isTh ? 'เลนส์' : 'LENS'}</th>
+              <th class="col-eq">${isTh ? 'อุปกรณ์' : 'EQUIPMENT'}</th>
+              <th class="col-desc">${isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง / บล็อกกิ้ง' : 'ACTION / CAMERA DETAILS'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+    printWin.focus();
+
+    setTimeout(() => {
+      printWin.print();
+    }, 400);
+  };
+
   const safeCastCallSchedules = Array.isArray(castCallSchedules) ? castCallSchedules : [];
 
   return (
@@ -955,13 +1139,25 @@ function DocumentsHubContent({
             </button>
           </div>
 
-          {/* Export / Print PDF Button */}
+          {/* Excel Spreadsheet Export Button */}
+          {lockedTab === 'shotlist' && (
+            <button
+              onClick={exportShotListToExcel}
+              className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer font-sans"
+              title={isTh ? 'ส่งออกเป็นตาราง Excel (.csv)' : 'Export as Excel Spreadsheet'}
+            >
+              <FileSpreadsheet size={16} />
+              <span>{isTh ? 'ส่งออกไฟล์ Excel (.xlsx)' : 'Export Excel'}</span>
+            </button>
+          )}
+
+          {/* Dedicated Clean Document Print Button */}
           <button
-            onClick={() => window.print()}
+            onClick={handlePrintDocument}
             className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-600 to-amber-500 hover:from-gold-500 hover:to-amber-400 text-obsidian-950 font-black text-xs transition-all shadow-md hover:shadow-gold-500/20 active:scale-95 flex items-center gap-2 cursor-pointer font-sans"
           >
             <Printer size={15} />
-            <span>{isTh ? 'พิมพ์เอกสาร / บันทึกเป็น PDF' : 'Print / Export PDF'}</span>
+            <span>{isTh ? 'พิมพ์เอกสาร A4 (Dedicated Print)' : 'Print Clean Document'}</span>
           </button>
         </div>
       </div>
