@@ -1877,7 +1877,7 @@ function DocumentsHubContent({
       {/* 2.1 EDIT SHOT MODAL */}
       {isEditShotModalOpen && editingShot && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-xl w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => { setIsEditShotModalOpen(false); setEditingShot(null); }}
               className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
@@ -1890,7 +1890,7 @@ function DocumentsHubContent({
               <span>{isTh ? `แก้ไขข้อมูลช็อตถ่ายทำ - SHOT ${editShotNum}` : `Edit Shot Details - SHOT ${editShotNum}`}</span>
             </h2>
 
-            <form onSubmit={handleEditShotSubmit} className="space-y-3 font-sans text-xs">
+            <form onSubmit={handleEditShotSubmit} className="space-y-3.5 font-sans text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 font-bold mb-1">SHOT #:</label>
@@ -1924,33 +1924,85 @@ function DocumentsHubContent({
                     onChange={(e) => setEditShotLens(e.target.value)}
                     className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
                   >
-                    {['18mm', '24mm', '35mm', '50mm', '85mm', '105mm', '70-200mm'].map(l => (
+                    {['14mm', '18mm', '24mm', '35mm', '50mm', '85mm', '105mm', '135mm', '70-200mm'].map(l => (
                       <option key={l} value={l}>{l}</option>
                     ))}
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'การเคลื่อนกล้อง:' : 'Movement:'}</label>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'มุมกล้อง (Camera Angle):' : 'Angle:'}</label>
+                  <select
+                    value={editShotAngle}
+                    onChange={(e) => setEditShotAngle(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    <option value="Eye-Level">{isTh ? 'Eye-Level (ระดับสายตา)' : 'Eye-Level'}</option>
+                    <option value="High Angle">{isTh ? 'High Angle (มุมก้ม/มุมมองจากที่สูง)' : 'High Angle'}</option>
+                    <option value="Low Angle">{isTh ? 'Low Angle (มุมเงย/เสยขึ้น)' : 'Low Angle'}</option>
+                    <option value="Bird\'s Eye">{isTh ? "Bird's Eye (มุมสูงตรง Top-down)" : "Bird's Eye"}</option>
+                    <option value="Worm\'s Eye">{isTh ? "Worm's Eye (มุมมดมองจากพื้น)" : "Worm's Eye"}</option>
+                    <option value="Dutch Angle">{isTh ? 'Dutch Angle (มุมเอียงสร้างความกดดัน)' : 'Dutch Angle'}</option>
+                    <option value="Over the Shoulder">{isTh ? 'Over the Shoulder (OTS / ถ่ายผ่านไหล่)' : 'Over the Shoulder'}</option>
+                    <option value="Point of View">{isTh ? 'Point of View (POV / สายตาตัวละคร)' : 'Point of View'}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'การเคลื่อนกล้อง & ทิศทาง:' : 'Movement & Direction:'}</label>
                   <select
                     value={editShotMove}
                     onChange={(e) => setEditShotMove(e.target.value)}
                     className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
                   >
-                    {['Static', 'Pan', 'Tilt', 'Dolly', 'Steadicam', 'Handheld', 'Drone'].map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
+                    <option value="Static">{isTh ? 'Static (ตั้งนิ่งบนขาตั้ง)' : 'Static'}</option>
+                    <option value="Pan Left">{isTh ? 'Pan Left (แพนไปซ้าย)' : 'Pan Left'}</option>
+                    <option value="Pan Right">{isTh ? 'Pan Right (แพนไปขวา)' : 'Pan Right'}</option>
+                    <option value="Tilt Up">{isTh ? 'Tilt Up (ทิลท์ก้มเงยขึ้น)' : 'Tilt Up'}</option>
+                    <option value="Tilt Down">{isTh ? 'Tilt Down (ทิลท์ก้มกดลง)' : 'Tilt Down'}</option>
+                    <option value="Dolly In">{isTh ? 'Dolly In (ดอลลี่ดันเข้าหาตัวละคร)' : 'Dolly In'}</option>
+                    <option value="Dolly Out">{isTh ? 'Dolly Out (ดอลลี่ถอยออก)' : 'Dolly Out'}</option>
+                    <option value="Track Left">{isTh ? 'Track Left (ทรักตามไปทางซ้าย)' : 'Track Left'}</option>
+                    <option value="Track Right">{isTh ? 'Track Right (ทรักตามไปทางขวา)' : 'Track Right'}</option>
+                    <option value="Pedestal Up/Down">{isTh ? 'Pedestal Up/Down (ยกความสูงกล้อง)' : 'Pedestal Up/Down'}</option>
+                    <option value="Handheld / Shoulder">{isTh ? 'Handheld (ถือกล้องประชิดตัว)' : 'Handheld'}</option>
+                    <option value="Steadicam Follow">{isTh ? 'Steadicam Follow (สเตดี้แคมตาม)' : 'Steadicam Follow'}</option>
+                    <option value="Gimbal Orbit">{isTh ? 'Gimbal Orbit (กิมบอลวนรอบตัว)' : 'Gimbal Orbit'}</option>
+                    <option value="Zoom In/Out">{isTh ? 'Zoom In/Out (ซูมเข้า/ออก)' : 'Zoom In/Out'}</option>
+                    <option value="Whip Pan">{isTh ? 'Whip Pan (แพนสะบัดเร็ว)' : 'Whip Pan'}</option>
+                    <option value="Drone Flyover">{isTh ? 'Drone Flyover (โดรนบินข้ามฉาก)' : 'Drone Flyover'}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{isTh ? 'อุปกรณ์กล้อง (Equipment):' : 'Equipment:'}</label>
+                  <select
+                    value={editShotEquipment}
+                    onChange={(e) => setEditShotEquipment(e.target.value)}
+                    className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 font-mono text-slate-800 dark:text-slate-200"
+                  >
+                    <option value="Tripod">{isTh ? 'Tripod (ขาตั้งกล้องมาตรฐาน)' : 'Tripod'}</option>
+                    <option value="Handheld / Shoulder Rig">{isTh ? 'Handheld / Shoulder Rig (ประชิดไหล่)' : 'Handheld / Shoulder Rig'}</option>
+                    <option value="Gimbal / Steadicam">{isTh ? 'Gimbal / Steadicam (กิมบอล)' : 'Gimbal / Steadicam'}</option>
+                    <option value="Dolly & Track">{isTh ? 'Dolly & Track (ดอลลี่วางราง)' : 'Dolly & Track'}</option>
+                    <option value="Jib Arm / Crane">{isTh ? 'Jib Arm / Crane (เครนยกรักษาความสูง)' : 'Jib Arm / Crane'}</option>
+                    <option value="Vehicle Mount">{isTh ? 'Vehicle Mount (ยึดติดยานพาหนะ)' : 'Vehicle Mount'}</option>
+                    <option value="Drone / UAV">{isTh ? 'Drone / UAV (โดรนถ่ายภาพอากาศ)' : 'Drone / UAV'}</option>
+                    <option value="Slider / Table Rig">{isTh ? 'Slider (สไลเดอร์รางสั้น)' : 'Slider'}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง:' : 'Action Description:'}</label>
+                <label className="block text-slate-400 font-bold mb-1">{isTh ? 'รายละเอียดแอคชั่น / การกระทำ / เทคนิคภาพ:' : 'Action & Camera Details:'}</label>
                 <textarea
-                  rows={3}
+                  rows={4}
                   value={editShotDescTh}
                   onChange={(e) => setEditShotDescTh(e.target.value)}
-                  placeholder={isTh ? 'ระบุการเคลื่อนไหวของนักแสดงหรือมุมกล้อง...' : 'Describe action and camera movement...'}
-                  className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                  placeholder={isTh ? 'ระบุการกระทำของนักแสดง, ทิศทางเคลื่อนกล้อง, เทคนิคแสง และบล็อกกิ้งฉาก...' : 'Describe actor action, camera movement direction, lighting technique and blocking...'}
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 leading-relaxed"
                 />
               </div>
 
