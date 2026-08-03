@@ -161,8 +161,10 @@ function DocumentsHubContent({
   // Selected Shoot Day Number (for Call Sheet tab)
   const [selectedShootDay, setSelectedShootDay] = useState('1');
 
-  // Print Orientation State ('portrait' | 'landscape')
+  // Global Print Configuration States
   const [printOrientation, setPrintOrientation] = useState('portrait');
+  const [printPaperSize, setPrintPaperSize] = useState('A4');
+  const [printMargin, setPrintMargin] = useState('standard'); // 'standard' (15mm) | 'compact' (8mm) | 'wide' (20mm)
 
   // File Vault State (Persisted in LocalStorage per project)
   const [vaultFiles, setVaultFiles] = useState([]);
@@ -757,8 +759,8 @@ function DocumentsHubContent({
       <style>{`
         @media print {
           @page {
-            size: ${printOrientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
-            margin: 10mm 12mm 10mm 12mm;
+            size: ${printPaperSize} ${printOrientation};
+            margin: ${printMargin === 'compact' ? '8mm 10mm 8mm 10mm' : printMargin === 'wide' ? '20mm 22mm 20mm 22mm' : '15mm 15mm 15mm 15mm'};
           }
           body {
             background-color: #ffffff !important;
@@ -766,6 +768,8 @@ function DocumentsHubContent({
             font-family: 'Sarabun', 'Inter', system-ui, -apple-system, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           body * {
             visibility: hidden;
@@ -774,17 +778,17 @@ function DocumentsHubContent({
             visibility: visible !important;
           }
           .print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
+            position: relative !important;
             display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: 16px 8px 24px 8px !important;
             background: #ffffff !important;
             color: #000000 !important;
             box-shadow: none !important;
             border: none !important;
+            box-sizing: border-box !important;
           }
           .no-print, nav, sidebar, header, button, footer {
             display: none !important;
@@ -801,14 +805,14 @@ function DocumentsHubContent({
           .print-area table {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin-top: 10px !important;
-            font-size: 9pt !important;
+            margin-top: 12px !important;
+            font-size: 9.5pt !important;
             color: #000000 !important;
             table-layout: fixed !important;
           }
           .print-area th, .print-area td {
             border: 1px solid #1e293b !important;
-            padding: 6px 8px !important;
+            padding: 7px 9px !important;
             color: #000000 !important;
             vertical-align: top !important;
             word-wrap: break-word !important;
@@ -893,20 +897,61 @@ function DocumentsHubContent({
         </div>
 
         {/* Global Toolbar Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Paper Size Selector */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintPaperSize('A4')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printPaperSize === 'A4' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              A4
+            </button>
+            <button
+              onClick={() => setPrintPaperSize('Letter')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printPaperSize === 'Letter' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              Letter
+            </button>
+          </div>
+
+          {/* Margins Selector */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintMargin('standard')}
+              title={isTh ? 'ระยะขอบมาตรฐาน 15mm' : 'Standard 15mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'standard' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {isTh ? 'ขอบมาตรฐาน (15mm)' : 'Std Margin'}
+            </button>
+            <button
+              onClick={() => setPrintMargin('wide')}
+              title={isTh ? 'ระยะขอบกว้าง 20mm' : 'Wide 20mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'wide' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {isTh ? 'ขอบกว้าง (20mm)' : 'Wide'}
+            </button>
+            <button
+              onClick={() => setPrintMargin('compact')}
+              title={isTh ? 'ระยะขอบแคบ 8mm' : 'Compact 8mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'compact' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {isTh ? 'ขอบแคบ (8mm)' : 'Compact'}
+            </button>
+          </div>
+
           {/* Orientation Toggle */}
           <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
             <button
               onClick={() => setPrintOrientation('portrait')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${printOrientation === 'portrait' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              className={`px-3 py-1 rounded-lg transition-all ${printOrientation === 'portrait' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
-              {isTh ? 'แนวตั้ง (Portrait)' : 'Portrait'}
+              {isTh ? 'แนวตั้ง' : 'Portrait'}
             </button>
             <button
               onClick={() => setPrintOrientation('landscape')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${printOrientation === 'landscape' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              className={`px-3 py-1 rounded-lg transition-all ${printOrientation === 'landscape' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
             >
-              {isTh ? 'แนวนอน (Landscape)' : 'Landscape'}
+              {isTh ? 'แนวนอน' : 'Landscape'}
             </button>
           </div>
 
