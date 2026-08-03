@@ -548,10 +548,23 @@ function DocumentsHubContent({
     setEditingShot(null);
   };
 
-  // Delete Shot
+  // Delete Shot with Undo Support
   const handleDeleteShot = (shotId) => {
-    if (window.confirm(isTh ? 'ต้องการลบช็อตถ่ายทำนี้ใช่หรือไม่?' : 'Delete this shot item?')) {
-      if (setShotList) setShotList(safeShotList.filter(s => s && s.id !== shotId));
+    const shotToDelete = safeShotList.find(s => s && s.id === shotId);
+    if (!shotToDelete) return;
+    const shotNumDisplay = shotToDelete.shotNum || shotToDelete.shot_number || `${selectedSceneNum}.1`;
+    const prevList = [...safeShotList];
+    const newList = safeShotList.filter(s => s && s.id !== shotId);
+    
+    if (setShotList) setShotList(newList);
+
+    if (typeof pushUndoAction === 'function') {
+      pushUndoAction(
+        isTh ? `ลบช็อต SHOT ${shotNumDisplay} แล้ว` : `Deleted Shot ${shotNumDisplay}`,
+        () => {
+          if (setShotList) setShotList(prevList);
+        }
+      );
     }
   };
 
@@ -694,11 +707,23 @@ function DocumentsHubContent({
     setIsFileUploadModalOpen(false);
   };
 
+  // Delete Vault File with Undo Support
   const handleDeleteVaultFile = (fileId) => {
-    if (window.confirm(isTh ? 'ต้องการลบเอกสารนี้ออกจากคลังใช่หรือไม่?' : 'Delete this file from vault?')) {
-      const safeV = Array.isArray(vaultFiles) ? vaultFiles : [];
-      const updated = safeV.filter(f => f && f.id !== fileId);
-      saveVaultFiles(updated);
+    const safeV = Array.isArray(vaultFiles) ? vaultFiles : [];
+    const fileToDelete = safeV.find(f => f && f.id === fileId);
+    if (!fileToDelete) return;
+    const prevFiles = [...safeV];
+    const updated = safeV.filter(f => f && f.id !== fileId);
+
+    saveVaultFiles(updated);
+
+    if (typeof pushUndoAction === 'function') {
+      pushUndoAction(
+        isTh ? `ลบเอกสาร ${fileToDelete.name} แล้ว` : `Deleted File ${fileToDelete.name}`,
+        () => {
+          saveVaultFiles(prevFiles);
+        }
+      );
     }
   };
 

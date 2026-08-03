@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { googleCalendar } from '../services/googleCalendar';
 import { useAuth } from './AuthContext';
@@ -40,6 +40,11 @@ export const ProjectProvider = ({ children }) => {
   const [undoStack, setUndoStack] = useState([]);
   const [activeUndoToast, setActiveUndoToast] = useState(null);
 
+  const undoStackRef = useRef(undoStack);
+  useEffect(() => {
+    undoStackRef.current = undoStack;
+  }, [undoStack]);
+
   const pushUndoAction = useCallback((label, restoreFn) => {
     const actionId = `undo-${Date.now()}-${Math.random()}`;
     const undoItem = { id: actionId, label, restoreFn };
@@ -78,24 +83,31 @@ export const ProjectProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, [activeUndoToast]);
 
-  // Global Keyboard listener for Ctrl+Z or Cmd+Z
+  // Global Keyboard listener for Ctrl+Z or Cmd+Z (supports English, Thai keyboard layouts, Windows Ctrl and Mac Cmd)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        const activeTag = document.activeElement?.tagName?.toLowerCase();
-        if (activeTag === 'input' || activeTag === 'textarea') {
-          return;
-        }
+      // Check for Ctrl or Meta (Cmd on Mac)
+      const isModifier = e.ctrlKey || e.metaKey;
+      
+      // Check for Z key across physical key code (KeyZ), character ('z', 'Z', 'ผ'), or keyCode (90)
+      const isZKey = e.code === 'KeyZ' || 
+                     (e.key && (e.key.toLowerCase() === 'z' || e.key === 'ผ')) || 
+                     e.keyCode === 90;
 
-        if (undoStack.length > 0) {
+      if (isModifier && isZKey && !e.shiftKey && !e.altKey) {
+        const currentStack = undoStackRef.current || [];
+        if (currentStack.length > 0) {
           e.preventDefault();
+          e.stopPropagation();
           performUndo();
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undoStack, performUndo]);
+
+    // Use capture phase (true) so we intercept Ctrl+Z / Cmd+Z before any other event handlers
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [performUndo]);
 
   // 1. Initial Load: Projects and Crew
   useEffect(() => {
