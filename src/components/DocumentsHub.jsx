@@ -752,7 +752,7 @@ function DocumentsHubContent({
   const safeCastCallSchedules = Array.isArray(castCallSchedules) ? castCallSchedules : [];
 
   return (
-    <div className="space-y-6 pb-20 no-print-padding font-sans">
+    <div className="space-y-6 pb-20 font-sans">
       {/* Dynamic Print Style Injector */}
       <style>{`
         @media print {
@@ -767,18 +767,27 @@ function DocumentsHubContent({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .no-print, nav, sidebar, header, button, .no-print-padding {
-            display: none !important;
+          body * {
+            visibility: hidden;
+          }
+          .print-area, .print-area * {
+            visibility: visible !important;
           }
           .print-area {
-            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
             width: 100% !important;
+            display: block !important;
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
             color: #000000 !important;
             box-shadow: none !important;
             border: none !important;
+          }
+          .no-print, nav, sidebar, header, button, footer {
+            display: none !important;
           }
           .print-card {
             background: #ffffff !important;
