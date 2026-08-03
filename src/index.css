@@ -185,7 +185,7 @@
       box-shadow: none !important;
     }
 
-    /* Force glass-panel and card designs to drop screen shadows and render as flat transparent boxes */
+    /* Force glass-panel and card designs to drop screen shadows and render cleanly on print */
     .glass-panel, 
     .glass-card {
       background: transparent !important;
@@ -193,21 +193,30 @@
       border: none !important;
       box-shadow: none !important;
       backdrop-filter: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
+    }
+
+    /* System-Wide Printable Document Area Container */
+    .print-area,
+    .print-document-container {
+      display: block !important;
+      visibility: visible !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+      margin: 0 auto !important;
+      padding: 24px 20px 32px 20px !important;
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      border: none !important;
+      box-shadow: none !important;
     }
 
     /* Clean solid border print cards */
     .print-card {
       background: #ffffff !important;
       color: #000000 !important;
-      border: 1px solid #cbd5e1 !important;
+      border: none !important;
       box-shadow: none !important;
-      border-radius: 6px !important;
-      padding: 1.5rem !important;
-      margin-bottom: 1.5rem !important;
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
       display: block !important;
     }
 

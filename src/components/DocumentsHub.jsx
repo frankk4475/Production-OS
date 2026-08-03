@@ -783,7 +783,7 @@ function DocumentsHubContent({
             width: 100% !important;
             max-width: 100% !important;
             margin: 0 auto !important;
-            padding: 16px 8px 24px 8px !important;
+            padding: 24px 20px 32px 20px !important;
             background: #ffffff !important;
             color: #000000 !important;
             box-shadow: none !important;
@@ -1431,7 +1431,7 @@ function DocumentsHubContent({
             )}
           </div>
 
-          <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
+          <div className="print-area print-card p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
             {/* Standard Film Studio Header for Print & Screen */}
             <div className="pb-4 border-b-2 border-slate-900 dark:border-gold-500/80 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
