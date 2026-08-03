@@ -771,7 +771,7 @@ function DocumentsHubContent({
 
     const rows = activeSceneShots.map(shot => [
       `"${shot.shotNum || shot.shot_number || ''}"`,
-      `"${shot.framing || ''}"`,
+      `"${shot.framing || shot.type || shot.size || 'MCU'}"`,
       `"${shot.camera_angle || shot.angle || 'Eye-Level'}"`,
       `"${shot.camera_movement || shot.movement || 'Static'}"`,
       `"${shot.lens || ''}"`,
@@ -803,10 +803,11 @@ function DocumentsHubContent({
 
     let rowsHtml = '';
     activeSceneShots.forEach(shot => {
+      const framingVal = shot.framing || shot.type || shot.size || 'MCU';
       rowsHtml += `
         <tr>
           <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold; font-family:monospace;">${shot.shotNum || shot.shot_number || ''}</td>
-          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold;">${shot.framing || '-'}</td>
+          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold;">${framingVal}</td>
           <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.camera_angle || shot.angle || 'Eye-Level'}</td>
           <td style="border:1px solid #334155; padding:8px;">${shot.camera_movement || shot.movement || 'Static'}</td>
           <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.lens || '-'}</td>
