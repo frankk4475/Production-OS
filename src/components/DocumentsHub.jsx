@@ -345,30 +345,48 @@ function DocumentsHubContent({
     }
   }, [activeEventId, selectedShootDay, project?.start_date, isTh, language]);
 
-  // Selected Scene Object resolver
-  const activeScene = safeScenes.find(s => s && String(s.scene_number) === String(selectedSceneNum)) || safeScenes[0] || {};
+  // Selected Scene Object resolver (Strict match without false fallback to safeScenes[0])
+  const activeScene = safeScenes.find(s => {
+    if (!s) return false;
+    const curNum = String(selectedSceneNum || '1');
+    const sNum = String(s.scene_number || s.sceneNum || s.id || '');
+    return sNum === curNum || sNum === `Scene ${curNum}` || sNum.endsWith(`-${curNum}`);
+  }) || { id: `scene-${selectedSceneNum || '1'}`, scene_number: String(selectedSceneNum || '1') };
 
-  // Filter shots for selected scene with multi-key resolver
+  // Filter shots for selected scene with strict scene isolation
   const activeSceneShots = safeShotList.filter(s => {
     if (!s) return false;
     const curSceneNumStr = String(selectedSceneNum || '1');
-    const curSceneIdStr = activeScene?.id ? String(activeScene.id) : null;
-
-    // 1. Match scene_id (UUID or Scene Number string)
-    if (s.scene_id && (String(s.scene_id) === curSceneNumStr || (curSceneIdStr && String(s.scene_id) === curSceneIdStr))) return true;
-
-    // 2. Match scene_number
-    if (s.scene_number && String(s.scene_number) === curSceneNumStr) return true;
-
-    // 3. Match sceneNum
-    if (s.sceneNum && String(s.sceneNum) === curSceneNumStr) return true;
-
-    // 4. Match shot_number prefix (e.g. shot_number "1.1" matches scene_number "1")
+    
+    // Extract shot's explicit scene number, scene ID, and shot number
+    const shotSceneNum = String(s.scene_number || s.description?.scene_number || s.sceneNum || '');
+    const shotSceneId = String(s.scene_id || '');
     const shotNumStr = String(s.shot_number || s.shotNum || '');
-    if (shotNumStr && (shotNumStr.startsWith(`${curSceneNumStr}.`) || shotNumStr === curSceneNumStr)) return true;
 
-    // 5. Fallback for Scene 1 if no scene markers exist
-    if (!s.scene_id && !s.scene_number && !s.sceneNum && curSceneNumStr === '1') return true;
+    // Extract scene prefix from shot_number e.g. "2.1" -> "2", "1.4" -> "1"
+    const shotNumPrefix = shotNumStr.includes('.') ? shotNumStr.split('.')[0] : null;
+
+    // Strict Rule 1: If shot_number has an explicit scene prefix (e.g. "2.1"), it MUST match current scene
+    if (shotNumPrefix && shotNumPrefix !== curSceneNumStr) {
+      return false;
+    }
+
+    // Strict Rule 2: If shot has explicit scene_number (e.g. "2"), it MUST match current scene
+    if (shotSceneNum && shotSceneNum !== curSceneNumStr) {
+      return false;
+    }
+
+    // Match 1: Explicit scene_number matches current scene number
+    if (shotSceneNum === curSceneNumStr) return true;
+
+    // Match 2: Shot number prefix matches current scene number (e.g. "1.2" for scene "1")
+    if (shotNumPrefix === curSceneNumStr) return true;
+
+    // Match 3: Explicit scene_id matches current scene_number or activeScene.id
+    if (shotSceneId && (shotSceneId === curSceneNumStr || (activeScene.id && shotSceneId === String(activeScene.id)))) return true;
+
+    // Match 4: Fallback ONLY for Scene 1 if shot has absolutely no scene markers or prefixes
+    if (!shotSceneNum && !shotSceneId && !shotNumPrefix && curSceneNumStr === '1') return true;
 
     return false;
   });
@@ -439,14 +457,19 @@ function DocumentsHubContent({
   const handleAddShotSubmit = (e) => {
     e.preventDefault();
 
-    const finalShotNum = newShotNum || `${selectedSceneNum}.${activeSceneShots.length + 1}`;
+    const curSceneStr = String(selectedSceneNum || '1');
+    const matchingSceneId = (activeScene?.id && String(activeScene.scene_number) === curSceneStr) 
+      ? String(activeScene.id) 
+      : curSceneStr;
+
+    const finalShotNum = newShotNum || `${curSceneStr}.${activeSceneShots.length + 1}`;
     const finalDescTh = newShotDescTh || newShotDescEn || `มุมกล้อง / ขนาดภาพ ${newShotFraming} (${newShotMove})`;
     const finalDescEn = newShotDescEn || newShotDescTh || `Camera Shot ${newShotFraming} (${newShotMove})`;
 
     const newShot = {
       id: `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      scene_id: activeScene?.id ? String(activeScene.id) : String(selectedSceneNum),
-      scene_number: String(selectedSceneNum),
+      scene_id: matchingSceneId,
+      scene_number: curSceneStr,
       shotNum: finalShotNum,
       shot_number: finalShotNum,
       type: newShotFraming,
@@ -457,6 +480,7 @@ function DocumentsHubContent({
       description: {
         th: finalDescTh,
         en: finalDescEn,
+        scene_number: curSceneStr,
         image_url: ''
       }
     };
