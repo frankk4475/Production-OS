@@ -63,6 +63,15 @@ export default function ScriptEditor() {
   const [includeCoverPage, setIncludeCoverPage] = useState(true);
   const [includePageNumbers, setIncludePageNumbers] = useState(true);
   const [watermarkText, setWatermarkText] = useState('');
+
+  // Customizable Cover Page States
+  const [coverTitle, setCoverTitle] = useState('');
+  const [coverAuthor, setCoverAuthor] = useState('');
+  const [coverBasedOn, setCoverBasedOn] = useState('');
+  const [coverDraftVersion, setCoverDraftVersion] = useState('');
+  const [coverContactInfo, setCoverContactInfo] = useState('');
+  const [coverCopyright, setCoverCopyright] = useState('');
+  const [showCoverEditForm, setShowCoverEditForm] = useState(false);
   
   const localChangeRef = useRef(false);
   const blockRefs = useRef([]);
@@ -516,35 +525,49 @@ export default function ScriptEditor() {
       position: 'relative'
     };
 
+    const displayTitle = coverTitle || project?.title?.[language] || project?.title?.th || project?.title?.en || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY');
+    const displayAuthor = coverAuthor || project?.director?.[language] || project?.director?.th || project?.created_by_name || 'STUDIO WRITER';
+    const displayBasedOn = coverBasedOn || '';
+    const displayDraft = coverDraftVersion || 'SHOOTING DRAFT';
+    const displayContact = coverContactInfo || `${language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER`;
+    const displayCopyright = coverCopyright || `© ${new Date().getFullYear()} ALL RIGHTS RESERVED`;
+
     return (
       <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none">
         <div></div>
 
-        <div className="text-center flex flex-col items-center justify-center my-auto" style={{ gap: '24pt' }}>
+        <div className="text-center flex flex-col items-center justify-center my-auto" style={{ gap: '20pt' }}>
           <h1 className="font-bold tracking-wide uppercase border-b-2 border-black pb-4 px-8 min-w-[200px]" style={{ fontSize: '24pt', lineHeight: '1.2' }}>
-            {project?.title?.[language] || project?.title?.en || (language === 'th' ? 'บทภาพยนตร์' : 'SCREENPLAY')}
+            {displayTitle}
           </h1>
           
-          <div className="mt-8" style={{ gap: '6pt', display: 'flex', flexDirection: 'column' }}>
+          <div className="mt-6" style={{ gap: '6pt', display: 'flex', flexDirection: 'column' }}>
             <p className="uppercase tracking-widest text-slate-500 font-bold" style={{ fontSize: '10pt' }}>{language === 'th' ? 'เขียนโดย' : 'Written by'}</p>
-            <p className="font-bold" style={{ fontSize: '14pt' }}>{project?.created_by_name || 'STUDIO WRITER'}</p>
+            <p className="font-bold" style={{ fontSize: '14pt' }}>{displayAuthor}</p>
           </div>
-          
-          {project?.description && (
-            <p className="max-w-md mx-auto italic text-slate-600 mt-6 border-t border-slate-200 pt-4" style={{ fontSize: '10pt', lineHeight: '1.4' }}>
-              "{project.description[language] || project.description.en || project.description}"
-            </p>
+
+          {displayBasedOn && (
+            <div className="mt-2" style={{ gap: '4pt', display: 'flex', flexDirection: 'column' }}>
+              <p className="uppercase tracking-widest text-slate-500 font-bold" style={{ fontSize: '9pt' }}>{language === 'th' ? 'อ้างอิงจาก / เรื่องโดย' : 'Based on / Story by'}</p>
+              <p className="italic font-bold" style={{ fontSize: '11pt' }}>{displayBasedOn}</p>
+            </div>
+          )}
+
+          {displayDraft && (
+            <div className="mt-4 inline-block px-4 py-1.5 border border-black font-mono font-bold uppercase tracking-wider" style={{ fontSize: '10pt' }}>
+              {displayDraft}
+            </div>
           )}
         </div>
 
-        <div className="flex justify-between items-end text-slate-500 font-mono mt-auto" style={{ fontSize: '9pt', lineHeight: '1.4' }}>
+        <div className="flex justify-between items-end text-slate-700 font-mono mt-auto" style={{ fontSize: '9pt', lineHeight: '1.4' }}>
           <div>
             <p>{language === 'th' ? 'วันที่:' : 'Date:'} {new Date(project?.created_at || defaultSessionDate).toLocaleDateString()}</p>
-            <p>{language === 'th' ? 'ระบบการจัดการกองถ่าย:' : 'Production OS:'} STUDIO CONTROLLER</p>
+            <p>{displayContact}</p>
           </div>
           <div className="text-right">
             <p>{language === 'th' ? 'บทร่างลิขสิทธิ์เฉพาะ' : 'PROPRIETARY DRAFT'}</p>
-            <p>© {new Date(defaultSessionDate).getFullYear()} ALL RIGHTS RESERVED</p>
+            <p>{displayCopyright}</p>
           </div>
         </div>
         
@@ -581,7 +604,10 @@ export default function ScriptEditor() {
       <div style={pageStyle} className="a4-page relative shadow-lg mx-auto bg-white text-black border border-slate-200 print:border-0 print:shadow-none flex flex-col justify-start">
         
         {includePageNumbers && (
-          <div className="absolute top-[0.5in] right-[1in] font-mono text-xs text-black text-right no-print print:block z-10 font-bold">
+          <div 
+            className="script-page-number absolute top-[0.5in] right-[1in] font-mono text-xs text-black text-right z-20 font-bold block"
+            style={{ position: 'absolute', top: '0.5in', right: '1in', color: '#000000', fontSize: '11pt', fontWeight: 'bold' }}
+          >
             {includeCoverPage ? pageIndex + 2 : pageIndex + 1}.
           </div>
         )}
@@ -1228,6 +1254,89 @@ export default function ScriptEditor() {
                   />
                   <span>{language === 'th' ? 'แสดงเลขหน้าบท' : 'Show Page Numbers'}</span>
                 </label>
+
+                {/* Edit Cover Details Accordion */}
+                {includeCoverPage && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCoverEditForm(!showCoverEditForm)}
+                      className="w-full text-left py-1.5 px-2.5 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 border border-gold-500/20 text-xs font-bold flex items-center justify-between transition-all"
+                    >
+                      <span>✍️ {language === 'th' ? 'แก้ไขข้อมูลใบปะหน้า' : 'Edit Cover Details'}</span>
+                      <span className="text-[10px]">{showCoverEditForm ? '▲' : '▼'}</span>
+                    </button>
+
+                    {showCoverEditForm && (
+                      <div className="mt-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5 text-xs animate-fadeIn">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                            {language === 'th' ? 'ชื่อเรื่อง (Title):' : 'Title:'}
+                          </label>
+                          <input
+                            type="text"
+                            value={coverTitle}
+                            onChange={(e) => setCoverTitle(e.target.value)}
+                            placeholder={project?.title?.[language] || 'ชื่อบทภาพยนตร์'}
+                            className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                            {language === 'th' ? 'เขียนโดย (Written by):' : 'Written by:'}
+                          </label>
+                          <input
+                            type="text"
+                            value={coverAuthor}
+                            onChange={(e) => setCoverAuthor(e.target.value)}
+                            placeholder={project?.director?.[language] || 'ชื่อผู้เขียน'}
+                            className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                            {language === 'th' ? 'อ้างอิงจาก / เรื่องโดย:' : 'Based on:'}
+                          </label>
+                          <input
+                            type="text"
+                            value={coverBasedOn}
+                            onChange={(e) => setCoverBasedOn(e.target.value)}
+                            placeholder="e.g. จากเรื่องสั้น..."
+                            className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                            {language === 'th' ? 'ฉบับร่าง (Draft Version):' : 'Draft Version:'}
+                          </label>
+                          <input
+                            type="text"
+                            value={coverDraftVersion}
+                            onChange={(e) => setCoverDraftVersion(e.target.value)}
+                            placeholder="e.g. SHOOTING DRAFT v1"
+                            className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">
+                            {language === 'th' ? 'ข้อมูลติดต่อ / สตูดิโอ:' : 'Contact Info:'}
+                          </label>
+                          <input
+                            type="text"
+                            value={coverContactInfo}
+                            onChange={(e) => setCoverContactInfo(e.target.value)}
+                            placeholder="e.g. STUDIO CONTROLLER / TEL: 081-xxx-xxxx"
+                            className="w-full px-2.5 py-1.5 rounded bg-slate-950 border border-slate-800 text-slate-200 text-xs font-mono focus:outline-none focus:border-gold-500"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Watermark Selector */}
