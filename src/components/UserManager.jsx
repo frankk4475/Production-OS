@@ -28,7 +28,7 @@ export default function UserManager({ hideHeader = false }) {
     toggleUserAdminByAdmin
   } = useAuth();
 
-  const { refreshCrew, activeCrew: crew, updateCrewMember } = useProject();
+  const { refreshCrew, activeCrew: crew, updateCrewMember, pushUndoAction } = useProject();
 
   // New user form states
   const [name, setName] = useState('');
@@ -159,17 +159,24 @@ export default function UserManager({ hideHeader = false }) {
       return;
     }
 
-    const confirmMsg = language === 'th'
-      ? `คุณแน่ใจว่าต้องการลบบัญชีผู้ใช้ "${userEmail}" ใช่หรือไม่?`
-      : `Are you sure you want to delete user account "${userEmail}"?`;
+    const userToDelete = users.find(u => u.id === userId);
+    try {
+      await deleteUserByAdmin(userId);
+      if (refreshCrew) await refreshCrew();
 
-    if (window.confirm(confirmMsg)) {
-      try {
-        await deleteUserByAdmin(userId);
-        if (refreshCrew) await refreshCrew();
-      } catch (err) {
-        alert(err.message);
+      if (typeof pushUndoAction === 'function') {
+        pushUndoAction(
+          language === 'th' ? `ลบบัญชีผู้ใช้ "${userEmail}" แล้ว` : `Deleted user "${userEmail}"`,
+          async () => {
+            if (userToDelete) {
+              await registerUserByAdmin(userToDelete.email, userToDelete.password || '123456', userToDelete.name, userToDelete.role);
+              if (refreshCrew) await refreshCrew();
+            }
+          }
+        );
       }
+    } catch (err) {
+      alert(err.message);
     }
   };
 

@@ -35,7 +35,7 @@ export default function ScriptBreakdown() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
-  const { activeScenes: scenes, addScene, updateScene, deleteScene, recalculatePageLengths, scriptBlocks } = useProject();
+  const { activeScenes: scenes, addScene, updateScene, deleteScene, recalculatePageLengths, scriptBlocks, pushUndoAction } = useProject();
 
   const [activeSubTab, setActiveSubTab] = useState('summary');
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,9 +110,19 @@ export default function ScriptBreakdown() {
 
   const handleDeleteClick = async (sceneId, e) => {
     if (e) e.stopPropagation();
-    if (confirm(t('breakdown.deleteScene') + '?')) {
-      await deleteScene(sceneId);
-      if (selectedSceneId === sceneId) setSelectedSceneId(null);
+    const sceneToDelete = scenes.find(s => s && (s.id === sceneId || String(s.scene_number) === String(sceneId)));
+    if (!sceneToDelete) return;
+
+    await deleteScene(sceneId);
+    if (selectedSceneId === sceneId) setSelectedSceneId(null);
+
+    if (typeof pushUndoAction === 'function') {
+      pushUndoAction(
+        language === 'th' ? `ลบฉากที่ ${sceneToDelete.scene_number} แล้ว` : `Deleted Scene ${sceneToDelete.scene_number}`,
+        async () => {
+          await addScene(sceneToDelete);
+        }
+      );
     }
   };
 

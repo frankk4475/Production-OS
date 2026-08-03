@@ -129,7 +129,7 @@ function DocumentsHubContent({
   const { language } = useLanguage();
   const { theme } = useTheme();
   const auth = useAuth();
-  const { currentProject: project } = useProject();
+  const { currentProject: project, pushUndoAction } = useProject();
 
   const isTh = language === 'th';
   const hasWriteAccess = typeof auth?.hasWriteAccess === 'function' ? auth.hasWriteAccess() : true;

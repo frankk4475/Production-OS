@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { googleCalendar } from '../services/googleCalendar';
 import { useAuth } from './AuthContext';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { RotateCcw, X } from 'lucide-react';
 
 const ProjectContext = createContext();
 
@@ -34,6 +35,67 @@ export const ProjectProvider = ({ children }) => {
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Global Undo / Redo Restoration System
+  const [undoStack, setUndoStack] = useState([]);
+  const [activeUndoToast, setActiveUndoToast] = useState(null);
+
+  const pushUndoAction = useCallback((label, restoreFn) => {
+    const actionId = `undo-${Date.now()}-${Math.random()}`;
+    const undoItem = { id: actionId, label, restoreFn };
+
+    setUndoStack(prev => [...prev, undoItem]);
+    setActiveUndoToast(undoItem);
+  }, []);
+
+  const performUndo = useCallback(() => {
+    setUndoStack(prev => {
+      if (prev.length === 0) return prev;
+      const lastAction = prev[prev.length - 1];
+      if (lastAction && typeof lastAction.restoreFn === 'function') {
+        try {
+          lastAction.restoreFn();
+          setActiveUndoToast({
+            id: `restored-${Date.now()}`,
+            label: `✅ กู้คืนข้อมูลสำเร็จ: ${lastAction.label}`,
+            isRestoredNotice: true
+          });
+          setTimeout(() => setActiveUndoToast(null), 3500);
+        } catch (err) {
+          console.error("Undo restoration failed:", err);
+        }
+      }
+      return prev.slice(0, -1);
+    });
+  }, []);
+
+  // Auto-expire active toast after 60 seconds (1 minute window)
+  useEffect(() => {
+    if (!activeUndoToast || activeUndoToast.isRestoredNotice) return;
+    const timer = setTimeout(() => {
+      setActiveUndoToast(null);
+    }, 60000);
+    return () => clearTimeout(timer);
+  }, [activeUndoToast]);
+
+  // Global Keyboard listener for Ctrl+Z or Cmd+Z
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const activeTag = document.activeElement?.tagName?.toLowerCase();
+        if (activeTag === 'input' || activeTag === 'textarea') {
+          return;
+        }
+
+        if (undoStack.length > 0) {
+          e.preventDefault();
+          performUndo();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoStack, performUndo]);
 
   // 1. Initial Load: Projects and Crew
   useEffect(() => {
@@ -756,9 +818,49 @@ export const ProjectProvider = ({ children }) => {
       
       exportDatabase: handleExportDatabase,
       importDatabase: handleImportDatabase,
-      resetDatabase: handleResetDatabase
+      resetDatabase: handleResetDatabase,
+
+      // Undo / Redo System
+      pushUndoAction,
+      performUndo,
+      hasUndoActions: undoStack.length > 0
     }}>
       {children}
+
+      {/* GLOBAL UNDO & RESTORATION TOAST BANNER */}
+      {activeUndoToast && (
+        <div className="fixed bottom-6 right-6 md:right-10 z-[99999] animate-fadeIn no-print">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-obsidian-950/95 border border-gold-500/50 text-slate-100 shadow-2xl backdrop-blur-md font-sans text-xs">
+            <div className="flex items-center gap-2">
+              {!activeUndoToast.isRestoredNotice && (
+                <span className="w-2.5 h-2.5 rounded-full bg-gold-500 animate-ping" />
+              )}
+              <span className="font-bold text-gold-400">{activeUndoToast.label}</span>
+            </div>
+
+            {!activeUndoToast.isRestoredNotice && (
+              <div className="flex items-center gap-2 ml-2 pl-3 border-l border-slate-800">
+                <button
+                  type="button"
+                  onClick={performUndo}
+                  className="px-3.5 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-400 text-obsidian-950 font-black flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                >
+                  <RotateCcw size={14} />
+                  <span>กู้คืน (Ctrl+Z)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveUndoToast(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </ProjectContext.Provider>
   );
 };
