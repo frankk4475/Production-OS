@@ -757,14 +757,17 @@ function DocumentsHubContent({
       <style>{`
         @media print {
           @page {
-            size: ${printOrientation === 'landscape' ? 'landscape' : 'portrait'};
-            margin: 10mm;
+            size: ${printOrientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
+            margin: 10mm 12mm 10mm 12mm;
           }
           body {
             background-color: #ffffff !important;
             color: #000000 !important;
+            font-family: 'Sarabun', 'Inter', system-ui, -apple-system, sans-serif !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .no-print, nav, sidebar, header, button {
+          .no-print, nav, sidebar, header, button, .no-print-padding {
             display: none !important;
           }
           .print-area {
@@ -780,7 +783,63 @@ function DocumentsHubContent({
           .print-card {
             background: #ffffff !important;
             color: #000000 !important;
-            border: 1px solid #000000 !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+
+          /* General Tables for A4 Print */
+          .print-area table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 10px !important;
+            font-size: 9pt !important;
+            color: #000000 !important;
+            table-layout: fixed !important;
+          }
+          .print-area th, .print-area td {
+            border: 1px solid #1e293b !important;
+            padding: 6px 8px !important;
+            color: #000000 !important;
+            vertical-align: top !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+          }
+          .print-area th {
+            background-color: #f1f5f9 !important;
+            color: #000000 !important;
+            font-weight: 800 !important;
+            font-size: 8.5pt !important;
+            text-transform: uppercase !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-area tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          
+          /* Shot List Table Column Width Ratios for A4 */
+          .shot-list-table th:nth-child(1), .shot-list-table td:nth-child(1) { width: 8% !important; font-weight: bold !important; text-align: center !important; }
+          .shot-list-table th:nth-child(2), .shot-list-table td:nth-child(2) { width: 10% !important; font-weight: bold !important; text-align: center !important; }
+          .shot-list-table th:nth-child(3), .shot-list-table td:nth-child(3) { width: 12% !important; text-align: center !important; }
+          .shot-list-table th:nth-child(4), .shot-list-table td:nth-child(4) { width: 14% !important; }
+          .shot-list-table th:nth-child(5), .shot-list-table td:nth-child(5) { width: 8% !important; text-align: center !important; }
+          .shot-list-table th:nth-child(6), .shot-list-table td:nth-child(6) { width: 12% !important; text-align: center !important; }
+          .shot-list-table th:nth-child(7), .shot-list-table td:nth-child(7) { width: 36% !important; line-height: 1.35 !important; }
+          .shot-list-table th:nth-child(8), .shot-list-table td:nth-child(8) { display: none !important; }
+
+          /* Storyboard Cards Layout on A4 */
+          .storyboard-grid {
+            display: grid !important;
+            grid-template-columns: ${printOrientation === 'landscape' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'} !important;
+            gap: 12px !important;
+          }
+          .storyboard-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            border: 1px solid #1e293b !important;
+            background: #ffffff !important;
           }
         }
       `}</style>
@@ -1319,20 +1378,40 @@ function DocumentsHubContent({
           </div>
 
           <div className="print-area print-card glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 space-y-4 bg-white dark:bg-obsidian-950 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-obsidian-800">
-              <div>
-                <span className="text-[10px] font-black uppercase text-gold-500 font-mono">SHOT LIST DOCUMENT</span>
-                <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans">
-                  {isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}
-                </h2>
+            {/* Standard Film Studio Header for Print & Screen */}
+            <div className="pb-4 border-b-2 border-slate-900 dark:border-gold-500/80 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase font-mono bg-slate-900 text-gold-400 dark:bg-gold-500 dark:text-obsidian-950">
+                    {formatTextValue(project?.title, language, 'PRODUCTION PROJECT')}
+                  </span>
+                  <span className="text-[10px] font-black uppercase text-gold-500 font-mono tracking-wider">
+                    • SHOT LIST DOCUMENT (A4)
+                  </span>
+                </div>
+                <div className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                  {new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </div>
               </div>
-              <span className="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">
-                {activeSceneShots.length} {isTh ? 'ช็อตในฉากนี้' : 'Shots'}
-              </span>
+
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 dark:text-white font-sans tracking-tight">
+                    {isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-sans mt-0.5">
+                    {activeScene?.int_ext || 'INT/EXT'} • {activeScene?.day_night || 'DAY/NIGHT'} • {isTh ? 'สถานที่:' : 'Location:'} {activeScene?.location?.th || activeScene?.setting || 'TBD'}
+                  </p>
+                </div>
+
+                <div className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-obsidian-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-obsidian-800 shrink-0">
+                  🎬 {activeSceneShots.length} {isTh ? 'ช็อตในฉากนี้' : 'Shots in Scene'}
+                </div>
+              </div>
             </div>
 
             <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-xl">
-              <table className="w-full text-left text-xs font-sans">
+              <table className="shot-list-table w-full text-left text-xs font-sans">
                 <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
                   <tr>
                     <th className="p-3 font-black">SHOT #</th>
