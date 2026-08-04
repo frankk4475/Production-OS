@@ -14,7 +14,8 @@ import {
   Check,
   ChevronRight, 
   Sparkles,
-  GripVertical
+  GripVertical,
+  X
 } from 'lucide-react';
 
 // Helpers to parse and format page lengths in eighths of a page
