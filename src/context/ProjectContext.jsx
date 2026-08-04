@@ -208,7 +208,7 @@ export const ProjectProvider = ({ children }) => {
 
   // Real-time Database Updates and Presence Collaboration System
   useEffect(() => {
-    if (!currentProjectId || !isSupabaseConfigured) return;
+    if (!currentProjectId || !isSupabaseConfigured || !supabase) return;
 
     // 1. Subscribe to Postgres Database Changes for Realtime Collaboration
     const dbChannel = supabase

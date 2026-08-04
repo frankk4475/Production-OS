@@ -42,6 +42,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
+import { api } from '../services/api';
 
 const ELEMENT_CATEGORIES = [
   { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },

@@ -36,7 +36,7 @@ export default function ScriptBreakdown() {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
-  const { activeScenes: scenes, addScene, updateScene, deleteScene, recalculatePageLengths, scriptBlocks, pushUndoAction } = useProject();
+  const { activeScenes: scenes, addScene, updateScene, deleteScene, recalculatePageLengths, scriptBlocks, pushUndoAction, currentProject } = useProject();
 
   const [activeSubTab, setActiveSubTab] = useState('summary');
   const [searchTerm, setSearchTerm] = useState('');
@@ -254,7 +254,7 @@ export default function ScriptBreakdown() {
       return;
     }
 
-    const docTitle = (project?.title?.th || project?.title || 'PRODUCTION OS PROJECT');
+    const docTitle = (currentProject?.title?.th || currentProject?.title || 'PRODUCTION OS PROJECT');
     const dateStr = new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
     let scenesHtml = '';
