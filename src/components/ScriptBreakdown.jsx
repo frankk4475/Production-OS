@@ -14,7 +14,8 @@ import {
   Printer, 
   FileText, 
   Tag,
-  RefreshCw
+  RefreshCw,
+  FileSpreadsheet
 } from 'lucide-react';
 
 const ELEMENT_CATEGORIES = [
@@ -245,6 +246,111 @@ export default function ScriptBreakdown() {
     return output;
   };
 
+  // Dedicated Print Document Engine for Breakdown Sheets
+  const handlePrintDocument = () => {
+    const printWin = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const docTitle = (project?.title?.th || project?.title || 'PRODUCTION OS PROJECT');
+    const dateStr = new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let scenesHtml = '';
+    scenes.forEach(sc => {
+      const elements = sc.tech_notes?.scene_elements || [];
+      let elementsHtml = '';
+      ELEMENT_CATEGORIES.forEach(cat => {
+        const catItems = elements.filter(e => e.category === cat.id);
+        if (catItems.length > 0) {
+          elementsHtml += `
+            <div style="margin-bottom:6px;">
+              <strong style="color:#0f172a; font-size:11px;">${language === 'th' ? cat.labelTh : cat.label}:</strong>
+              <span style="font-size:11px; color:#334155;"> ${catItems.map(i => `${i.name}${i.qty > 1 ? ` (x${i.qty})` : ''}`).join(', ')}</span>
+            </div>
+          `;
+        }
+      });
+
+      scenesHtml += `
+        <div style="border:1px solid #cbd5e1; border-radius:6px; padding:12px 16px; margin-bottom:14px; page-break-inside:avoid;">
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:6px; margin-bottom:8px;">
+            <strong style="font-size:14px; color:#0f172a;">SCENE ${sc.scene_number} - ${sc.setting || ''} (${sc.int_ext || 'INT'} / ${sc.day_night || 'DAY'})</strong>
+            <span style="font-size:11px; font-weight:bold; color:#64748b;">${sc.pages || '1/8'} pgs</span>
+          </div>
+          <div style="font-size:11px; color:#475569; margin-bottom:8px; line-height:1.4;">
+            ${sc.description?.th || sc.description || ''}
+          </div>
+          ${elementsHtml ? `<div style="background:#f8fafc; padding:8px 12px; border-radius:4px; border:1px solid #e2e8f0;">${elementsHtml}</div>` : ''}
+        </div>
+      `;
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${docTitle} - Scene Breakdown Summary</title>
+        <meta charset="utf-8">
+        <style>
+          @page { size: A4 portrait; margin: 20mm 15mm 20mm 15mm; }
+          body { font-family: 'Sarabun', sans-serif; padding: 35px 30px; color: #000; }
+          .header { border-bottom: 3px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="font-size:18px;">${docTitle}</strong>
+            <span style="font-size:12px; color:#64748b;">${dateStr}</span>
+          </div>
+          <h2 style="margin:6px 0 0 0; font-size:16px; color:#0f172a;">REPORT: SCRIPT BREAKDOWN SUMMARY (A4)</h2>
+        </div>
+        ${scenesHtml}
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => printWin.print(), 400);
+  };
+
+  // Direct Excel Spreadsheet Export for Breakdown Sheets
+  const exportBreakdownToExcel = () => {
+    if (!scenes || scenes.length === 0) {
+      alert(language === 'th' ? 'ไม่มีข้อมูลฉากสำหรับส่งออก' : 'No scenes to export');
+      return;
+    }
+
+    const headers = ['ฉาก (Scene #)', 'ประเภท (INT/EXT)', 'สถานที่ (Setting)', 'ช่วงเวลา (Day/Night)', 'จำนวนหน้า (Pages)', 'รายละเอียดบท (Synopsis)', 'องค์ประกอบแจกแจง (Elements)'];
+    const rows = scenes.map(sc => {
+      const elements = (sc.tech_notes?.scene_elements || []).map(e => `${e.name} (${e.category})`).join('; ');
+      return [
+        `"${sc.scene_number || ''}"`,
+        `"${sc.int_ext || ''}"`,
+        `"${sc.setting || ''}"`,
+        `"${sc.day_night || ''}"`,
+        `"${sc.pages || ''}"`,
+        `"${(sc.description?.th || sc.description || '').replace(/"/g, '""')}"`,
+        `"${elements.replace(/"/g, '""')}"`
+      ];
+    });
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Script_Breakdown_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filteredScenes = scenes.filter(s => (s.scene_number?.toLowerCase().includes(searchTerm.toLowerCase()) || s.setting?.toLowerCase().includes(searchTerm.toLowerCase())) && (filterIntExt === 'ALL' || s.int_ext === filterIntExt) && (filterDayNight === 'ALL' || s.day_night === filterDayNight)).sort((a, b) => (parseFloat(a.scene_number) || 0) - (parseFloat(b.scene_number) || 0));
   const activeSceneBlocks = activeScene ? getSceneBlocks(activeScene.scene_number) : [];
   const activeSceneElements = activeScene?.tech_notes?.scene_elements || [];
@@ -264,16 +370,23 @@ export default function ScriptBreakdown() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => window.print()} 
-            className={`px-3 py-2 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 ${
-              theme === 'dark' 
-                ? 'bg-obsidian-900 border-obsidian-850 text-slate-200 hover:bg-obsidian-800' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-            }`}
+          {/* Excel Export Button */}
+          <button
+            onClick={exportBreakdownToExcel}
+            className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs transition-all shadow-xs active:scale-95 flex items-center gap-1.5 cursor-pointer font-sans"
+            title={language === 'th' ? 'ส่งออกไฟล์ตาราง Excel (.xlsx)' : 'Export Excel'}
           >
-            <Printer size={14} /> 
-            <span>{language === 'th' ? 'พิมพ์รายงาน' : 'Print / Export'}</span>
+            <FileSpreadsheet size={15} />
+            <span>{language === 'th' ? 'ส่งออก Excel (.xlsx)' : 'Export Excel'}</span>
+          </button>
+
+          {/* Dedicated Print Button */}
+          <button 
+            onClick={handlePrintDocument} 
+            className="px-3.5 py-2 rounded-lg bg-gold-500 hover:bg-gold-400 text-obsidian-950 font-black text-xs transition-all shadow-xs active:scale-95 flex items-center gap-1.5 cursor-pointer font-sans"
+          >
+            <Printer size={15} /> 
+            <span>{language === 'th' ? 'พิมพ์รายงาน A4' : 'Print A4 Report'}</span>
           </button>
           {hasWriteAccess() && (
             <button

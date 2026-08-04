@@ -18,7 +18,9 @@ import {
   Menu,
   FileEdit,
   RefreshCw,
-  Printer
+  Printer,
+  FileCode,
+  Download
 } from 'lucide-react';
 
 const DEMO_SCRIPT = [
@@ -103,6 +105,112 @@ export default function ScriptEditor() {
       setSaveStatus('error');
       alert("Failed to sync: " + err.message);
     }
+  };
+
+  // Export screenplay to Final Draft 13 / 12 XML (.fdx) format
+  const exportToFinalDraftFDX = () => {
+    if (!blocks || blocks.length === 0) {
+      alert(language === 'th' ? 'ไม่มีบทภาพยนตร์สำหรับส่งออก' : 'No screenplay blocks to export');
+      return;
+    }
+
+    const scriptTitle = coverTitle || (project?.title?.th || project?.title || 'Screenplay');
+    
+    // Map internal paragraph types to Final Draft XML Paragraph Types
+    const getFDXType = (type) => {
+      switch (type) {
+        case 'heading': return 'Scene Heading';
+        case 'action': return 'Action';
+        case 'character': return 'Character';
+        case 'parenthetical': return 'Parenthetical';
+        case 'dialogue': return 'Dialogue';
+        case 'transition': return 'Transition';
+        case 'shot': return 'Shot';
+        default: return 'Action';
+      }
+    };
+
+    let paragraphsXml = '';
+    blocks.forEach((block) => {
+      const fdxType = getFDXType(block.type);
+      const safeText = (block.text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+
+      paragraphsXml += `    <Paragraph Type="${fdxType}">\n      <Text>${safeText}</Text>\n    </Paragraph>\n`;
+    });
+
+    const fdxContent = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<FinalDraft DocumentType="Script" Template="No" Version="5">
+  <Content>
+${paragraphsXml}  </Content>
+  <HeaderAndFooter Alignment="Left" FirstHeader="No" HeaderPageNum="Yes">
+    <Header>
+      <Paragraph Alignment="Right">
+        <Text>${scriptTitle}</Text>
+      </Paragraph>
+    </Header>
+  </HeaderAndFooter>
+</FinalDraft>`;
+
+    const blob = new Blob([fdxContent], { type: 'application/xml;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${scriptTitle.replace(/\s+/g, '_')}_FinalDraft.fdx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export screenplay to Plain Text (.txt) format
+  const exportToTXT = () => {
+    if (!blocks || blocks.length === 0) {
+      alert(language === 'th' ? 'ไม่มีบทภาพยนตร์สำหรับส่งออก' : 'No screenplay blocks to export');
+      return;
+    }
+
+    const scriptTitle = coverTitle || (project?.title?.th || project?.title || 'Screenplay');
+    let textContent = `${scriptTitle.toUpperCase()}\n\n`;
+
+    blocks.forEach((block) => {
+      const text = block.text || '';
+      switch (block.type) {
+        case 'heading':
+          textContent += `\n${text.toUpperCase()}\n\n`;
+          break;
+        case 'action':
+          textContent += `${text}\n\n`;
+          break;
+        case 'character':
+          textContent += `                    ${text.toUpperCase()}\n`;
+          break;
+        case 'parenthetical':
+          textContent += `              (${text.replace(/^\(|\)$/g, '')})\n`;
+          break;
+        case 'dialogue':
+          textContent += `          ${text}\n\n`;
+          break;
+        case 'transition':
+          textContent += `                                              ${text.toUpperCase()}\n\n`;
+          break;
+        default:
+          textContent += `${text}\n\n`;
+          break;
+      }
+    });
+
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${scriptTitle.replace(/\s+/g, '_')}_Screenplay.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Load project script blocks when loaded from context
@@ -836,6 +944,28 @@ export default function ScriptEditor() {
           >
             <RefreshCw size={13} className="text-gold-500" />
             <span>{language === 'th' ? 'คำนวณหน้าบทย่อย (Sync Lengths)' : 'Sync Scene Lengths'}</span>
+          </button>
+
+          {/* Final Draft FDX Export Button */}
+          <button
+            onClick={exportToFinalDraftFDX}
+            className="px-4 py-2.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer font-sans"
+            title={language === 'th' ? 'ส่งออกเป็นไฟล์บท Final Draft (.fdx XML) สำหรับเปิดในโปรแกรม Final Draft 13' : 'Export as Final Draft 13 (.fdx) file'}
+          >
+            <FileCode size={14} />
+            <span>{language === 'th' ? 'ส่งออก Final Draft (.fdx)' : 'Export Final Draft (.fdx)'}</span>
+          </button>
+
+          {/* TXT Export Button */}
+          <button
+            onClick={exportToTXT}
+            className={`px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              theme === 'dark' ? 'bg-obsidian-900 hover:bg-obsidian-800 text-slate-200 border border-obsidian-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
+            title={language === 'th' ? 'ส่งออกเป็นไฟล์ข้อความ (.txt)' : 'Export as plain text (.txt)'}
+          >
+            <Download size={13} />
+            <span>{language === 'th' ? 'ส่งออก TXT' : 'Export TXT'}</span>
           </button>
 
           <button
