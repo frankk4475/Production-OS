@@ -31,6 +31,7 @@ import {
   Mail,
   Send,
   FileDown,
+  RefreshCw,
   FolderPlus,
   Search,
   User,
