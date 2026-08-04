@@ -122,13 +122,17 @@ function ShootingSchedule() {
   // Extract all unique characters to auto-generate Cast IDs (1, 2, 3...)
   const getCastIdsMap = () => {
     const chars = new Set();
-    scenes.forEach(scene => {
+    const safeScenes = Array.isArray(scenes) ? scenes : [];
+    safeScenes.forEach(scene => {
+      if (!scene) return;
       // Scan cast field
       if (scene.cast?.th) scene.cast.th.split(',').forEach(c => chars.add(c.trim().toUpperCase()));
       if (scene.cast?.en) scene.cast.en.split(',').forEach(c => chars.add(c.trim().toUpperCase()));
       // Scan tagged elements
       const elements = scene.tech_notes?.scene_elements || [];
-      elements.filter(el => el.category === 'cast_members').forEach(el => chars.add(el.name.trim().toUpperCase()));
+      elements.filter(el => el && el.category === 'cast_members').forEach(el => {
+        if (el.name) chars.add(el.name.trim().toUpperCase());
+      });
     });
     
     const sortedChars = Array.from(chars).sort();
@@ -142,12 +146,15 @@ function ShootingSchedule() {
   const castIdsMap = getCastIdsMap();
 
   const getSceneCastIds = (scene) => {
+    if (!scene) return [];
     const ids = [];
     const sceneChars = new Set();
     if (scene.cast?.th) scene.cast.th.split(',').forEach(c => sceneChars.add(c.trim().toUpperCase()));
     if (scene.cast?.en) scene.cast.en.split(',').forEach(c => sceneChars.add(c.trim().toUpperCase()));
     const elements = scene.tech_notes?.scene_elements || [];
-    elements.filter(el => el.category === 'cast_members').forEach(el => sceneChars.add(el.name.trim().toUpperCase()));
+    elements.filter(el => el && el.category === 'cast_members').forEach(el => {
+      if (el.name) sceneChars.add(el.name.trim().toUpperCase());
+    });
 
     sceneChars.forEach(c => {
       if (castIdsMap[c]) ids.push(castIdsMap[c]);
@@ -391,8 +398,9 @@ function ShootingSchedule() {
   };
 
   // Boneyard scenes list
-  const boneyardScenes = scenes.filter(s => s.tech_notes?.scheduling?.inBoneyard)
-    .sort((a, b) => (parseFloat(a.scene_number) || 0) - (parseFloat(b.scene_number) || 0));
+  const safeScenesList = Array.isArray(scenes) ? scenes : [];
+  const boneyardScenes = safeScenesList.filter(s => s && s.tech_notes?.scheduling?.inBoneyard)
+    .sort((a, b) => (parseFloat(a?.scene_number) || 0) - (parseFloat(b?.scene_number) || 0));
 
   // Compute total pages per shoot day & display strips
   const renderStripsWithDaybreaks = () => {
