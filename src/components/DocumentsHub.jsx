@@ -174,6 +174,7 @@ function DocumentsHubContent({
   // Call Sheet Email Dispatcher Modal States
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [selectedCrewEmails, setSelectedCrewEmails] = useState([]);
+  const [customRecipientEmail, setCustomRecipientEmail] = useState('');
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchStatus, setDispatchStatus] = useState('idle'); // 'idle' | 'sending' | 'success'
 
@@ -183,26 +184,58 @@ function DocumentsHubContent({
     handlePrintDocument();
   };
 
-  // Handle Send Call Sheet Emails Dispatch
+  // Handle Real-World Call Sheet Email Dispatch (Launches Gmail Web Compose & Native Mailto)
   const handleSendCallSheetEmails = () => {
-    if (selectedCrewEmails.length === 0) {
-      alert(isTh ? 'กรุณาเลือกทีมงานหรือนักแสดงอย่างน้อย 1 ท่านสำหรับส่ง Email' : 'Please select at least 1 recipient');
+    const recipientsList = [...selectedCrewEmails];
+    if (customRecipientEmail.trim()) {
+      const customEmails = customRecipientEmail.split(',').map(e => e.trim()).filter(Boolean);
+      recipientsList.push(...customEmails);
+    }
+
+    if (recipientsList.length === 0) {
+      alert(isTh ? 'กรุณาเลือกทีมงาน หรือระบุ Email ของคุณในช่องด้านล่างก่อนส่งครับ' : 'Please select at least 1 recipient or enter an email');
       return;
     }
 
     setIsDispatching(true);
     setDispatchStatus('sending');
 
+    const toEmails = recipientsList.join(',');
+    const subjectText = `🎬 [CALL SHEET] ${formatTextValue(project?.title, language, 'PRODUCTION OS PROJECT')} - SHOOT DAY ${selectedShootDay}`;
+    
+    const scheduledDetails = dayScheduledScenes.map(sc => `• SCENE ${sc.scene_number}: ${sc.setting || ''} (${sc.int_ext || 'INT'} / ${sc.day_night || 'DAY'})`).join('\n');
+    
+    const bodyText = `
+=========================================
+🎬 DAILY CALL SHEET (ใบสั่งงานกองถ่ายประจำวัน)
+=========================================
+โปรเจกต์: ${formatTextValue(project?.title, language, 'PRODUCTION OS PROJECT')}
+วันถ่ายทำที่: DAY ${selectedShootDay}
+วันที่: ${new Date().toLocaleDateString(isTh ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+เวลานัดรวม (General Call): 06:00 AM
+สถานที่ถ่ายทำ: ${dayScheduledScenes[0]?.location?.th || dayScheduledScenes[0]?.setting || 'TBD'}
+โรงพยาบาลใกล้เคียง: โรงพยาบาลมหาราช
+
+ตารางฉากนัดถ่ายทำ:
+${scheduledDetails || '- ไม่มีรายการฉาก -'}
+
+รายละเอียดเพิ่มเติมและตารางช็อตทั้งหมดดูได้ในระบบ Production OS
+=========================================
+`.trim();
+
+    // Trigger Gmail Web Compose Window directly in browser (Uses active Gmail login in Chrome)
+    const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(toEmails)}&su=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`;
+    
     setTimeout(() => {
+      window.open(gmailComposeUrl, '_blank');
+
       setIsDispatching(false);
       setDispatchStatus('success');
       setTimeout(() => {
         setIsEmailModalOpen(false);
         setDispatchStatus('idle');
-        setSelectedCrewEmails([]);
-        alert(isTh ? `ส่ง Call Sheet เข้า Email ทีมงานและนักแสดงเรียบร้อยแล้ว (${selectedCrewEmails.length} รายการ)` : `Call Sheets sent successfully to ${selectedCrewEmails.length} recipients!`);
-      }, 1000);
-    }, 1500);
+      }, 800);
+    }, 500);
   };
 
   // File Vault State (Persisted in LocalStorage per project)
@@ -2755,7 +2788,7 @@ function DocumentsHubContent({
                 <label className="font-bold text-slate-900 dark:text-white block mb-1.5 font-mono text-[11px] uppercase tracking-wider">
                   {isTh ? 'เลือกรายชื่อทีมงานและนักแสดงที่จะส่ง Email:' : 'Select Recipients:'}
                 </label>
-                <div className="max-h-48 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-slate-200 dark:border-obsidian-800 bg-slate-50 dark:bg-obsidian-900">
+                <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 rounded-xl border border-slate-200 dark:border-obsidian-800 bg-slate-50 dark:bg-obsidian-900">
                   {safeCrew.length > 0 ? (
                     safeCrew.map((c) => {
                       const emailVal = c.email || `${(c.name?.th || c.name || 'crew').toLowerCase().replace(/\s+/g, '')}@production.com`;
@@ -2786,6 +2819,19 @@ function DocumentsHubContent({
                     <div className="p-3 text-center text-slate-400 italic">ไม่มีรายชื่อทีมงานในระบบ</div>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-900 dark:text-white block mb-1 font-mono text-[11px] uppercase tracking-wider">
+                  {isTh ? 'ระบุ Email ส่วนตัว / Email เพิ่มเติมที่ต้องการส่งเข้า Inbox:' : 'Additional Email Address:'}
+                </label>
+                <input
+                  type="text"
+                  value={customRecipientEmail}
+                  onChange={(e) => setCustomRecipientEmail(e.target.value)}
+                  placeholder={isTh ? "พิมพ์อีเมลของคุณ เช่น frankkrongs...gmail.com" : "e.g. yourname@gmail.com"}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-obsidian-900 border border-slate-300 dark:border-obsidian-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 font-mono"
+                />
               </div>
 
               <div className="p-3 rounded-xl bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 space-y-1 font-mono text-[11px]">
