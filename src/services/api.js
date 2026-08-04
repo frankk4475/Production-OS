@@ -1913,8 +1913,8 @@ export const api = {
     const apiKey = providerConfig?.apiKey || localStorage.getItem('prod_api_email_key') || '';
     const serviceUrl = providerConfig?.serviceUrl || localStorage.getItem('prod_api_email_url') || '';
 
-    // 1. If custom API Key or Endpoint is provided, perform live HTTP POST
-    if (serviceUrl && apiKey) {
+    // 1. If custom API Key or Endpoint is provided and valid, perform live HTTP POST
+    if (serviceUrl && apiKey && (serviceUrl.startsWith('http://') || serviceUrl.startsWith('https://'))) {
       try {
         const response = await fetch(serviceUrl, {
           method: 'POST',

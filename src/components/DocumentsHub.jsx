@@ -2912,6 +2912,19 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                         >
                           ✉️ EmailJS REST API
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmailServiceUrl('');
+                            setEmailApiKey('');
+                            localStorage.removeItem('prod_api_email_url');
+                            localStorage.removeItem('prod_api_email_key');
+                          }}
+                          className="px-2 py-1 rounded bg-slate-700 text-slate-300 border border-slate-600 hover:bg-red-600 hover:text-white transition-all text-[10px] font-bold cursor-pointer"
+                          title="ล้างค่าที่กรอกผิด กลับสู่โหมดส่งด่วนมาตรฐาน"
+                        >
+                          ❌ ล้างค่า (กลับสู่โหมดส่งด่วนปกติ)
+                        </button>
                       </div>
                     </div>
 
