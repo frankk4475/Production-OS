@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -41,7 +41,7 @@ const DEMO_SCRIPT = [
   { id: 'b15', type: 'action', text: 'He pulls his hood up and walks quickly down the alleyway.' }
 ];
 
-export default function ScriptEditor() {
+function ScriptEditor() {
   const { language } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
@@ -1535,5 +1535,54 @@ ${paragraphsXml}  </Content>
       )}
 
     </div>
+  );
+}
+
+class ScriptEditorErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ScriptEditor Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 max-w-xl mx-auto my-12 glass-panel rounded-2xl border border-amber-500/30 bg-amber-950/20 text-center font-sans space-y-4">
+          <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+            ✍️
+          </div>
+          <h3 className="text-lg font-black text-white">กำลังโหลดสตูดิโอเขียนบท...</h3>
+          <p className="text-xs text-slate-400 font-mono">
+            {this.state.error?.toString() || 'Loading Script Editor'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-gold-500 text-obsidian-950 rounded-xl font-bold text-xs hover:bg-gold-400 transition-all cursor-pointer"
+          >
+            รีเฟรชหน้า Script Editor
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function ScriptEditorWithBoundary(props) {
+  return (
+    <ScriptEditorErrorBoundary>
+      <ScriptEditor {...props} />
+    </ScriptEditorErrorBoundary>
   );
 }

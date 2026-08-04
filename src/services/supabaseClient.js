@@ -31,6 +31,14 @@ export const isSupabaseConfigured =
   envAnonKey !== 'YOUR_SUPABASE_ANON_KEY' && 
   envAnonKey.trim() !== '');
 
-export const supabase = isSupabaseConfigured 
-  ? createClient(envUrl, envAnonKey) 
-  : null;
+let clientInstance = null;
+if (isSupabaseConfigured) {
+  try {
+    clientInstance = createClient(envUrl, envAnonKey);
+  } catch (err) {
+    console.error("Failed to initialize Supabase client:", err);
+    clientInstance = null;
+  }
+}
+
+export const supabase = clientInstance;
