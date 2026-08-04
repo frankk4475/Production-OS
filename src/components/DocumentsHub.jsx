@@ -2875,7 +2875,46 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                 </button>
 
                 {showServerConfig && (
-                  <div className="mt-2.5 p-3 rounded-xl bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 space-y-2 font-mono text-[11px]">
+                  <div className="mt-2.5 p-3 rounded-xl bg-slate-100 dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 space-y-3 font-mono text-[11px]">
+                    <div>
+                      <span className="text-slate-400 block font-bold mb-1">เลือกเกตเวย์ส่ง Email สำเร็จรูป (Quick Presets):</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = 'https://api.resend.com/emails';
+                            setEmailServiceUrl(url);
+                            localStorage.setItem('prod_api_email_url', url);
+                          }}
+                          className="px-2 py-1 rounded bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all text-[10px] font-bold cursor-pointer"
+                        >
+                          ⚡ Resend API (ฟรี 3,000 เมล/เดือน)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+                            setEmailServiceUrl(url);
+                            localStorage.setItem('prod_api_email_url', url);
+                          }}
+                          className="px-2 py-1 rounded bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600 hover:text-white transition-all text-[10px] font-bold cursor-pointer"
+                        >
+                          🔴 Google Cloud Gmail API
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const url = 'https://api.emailjs.com/api/v1.0/email/send';
+                            setEmailServiceUrl(url);
+                            localStorage.setItem('prod_api_email_url', url);
+                          }}
+                          className="px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-bold cursor-pointer"
+                        >
+                          ✉️ EmailJS REST API
+                        </button>
+                      </div>
+                    </div>
+
                     <div>
                       <span className="text-slate-400 block font-bold mb-1">Email Service Endpoint URL:</span>
                       <input
@@ -2885,7 +2924,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                           setEmailServiceUrl(e.target.value);
                           localStorage.setItem('prod_api_email_url', e.target.value);
                         }}
-                        placeholder="https://api.resend.com/emails หรือ https://api.emailjs.com/api/v1.0/email/send"
+                        placeholder="https://api.resend.com/emails หรือ https://gmail.googleapis.com/..."
                         className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 text-slate-900 dark:text-white"
                       />
                     </div>
@@ -2898,12 +2937,12 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                           setEmailApiKey(e.target.value);
                           localStorage.setItem('prod_api_email_key', e.target.value);
                         }}
-                        placeholder="re_123456789... (Resend / SendGrid / Brevo API Key)"
+                        placeholder="re_123456789... (Resend / Google Cloud API Key)"
                         className="w-full px-2.5 py-1.5 rounded-lg bg-white dark:bg-obsidian-950 border border-slate-300 dark:border-obsidian-800 text-slate-900 dark:text-white"
                       />
                     </div>
                     <span className="text-[10px] text-slate-400 block">
-                      💡 เมื่อใส่ API Key ระบบจะทำการส่งข้อความผ่านเซิร์ฟเวอร์อีเมลบริษัทของคุณโดยตรง 100%
+                      💡 เมื่อใส่ API Key ระบบจะทำการยิงข้อความผ่านเซิร์ฟเวอร์อีเมลหัวหน้างาน/บริษัทของคุณโดยตรง 100%
                     </span>
                   </div>
                 )}
