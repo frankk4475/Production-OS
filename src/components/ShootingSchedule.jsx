@@ -52,7 +52,7 @@ const formatEighths = (val) => {
   return eighths > 0 ? `${whole} ${eighths}/8 pgs` : `${whole} pgs`;
 };
 
-export default function ShootingSchedule() {
+function ShootingSchedule() {
   const { language } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
@@ -828,10 +828,11 @@ export default function ShootingSchedule() {
       )}
 
       {/* SHOOT DAY PICKER MODAL */}
-      {shootDayModalScene && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print">
-          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-md w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative">
+      {shootDayModalScene && shootDayModalScene.scene && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 no-print animate-fadeIn">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-4 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative font-sans">
             <button 
+              type="button"
               onClick={() => setShootDayModalScene(null)}
               className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
             >
@@ -840,21 +841,22 @@ export default function ShootingSchedule() {
 
             <h3 className="text-base font-black text-slate-900 dark:text-white font-sans flex items-center gap-2">
               <Calendar size={18} className="text-gold-500" />
-              <span>{language === 'th' ? `กำหนดคิววันถ่ายทำ - ฉากที่ ${shootDayModalScene.scene.scene_number}` : `Assign Shoot Day - Scene ${shootDayModalScene.scene.scene_number}`}</span>
+              <span>{language === 'th' ? `กำหนดคิววันถ่ายทำ - ฉากที่ ${shootDayModalScene.scene.scene_number || ''}` : `Assign Shoot Day - Scene ${shootDayModalScene.scene.scene_number || ''}`}</span>
             </h3>
 
             <p className="text-xs text-slate-400 font-sans">
               {language === 'th' ? 'เลือกคิววันถ่ายทำ (Shoot Day) หรือแทรกเส้นคั่นแบ่งวันสำหรับฉากนี้' : 'Select a Shoot Day or insert a day break divider for this scene.'}
             </p>
 
-            <div className="grid grid-cols-2 gap-2 font-mono text-xs pt-2">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map((dayNum) => (
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 font-mono text-xs pt-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'].map((dayNum) => (
                 <button
                   key={dayNum}
+                  type="button"
                   onClick={() => handleAssignShootDay(shootDayModalScene.scene, dayNum)}
-                  className={`p-3 rounded-xl border text-center font-black transition-all cursor-pointer ${
-                    String(shootDayModalScene.scene.tech_notes?.scheduling?.shootDay) === dayNum
-                      ? 'bg-gold-500 text-obsidian-950 border-gold-400 shadow-md'
+                  className={`p-2.5 rounded-xl border text-center font-black transition-all cursor-pointer ${
+                    String(shootDayModalScene.scene.tech_notes?.scheduling?.shootDay || '') === dayNum
+                      ? 'bg-gold-500 text-obsidian-950 border-gold-400 shadow-md scale-105'
                       : 'bg-slate-100 dark:bg-obsidian-900 border-slate-200 dark:border-obsidian-800 text-slate-700 dark:text-slate-200 hover:border-gold-500/50'
                   }`}
                 >
@@ -863,29 +865,91 @@ export default function ShootingSchedule() {
               ))}
             </div>
 
-            <div className="pt-3 border-t border-slate-200 dark:border-obsidian-800 flex justify-between items-center">
-              <button
-                type="button"
-                onClick={() => {
-                  addDayBreak(shootDayModalScene.index);
-                  setShootDayModalScene(null);
-                }}
-                className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-bold cursor-pointer font-sans"
-              >
-                + {language === 'th' ? 'แทรกเส้นคั่นแบ่งวัน (Day Break)' : 'Insert Day Break Divider'}
-              </button>
+            <div className="pt-3 border-t border-slate-200 dark:border-obsidian-800 flex flex-wrap justify-between items-center gap-2">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    addDayBreak(shootDayModalScene.index);
+                    setShootDayModalScene(null);
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/30 text-xs font-bold cursor-pointer font-sans"
+                >
+                  + {language === 'th' ? 'แทรกเส้นคั่น (Day Break)' : 'Insert Break'}
+                </button>
+
+                {shootDayModalScene.scene.tech_notes?.scheduling?.shootDay && (
+                  <button
+                    type="button"
+                    onClick={() => handleAssignShootDay(shootDayModalScene.scene, '')}
+                    className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold cursor-pointer font-sans"
+                  >
+                    {language === 'th' ? 'ลบคิววันถ่าย' : 'Clear Day'}
+                  </button>
+                )}
+              </div>
 
               <button
                 type="button"
                 onClick={() => setShootDayModalScene(null)}
                 className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-400 text-xs font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer font-sans"
               >
-                {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                {language === 'th' ? 'ปิด' : 'Close'}
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// React Class Error Boundary Component to prevent white screen crashes
+class ShootingScheduleErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ShootingSchedule Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 max-w-xl mx-auto my-12 glass-panel rounded-2xl border border-red-500/30 bg-red-950/20 text-center font-sans space-y-4">
+          <div className="w-12 h-12 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 flex items-center justify-center mx-auto text-xl font-bold">
+            ⚠️
+          </div>
+          <h3 className="text-lg font-black text-white">เกิดข้อผิดพลาดในตารางวางแผนถ่ายทำ</h3>
+          <p className="text-xs text-slate-400 font-mono">
+            {this.state.error?.toString() || 'Unknown Render Error'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-gold-500 text-obsidian-950 rounded-xl font-bold text-xs hover:bg-gold-400 transition-all cursor-pointer"
+          >
+            รีเฟรชหน้าตารางถ่ายทำ
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function ShootingScheduleWithBoundary(props) {
+  return (
+    <ShootingScheduleErrorBoundary>
+      <ShootingSchedule {...props} />
+    </ShootingScheduleErrorBoundary>
   );
 }
