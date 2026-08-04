@@ -790,8 +790,9 @@ function DocumentsHubContent({
     document.body.removeChild(link);
   };
 
-  // Dedicated Print Document Popup Generator (Clean 100% Margined Print Document Engine)
+  // Context-Aware Dedicated Print Engine (Clean A4 Print Engine for ALL Document Tabs)
   const handlePrintDocument = () => {
+    const currentTab = lockedTab || activeSubTab;
     const printWin = window.open('', '_blank', 'width=1100,height=850');
     if (!printWin) {
       window.print();
@@ -801,27 +802,167 @@ function DocumentsHubContent({
     const docTitle = formatTextValue(project?.title, language, 'PRODUCTION OS PROJECT');
     const dateStr = new Date().toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    let rowsHtml = '';
-    activeSceneShots.forEach(shot => {
-      const framingVal = shot.framing || shot.type || shot.size || 'MCU';
-      rowsHtml += `
-        <tr>
-          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold; font-family:monospace;">${shot.shotNum || shot.shot_number || ''}</td>
-          <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold;">${framingVal}</td>
-          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.camera_angle || shot.angle || 'Eye-Level'}</td>
-          <td style="border:1px solid #334155; padding:8px;">${shot.camera_movement || shot.movement || 'Static'}</td>
-          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.lens || '-'}</td>
-          <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.equipment || 'Tripod'}</td>
-          <td style="border:1px solid #334155; padding:8px; line-height:1.4;">${shot.description?.th || shot.description || '-'}</td>
-        </tr>
+    let docHtmlBody = '';
+    let docSubTitle = '';
+
+    if (currentTab === 'storyboard') {
+      docSubTitle = isTh ? `สตอรี่บอร์ด & Previs - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Storyboards & Previs - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`;
+      
+      let cardsHtml = '';
+      if (activeSceneShots && activeSceneShots.length > 0) {
+        activeSceneShots.forEach(shot => {
+          const framingVal = shot.framing || shot.type || shot.size || 'MCU';
+          const imgUrl = shot.imageUrl || shot.image_url || shot.storyboard_url;
+          cardsHtml += `
+            <div style="border:1px solid #cbd5e1; border-radius:8px; padding:12px; background:#fff; page-break-inside:avoid; break-inside:avoid;">
+              <div style="width:100%; height:180px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+                ${imgUrl ? `<img src="${imgUrl}" style="width:100%; height:100%; object-fit:cover;" />` : `<div style="color:#94a3b8; font-size:12px; font-weight:bold;">🖼️ [ยังไม่มีภาพสเก็ตช์]</div>`}
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-weight:900; font-family:monospace; color:#0f172a; font-size:13px;">SHOT ${shot.shotNum || shot.shot_number || ''}</span>
+                <span style="font-size:10px; font-weight:bold; background:#0f172a; color:#fbbf24; padding:2px 6px; border-radius:4px;">${framingVal} | ${shot.camera_angle || shot.angle || 'Eye-Level'}</span>
+              </div>
+              <div style="font-size:11px; color:#475569; line-height:1.4;">
+                ${shot.description?.th || shot.description || '-'}
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        cardsHtml = `<div style="padding:20px; text-align:center; color:#64748b;">ไม่มีข้อมูลสตอรี่บอร์ดในฉากนี้</div>`;
+      }
+
+      docHtmlBody = `
+        <div style="display:grid; grid-template-columns: repeat(${printOrientation === 'landscape' ? '3' : '2'}, 1fr); gap:16px;">
+          ${cardsHtml}
+        </div>
       `;
-    });
+    } 
+    else if (currentTab === 'callsheet') {
+      docSubTitle = isTh ? `ใบสั่งงานกองถ่าย (Daily Call Sheet) - วันถ่ายที่ ${selectedShootDay}` : `Daily Call Sheet - Shoot Day ${selectedShootDay}`;
+      
+      let scheduledScenesRows = '';
+      dayScheduledScenes.forEach(sc => {
+        scheduledScenesRows += `
+          <tr>
+            <td style="border:1px solid #334155; padding:6px; font-weight:bold; text-align:center;">SCENE ${sc.scene_number}</td>
+            <td style="border:1px solid #334155; padding:6px; font-weight:bold;">${sc.setting || ''}</td>
+            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.int_ext || 'INT'} / ${sc.day_night || 'DAY'}</td>
+            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.pages || '1/8'} pgs</td>
+            <td style="border:1px solid #334155; padding:6px; line-height:1.3;">${sc.description?.th || sc.description || '-'}</td>
+          </tr>
+        `;
+      });
+
+      docHtmlBody = `
+        <div style="border:1px solid #334155; padding:12px; margin-bottom:16px; background:#f8fafc; border-radius:6px; display:flex; justify-content:space-between;">
+          <div>
+            <strong>🗓️ ${isTh ? 'วันที่ถ่ายทำ:' : 'Shoot Date:'}</strong> ${new Date().toLocaleDateString(isTh ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br/>
+            <strong>📍 ${isTh ? 'สถานที่นัดหมาย:' : 'Location:'}</strong> ${dayScheduledScenes[0]?.location?.th || dayScheduledScenes[0]?.setting || 'TBD'}
+          </div>
+          <div style="text-align:right;">
+            <strong>⏰ ${isTh ? 'เวลานัดรวม (General Call):' : 'General Call:'}</strong> 06:00 AM<br/>
+            <strong>🏥 ${isTh ? 'โรงพยาบาลใกล้เคียง:' : 'Nearest Hospital:'}</strong> โรงพยาบาลมหาราช
+          </div>
+        </div>
+
+        <h3 style="font-size:13px; margin:14px 0 6px 0; text-transform:uppercase; color:#0f172a;">${isTh ? 'ตารางถ่ายทำประจำวัน (Scheduled Scenes)' : 'Scheduled Scenes'}</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:12%;">SCENE #</th>
+              <th style="width:25%;">${isTh ? 'สถานที่' : 'SETTING'}</th>
+              <th style="width:15%;">${isTh ? 'ประเภท/เวลา' : 'INT/EXT'}</th>
+              <th style="width:12%;">${isTh ? 'จำนวนหน้า' : 'PAGES'}</th>
+              <th style="width:36%;">${isTh ? 'รายละเอียดบทฉาก' : 'SYNOPSIS'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${scheduledScenesRows || `<tr><td colspan="5" style="text-align:center; padding:12px;">ไม่มีฉากนัดถ่ายในวันนี้</td></tr>`}
+          </tbody>
+        </table>
+      `;
+    }
+    else if (currentTab === 'breakdown') {
+      docSubTitle = isTh ? 'ตารางสรุปแจกแจงบทถ่ายทำ (Script Breakdown Summary)' : 'Script Breakdown Summary';
+      
+      let breakdownRows = '';
+      safeScenes.forEach(sc => {
+        const elements = sc.tech_notes?.scene_elements || [];
+        const itemsStr = elements.map(e => `${e.name} (${e.category})`).join(', ');
+        breakdownRows += `
+          <tr>
+            <td style="border:1px solid #334155; padding:6px; font-weight:bold; text-align:center;">SCENE ${sc.scene_number}</td>
+            <td style="border:1px solid #334155; padding:6px; font-weight:bold;">${sc.setting || ''}</td>
+            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.int_ext || 'INT'} / ${sc.day_night || 'DAY'}</td>
+            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.pages || '1/8'} pgs</td>
+            <td style="border:1px solid #334155; padding:6px; line-height:1.3;">${itemsStr || '- ไม่มี -'}</td>
+          </tr>
+        `;
+      });
+
+      docHtmlBody = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:12%;">SCENE #</th>
+              <th style="width:22%;">${isTh ? 'สถานที่' : 'SETTING'}</th>
+              <th style="width:15%;">${isTh ? 'ประเภท' : 'TYPE'}</th>
+              <th style="width:12%;">${isTh ? 'จำนวนหน้า' : 'PAGES'}</th>
+              <th style="width:39%;">${isTh ? 'องค์ประกอบบท (Elements)' : 'ELEMENTS'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${breakdownRows}
+          </tbody>
+        </table>
+      `;
+    }
+    else {
+      // Default: Shot List tab
+      docSubTitle = isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`;
+      
+      let rowsHtml = '';
+      activeSceneShots.forEach(shot => {
+        const framingVal = shot.framing || shot.type || shot.size || 'MCU';
+        rowsHtml += `
+          <tr>
+            <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold; font-family:monospace;">${shot.shotNum || shot.shot_number || ''}</td>
+            <td style="border:1px solid #334155; padding:8px; text-align:center; font-weight:bold;">${framingVal}</td>
+            <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.camera_angle || shot.angle || 'Eye-Level'}</td>
+            <td style="border:1px solid #334155; padding:8px;">${shot.camera_movement || shot.movement || 'Static'}</td>
+            <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.lens || '-'}</td>
+            <td style="border:1px solid #334155; padding:8px; text-align:center;">${shot.equipment || 'Tripod'}</td>
+            <td style="border:1px solid #334155; padding:8px; line-height:1.4;">${shot.description?.th || shot.description || '-'}</td>
+          </tr>
+        `;
+      });
+
+      docHtmlBody = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width:8%;">SHOT #</th>
+              <th style="width:10%;">${isTh ? 'ขนาดภาพ' : 'FRAMING'}</th>
+              <th style="width:12%;">${isTh ? 'มุมกล้อง' : 'ANGLE'}</th>
+              <th style="width:14%;">${isTh ? 'การเคลื่อนกล้อง & ทิศทาง' : 'MOVEMENT'}</th>
+              <th style="width:8%;">${isTh ? 'เลนส์' : 'LENS'}</th>
+              <th style="width:12%;">${isTh ? 'อุปกรณ์' : 'EQUIPMENT'}</th>
+              <th style="width:36%;">${isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง / บล็อกกิ้ง' : 'ACTION / CAMERA DETAILS'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml || `<tr><td colspan="7" style="text-align:center; padding:12px;">ไม่มีข้อมูลช็อตในฉากนี้</td></tr>`}
+          </tbody>
+        </table>
+      `;
+    }
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${docTitle} - Shot List Scene ${selectedSceneNum}</title>
+        <title>${docTitle} - ${docSubTitle}</title>
         <meta charset="utf-8">
         <style>
           @page {
@@ -853,15 +994,10 @@ function DocumentsHubContent({
             display: inline-block;
           }
           .doc-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 900;
-            margin: 10px 0 6px 0;
+            margin: 10px 0 4px 0;
             color: #0f172a;
-          }
-          .doc-meta {
-            font-size: 13px;
-            color: #475569;
-            margin-top: 4px;
           }
           table {
             width: 100%;
@@ -877,18 +1013,11 @@ function DocumentsHubContent({
             font-size: 11px;
             text-transform: uppercase;
             border: 1px solid #334155;
-            padding: 10px 8px;
+            padding: 9px 8px;
           }
           tr {
             page-break-inside: avoid;
           }
-          .col-shot { width: 8%; }
-          .col-framing { width: 10%; }
-          .col-angle { width: 12%; }
-          .col-move { width: 14%; }
-          .col-lens { width: 8%; }
-          .col-eq { width: 12%; }
-          .col-desc { width: 36%; }
         </style>
       </head>
       <body>
@@ -896,32 +1025,14 @@ function DocumentsHubContent({
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <div>
               <span class="doc-badge">${docTitle}</span>
-              <span style="font-size:11px; font-weight:bold; color:#64748b; margin-left:10px;">• SHOT LIST DOCUMENT (A4)</span>
+              <span style="font-size:11px; font-weight:bold; color:#64748b; margin-left:10px;">• DOCUMENT SUITE (A4)</span>
             </div>
             <div style="font-size:12px; font-weight:bold; color:#64748b;">${dateStr}</div>
           </div>
-          <h1 class="doc-title">${isTh ? `รายการช็อตถ่ายทำ - ฉากที่ ${selectedSceneNum}: ${activeScene?.setting || ''}` : `Shot List - Scene ${selectedSceneNum}: ${activeScene?.setting || ''}`}</h1>
-          <div class="doc-meta">
-            ${activeScene?.int_ext || 'INT/EXT'} • ${activeScene?.day_night || 'DAY/NIGHT'} • ${isTh ? 'สถานที่:' : 'Location:'} ${activeScene?.location?.th || activeScene?.setting || 'TBD'} • Total Shots: ${activeSceneShots.length}
-          </div>
+          <h1 class="doc-title">${docSubTitle}</h1>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th class="col-shot">SHOT #</th>
-              <th class="col-framing">${isTh ? 'ขนาดภาพ' : 'FRAMING'}</th>
-              <th class="col-angle">${isTh ? 'มุมกล้อง' : 'ANGLE'}</th>
-              <th class="col-move">${isTh ? 'การเคลื่อนกล้อง & ทิศทาง' : 'MOVEMENT'}</th>
-              <th class="col-lens">${isTh ? 'เลนส์' : 'LENS'}</th>
-              <th class="col-eq">${isTh ? 'อุปกรณ์' : 'EQUIPMENT'}</th>
-              <th class="col-desc">${isTh ? 'รายละเอียดแอคชั่น / มุมกล้อง / บล็อกกิ้ง' : 'ACTION / CAMERA DETAILS'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+        ${docHtmlBody}
       </body>
       </html>
     `;
@@ -933,6 +1044,7 @@ function DocumentsHubContent({
 
     setTimeout(() => {
       printWin.print();
+      printWin.close(); // Clean up popup window after printing so no blank window remains!
     }, 400);
   };
 
