@@ -176,35 +176,10 @@ function DocumentsHubContent({
   const [isDispatching, setIsDispatching] = useState(false);
   const [dispatchStatus, setDispatchStatus] = useState('idle'); // 'idle' | 'sending' | 'success'
 
-  // Direct High-Res PDF Generator (Bypasses Browser Print Preview)
+  // Direct High-Res PDF Generator Engine (Opens Native macOS / Chrome High-Res PDF Save Window)
   const handleDownloadDirectPDF = () => {
-    const currentTab = lockedTab || activeSubTab;
-    const docTitle = formatTextValue(project?.title, language, 'PRODUCTION_OS_DOCUMENT');
-    
-    // Create printable document blob
-    const htmlHeader = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${docTitle}</title><style>@page{size:${printPaperSize} ${printOrientation};margin:15mm;}body{font-family:'Sarabun',sans-serif;padding:30px;color:#000;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #334155;padding:8px;}</style></head><body>`;
-    const htmlFooter = `</body></html>`;
-    
-    let content = `<div style="border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px;"><h2>${docTitle}</h2><p>DOCUMENT TYPE: ${currentTab.toUpperCase()}</p></div>`;
-    if (currentTab === 'shotlist') {
-      content += `<table><thead><tr><th>SHOT #</th><th>FRAMING</th><th>ANGLE</th><th>MOVEMENT</th><th>LENS</th><th>EQUIPMENT</th><th>DETAILS</th></tr></thead><tbody>`;
-      activeSceneShots.forEach(s => {
-        content += `<tr><td>${s.shotNum || s.shot_number || ''}</td><td>${s.framing || s.type || s.size || 'MCU'}</td><td>${s.camera_angle || s.angle || 'Eye-Level'}</td><td>${s.camera_movement || s.movement || 'Static'}</td><td>${s.lens || ''}</td><td>${s.equipment || 'Tripod'}</td><td>${s.description?.th || s.description || ''}</td></tr>`;
-      });
-      content += `</tbody></table>`;
-    } else {
-      content += `<p>Production document generated automatically from Production OS Suite.</p>`;
-    }
-    
-    const fullHtml = htmlHeader + content + htmlFooter;
-    const blob = new Blob([fullHtml], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${docTitle}_${currentTab}_Direct.pdf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Route to dedicated print engine which generates valid %PDF binary output via Save as PDF
+    handlePrintDocument();
   };
 
   // Handle Send Call Sheet Emails Dispatch
