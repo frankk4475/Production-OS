@@ -874,7 +874,7 @@ function DocumentsHubContent({
       if (activeSceneShots && activeSceneShots.length > 0) {
         activeSceneShots.forEach(shot => {
           const framingVal = shot.framing || shot.type || shot.size || 'MCU';
-          const imgUrl = shot.imageUrl || shot.image_url || shot.storyboard_url;
+          const imgUrl = shot.imageUrl || shot.image_url || shot.storyboard_url || shot.image || shot.description?.image_url || shot.description?.image || shot.description?.storyboard_url;
           cardsHtml += `
             <div style="border:1px solid #cbd5e1; border-radius:8px; padding:12px; background:#fff; page-break-inside:avoid; break-inside:avoid;">
               <div style="width:100%; height:180px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
