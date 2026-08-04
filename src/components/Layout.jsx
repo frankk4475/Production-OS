@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -54,7 +54,7 @@ const getRoleLabel = (roleName, language) => {
   }
 };
 
-export default function Layout({ 
+function Layout({ 
   children, 
   currentTab, 
   setCurrentTab
@@ -662,5 +662,57 @@ export default function Layout({
         </div>
       )}
     </div>
+  );
+}
+
+class LayoutErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Layout Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 font-sans">
+          <div className="max-w-md w-full p-6 rounded-2xl glass-panel border border-gold-500/30 text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center mx-auto text-xl">
+              🎬
+            </div>
+            <h3 className="text-lg font-bold">ระบบขัดข้องในการโหลดเค้าโครงหน้า</h3>
+            <p className="text-xs text-slate-400 font-mono">
+              {this.state.error?.toString() || 'Layout Exception'}
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false, error: null });
+                window.location.hash = '#/dashboard';
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-gold-500 text-obsidian-950 rounded-xl font-black text-xs hover:bg-gold-400 cursor-pointer"
+            >
+              ↻ รีโหลดระบบ & ไปที่ Dashboard
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function LayoutWithBoundary(props) {
+  return (
+    <LayoutErrorBoundary>
+      <Layout {...props} />
+    </LayoutErrorBoundary>
   );
 }
