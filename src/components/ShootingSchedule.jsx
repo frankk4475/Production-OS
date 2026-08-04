@@ -91,20 +91,22 @@ function ShootingSchedule() {
   // Load and construct schedule list from scenes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (scenes && scenes.length > 0) {
+      const safeScenesList = Array.isArray(scenes) ? scenes : [];
+      if (safeScenesList.length > 0) {
         // 1. Separate scheduled and boneyard scenes
-        const scheduled = scenes.filter(s => !s.tech_notes?.scheduling?.inBoneyard);
+        const scheduled = safeScenesList.filter(s => s && !s.tech_notes?.scheduling?.inBoneyard);
         
         // 2. Sort scheduled scenes by shoot order
         const sortedScheduled = [...scheduled].sort((a, b) => {
-          const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
-          const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
+          const orderA = a?.tech_notes?.scheduling?.order ?? parseFloat(a?.scene_number) ?? 0;
+          const orderB = b?.tech_notes?.scheduling?.order ?? parseFloat(b?.scene_number) ?? 0;
           return orderA - orderB;
         });
 
         // 3. Insert day break placeholders
         const items = [];
         sortedScheduled.forEach((scene) => {
+          if (!scene) return;
           items.push({ type: 'scene', id: scene.id, scene });
           if (scene.tech_notes?.scheduling?.dayBreakAfter) {
             items.push({ type: 'day_break', id: `db-${scene.id}` });
@@ -122,17 +124,21 @@ function ShootingSchedule() {
   // Extract all unique characters to auto-generate Cast IDs (1, 2, 3...)
   const getCastIdsMap = () => {
     const chars = new Set();
-    const safeScenes = Array.isArray(scenes) ? scenes : [];
-    safeScenes.forEach(scene => {
+    const safeScenesList = Array.isArray(scenes) ? scenes : [];
+    safeScenesList.forEach(scene => {
       if (!scene) return;
       // Scan cast field
-      if (scene.cast?.th) scene.cast.th.split(',').forEach(c => chars.add(c.trim().toUpperCase()));
-      if (scene.cast?.en) scene.cast.en.split(',').forEach(c => chars.add(c.trim().toUpperCase()));
+      if (scene.cast?.th && typeof scene.cast.th === 'string') {
+        scene.cast.th.split(',').forEach(c => c && chars.add(c.trim().toUpperCase()));
+      }
+      if (scene.cast?.en && typeof scene.cast.en === 'string') {
+        scene.cast.en.split(',').forEach(c => c && chars.add(c.trim().toUpperCase()));
+      }
       // Scan tagged elements
       const elements = scene.tech_notes?.scene_elements || [];
-      elements.filter(el => el && el.category === 'cast_members').forEach(el => {
-        if (el.name) chars.add(el.name.trim().toUpperCase());
-      });
+      if (Array.isArray(elements)) {
+        elements.filter(el => el && el.category === 'cast_members').forEach(el => el.name && chars.add(el.name.trim().toUpperCase()));
+      }
     });
     
     const sortedChars = Array.from(chars).sort();
@@ -149,12 +155,16 @@ function ShootingSchedule() {
     if (!scene) return [];
     const ids = [];
     const sceneChars = new Set();
-    if (scene.cast?.th) scene.cast.th.split(',').forEach(c => sceneChars.add(c.trim().toUpperCase()));
-    if (scene.cast?.en) scene.cast.en.split(',').forEach(c => sceneChars.add(c.trim().toUpperCase()));
+    if (scene.cast?.th && typeof scene.cast.th === 'string') {
+      scene.cast.th.split(',').forEach(c => c && sceneChars.add(c.trim().toUpperCase()));
+    }
+    if (scene.cast?.en && typeof scene.cast.en === 'string') {
+      scene.cast.en.split(',').forEach(c => c && sceneChars.add(c.trim().toUpperCase()));
+    }
     const elements = scene.tech_notes?.scene_elements || [];
-    elements.filter(el => el && el.category === 'cast_members').forEach(el => {
-      if (el.name) sceneChars.add(el.name.trim().toUpperCase());
-    });
+    if (Array.isArray(elements)) {
+      elements.filter(el => el && el.category === 'cast_members').forEach(el => el.name && sceneChars.add(el.name.trim().toUpperCase()));
+    }
 
     sceneChars.forEach(c => {
       if (castIdsMap[c]) ids.push(castIdsMap[c]);
