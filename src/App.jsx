@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -14,6 +14,70 @@ import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
 import ShootingSchedule from './components/ShootingSchedule';
 import ProductionHub from './components/ProductionHub';
+
+// Top-Level Error Boundary Component to prevent white screen crashes anywhere in the app
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Global Production OS Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center p-6 font-sans">
+          <div className="max-w-lg w-full p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto text-3xl font-bold">
+              🎬
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-black text-white">ระบบ Production OS ตรวจพบข้อผิดพลาดการทำงาน</h2>
+              <p className="text-xs text-slate-400">
+                ระบบได้ปกป้องข้อมูลของคุณไม่ให้สูญหาย กดปุ่มด้านล่างเพื่อกลับเข้าสู่หน้าแผงควบคุมตามปกติ
+              </p>
+            </div>
+            {this.state.error && (
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-red-400 text-left overflow-x-auto max-h-32">
+                {this.state.error.toString()}
+              </div>
+            )}
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.hash = '#/dashboard';
+                  window.location.reload();
+                }}
+                className="px-5 py-2.5 rounded-xl bg-gold-500 text-obsidian-950 font-black text-xs hover:bg-gold-400 transition-all cursor-pointer shadow-lg"
+              >
+                ↻ รีโหลดระบบ & ไปที่ Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  window.location.hash = '#/login';
+                  window.location.reload();
+                }}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700 transition-all cursor-pointer"
+              >
+                ล้างข้อมูลแคช
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function MainApp() {
   const { user, isCrewOrTalent } = useAuth();
@@ -256,14 +320,16 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <ProjectProvider>
-            <MainApp />
-          </ProjectProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <GlobalErrorBoundary>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <ProjectProvider>
+              <MainApp />
+            </ProjectProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </GlobalErrorBoundary>
   );
 }
