@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -24,20 +24,20 @@ import {
   Plus
 } from 'lucide-react';
 
-export default function Dashboard({ setCurrentTab }) {
+function Dashboard({ setCurrentTab }) {
   const { language, t } = useLanguage();
   const { theme } = useTheme();
   const { hasWriteAccess } = useAuth();
 
   const {
-    projects,
+    projects = [],
     currentProject: project,
     updateProject: setProject,
     handleDeleteProject: onDeleteProject,
     handleAddProject,
-    activeScenes: scenes,
-    activeCrew: crew,
-    activeEvents: events,
+    activeScenes: scenes = [],
+    activeCrew: crew = [],
+    activeEvents: events = [],
     weather,
     setWeather,
     isLoading,
@@ -493,9 +493,13 @@ export default function Dashboard({ setCurrentTab }) {
     );
   }
 
+  const safeScenes = Array.isArray(scenes) ? scenes : [];
+  const safeCrew = Array.isArray(crew) ? crew : [];
+  const safeEvents = Array.isArray(events) ? events : [];
+
   // Find upcoming shoot days (type === 'shoot' and date >= today)
   const todayStr = new Date().toISOString().split('T')[0];
-  const upcomingShoots = events.filter(e => e.type === 'shoot' && e.date >= todayStr);
+  const upcomingShoots = safeEvents.filter(e => e && e.type === 'shoot' && e.date >= todayStr);
 
   const calculateDaysRemaining = () => {
     if (!project || !project.deadline) return 0;
@@ -509,7 +513,7 @@ export default function Dashboard({ setCurrentTab }) {
   const stats = [
     { 
       label: t('dashboard.activeCrew'), 
-      value: crew.length, 
+      value: safeCrew.length, 
       icon: Users,
       color: "from-blue-600 to-indigo-500",
       tab: "crew"
@@ -523,7 +527,7 @@ export default function Dashboard({ setCurrentTab }) {
     },
     { 
       label: t('dashboard.totalScenes'), 
-      value: scenes.length, 
+      value: safeScenes.length, 
       icon: Clapperboard,
       color: "from-purple-600 to-pink-500",
       tab: "breakdown"
@@ -1362,5 +1366,54 @@ export default function Dashboard({ setCurrentTab }) {
         </div>
       )}
     </div>
+  );
+}
+
+class DashboardErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Dashboard Error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 max-w-xl mx-auto my-12 glass-panel rounded-2xl border border-amber-500/30 bg-amber-950/20 text-center font-sans space-y-4">
+          <div className="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center mx-auto text-xl font-bold">
+            🎬
+          </div>
+          <h3 className="text-lg font-black text-white">กำลังโหลดแผงควบคุมหลัก...</h3>
+          <p className="text-xs text-slate-400 font-mono">
+            {this.state.error?.toString() || 'Loading Dashboard'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-gold-500 text-obsidian-950 rounded-xl font-bold text-xs hover:bg-gold-400 transition-all cursor-pointer"
+          >
+            รีเฟรชหน้า Dashboard
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function DashboardWithBoundary(props) {
+  return (
+    <DashboardErrorBoundary>
+      <Dashboard {...props} />
+    </DashboardErrorBoundary>
   );
 }
