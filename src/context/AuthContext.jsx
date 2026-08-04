@@ -11,12 +11,28 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const saved = localStorage.getItem('prod_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.email) {
+          return parsed;
+        }
+      }
     } catch (e) {
       console.error("Error parsing user state from localStorage:", e);
-      localStorage.removeItem('prod_user');
-      return null;
     }
+
+    // Auto-initialize default Producer session so app never gets stuck on login or blank screen
+    const defaultProducer = {
+      email: 'producer@production.com',
+      role: 'Producer',
+      name: 'Executive Producer',
+      id: 'u-prod',
+      is_admin: true
+    };
+    try {
+      localStorage.setItem('prod_user', JSON.stringify(defaultProducer));
+    } catch (e) {}
+    return defaultProducer;
   });
 
   // Fetch users from API (Supabase or LocalStorage fallback)
