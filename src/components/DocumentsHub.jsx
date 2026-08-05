@@ -44,6 +44,47 @@ import {
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient';
 import { api } from '../services/api';
 
+const sortShots = (shots) => {
+  if (!Array.isArray(shots)) return [];
+  return [...shots].sort((a, b) => {
+    const numA = a.shot_number || a.shotNum || '';
+    const numB = b.shot_number || b.shotNum || '';
+    
+    const partsA = numA.split('.').map(x => parseInt(x, 10));
+    const partsB = numB.split('.').map(x => parseInt(x, 10));
+    
+    const majorA = isNaN(partsA[0]) ? 0 : partsA[0];
+    const majorB = isNaN(partsB[0]) ? 0 : partsB[0];
+    if (majorA !== majorB) return majorA - majorB;
+    
+    const minorA = isNaN(partsA[1]) ? 0 : partsA[1];
+    const minorB = isNaN(partsB[1]) ? 0 : partsB[1];
+    if (minorA !== minorB) return minorA - minorB;
+    
+    return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+  });
+};
+
+const getNextShotNumber = (sceneNum, shots) => {
+  const sceneNumStr = String(sceneNum);
+  const minors = shots
+    .map(s => {
+      const numStr = String(s.shot_number || s.shotNum || '');
+      if (numStr.includes('.')) {
+        const parts = numStr.split('.');
+        if (parts[0] === sceneNumStr) {
+          const minorVal = parseInt(parts[1], 10);
+          return isNaN(minorVal) ? 0 : minorVal;
+        }
+      }
+      return 0;
+    })
+    .filter(val => val > 0);
+  
+  const maxMinor = minors.length > 0 ? Math.max(...minors) : 0;
+  return `${sceneNumStr}.${maxMinor + 1}`;
+};
+
 const ELEMENT_CATEGORIES = [
   { id: 'cast_members', label: 'Cast Members', labelTh: 'นักแสดงหลัก', dotColor: 'bg-purple-500', color: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
   { id: 'extras', label: 'Extras', labelTh: 'ตัวประกอบ', dotColor: 'bg-pink-500', color: 'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20' },
@@ -463,7 +504,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
   }) || { id: `scene-${selectedSceneNum || '1'}`, scene_number: String(selectedSceneNum || '1') };
 
   // Filter shots for selected scene with strict scene isolation
-  const activeSceneShots = safeShotList.filter(s => {
+  const activeSceneShots = sortShots(safeShotList.filter(s => {
     if (!s) return false;
     const curSceneNumStr = String(selectedSceneNum || '1');
     
@@ -498,7 +539,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
     if (!shotSceneNum && !shotSceneId && !shotNumPrefix && curSceneNumStr === '1') return true;
 
     return false;
-  });
+  }));
 
   // Save Call Sheet Form Updates into Calendar Event State
   const handleSaveCallSheet = (e) => {
@@ -552,7 +593,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
 
   // Open Create Shot Modal with Auto Shot Number
   const handleOpenAddShotModal = () => {
-    const nextNum = `${selectedSceneNum}.${activeSceneShots.length + 1}`;
+    const nextNum = getNextShotNumber(selectedSceneNum, activeSceneShots);
     setNewShotNum(nextNum);
     setNewShotFraming('MCU');
     setNewShotLens('50mm');
@@ -573,7 +614,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
       ? String(activeScene.id) 
       : curSceneStr;
 
-    const finalShotNum = newShotNum || `${curSceneStr}.${activeSceneShots.length + 1}`;
+    const finalShotNum = newShotNum || getNextShotNumber(curSceneStr, activeSceneShots);
     const finalDescTh = newShotDescTh || newShotDescEn || `มุมกล้อง / ขนาดภาพ ${newShotFraming} (${newShotAngle} / ${newShotMove})`;
     const finalDescEn = newShotDescEn || newShotDescTh || `Camera Shot ${newShotFraming} (${newShotAngle} / ${newShotMove})`;
 

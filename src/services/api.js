@@ -598,6 +598,27 @@ export const api = {
 
   // ================= SHOT LIST API =================
   async getShotList(projectId) {
+    const sortShots = (shots) => {
+      if (!Array.isArray(shots)) return [];
+      return [...shots].sort((a, b) => {
+        const numA = a.shot_number || a.shotNum || '';
+        const numB = b.shot_number || b.shotNum || '';
+        
+        const partsA = numA.split('.').map(x => parseInt(x, 10));
+        const partsB = numB.split('.').map(x => parseInt(x, 10));
+        
+        const majorA = isNaN(partsA[0]) ? 0 : partsA[0];
+        const majorB = isNaN(partsB[0]) ? 0 : partsB[0];
+        if (majorA !== majorB) return majorA - majorB;
+        
+        const minorA = isNaN(partsA[1]) ? 0 : partsA[1];
+        const minorB = isNaN(partsB[1]) ? 0 : partsB[1];
+        if (minorA !== minorB) return minorA - minorB;
+        
+        return numA.localeCompare(numB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+    };
+
     // Standalone helper to sanitize and map shot list item fields consistently
     const mapShotListItem = (s) => {
       const shotNum = s.shot_number || s.shotNum || '';
@@ -637,14 +658,14 @@ export const api = {
         .eq('project_id', projectId);
       if (error) {
         console.error('Supabase error fetching shotlist, falling back:', error);
-        return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId).map(mapShotListItem);
+        return sortShots(getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId).map(mapShotListItem));
       }
       if (!data || data.length === 0) {
         const localShots = getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
         if (localShots.length > 0) {
-          return localShots.map(mapShotListItem);
+          return sortShots(localShots.map(mapShotListItem));
         }
-        return [
+        return sortShots([
           {
             id: 'shot-demo-1',
             project_id: projectId || 'proj-1',
@@ -665,9 +686,9 @@ export const api = {
               lens: '50mm'
             }
           }
-        ].map(mapShotListItem);
+        ].map(mapShotListItem));
       }
-      return (data || []).map(mapShotListItem);
+      return sortShots((data || []).map(mapShotListItem));
     } else {
       await delay();
       const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
@@ -695,9 +716,9 @@ export const api = {
             }
           }
         ];
-        return defaultShots.map(mapShotListItem);
+        return sortShots(defaultShots.map(mapShotListItem));
       }
-      return filtered.map(mapShotListItem);
+      return sortShots(filtered.map(mapShotListItem));
     }
   },
 
