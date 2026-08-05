@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Check,
   ExternalLink,
-  Plus
+  Plus,
+  Trash2,
+  Edit3
 } from 'lucide-react';
 
 export default function MasterCalendar({ events = [], crew = [], setCurrentTab, setTabParams, setEvents }) {
@@ -46,6 +48,86 @@ export default function MasterCalendar({ events = [], crew = [], setCurrentTab, 
   const [newLocation, setNewLocation] = useState('');
   const [newNotes, setNewNotes] = useState('');
 
+  // Edit Event Form State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [editTitleTh, setEditTitleTh] = useState('');
+  const [editTitleEn, setEditTitleEn] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('08:30 AM');
+  const [editType, setEditType] = useState('shoot');
+  const [editLocation, setEditLocation] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editCrewAssigned, setEditCrewAssigned] = useState([]);
+
+  const canModifyEvent = (evt) => {
+    if (!evt) return false;
+    const userIsAdmin = user?.role === 'Admin' || user?.is_admin || user?.email?.toLowerCase() === 'admin@production.com';
+    if (userIsAdmin) return true;
+
+    const creatorId = evt.notes?.created_by || evt.created_by;
+    if (creatorId && creatorId === user?.id) {
+      return true;
+    }
+    return false;
+  };
+
+  const handleOpenEditModal = (evt) => {
+    if (!evt) return;
+    setEditingEventId(evt.id);
+    setEditTitleTh(evt.title?.th || evt.title || '');
+    setEditTitleEn(evt.title?.en || evt.title || '');
+    setEditDate(evt.date || '');
+    setEditTime(evt.time || '08:30 AM');
+    setEditType(evt.type || 'shoot');
+    setEditLocation(evt.location?.th || evt.location?.en || evt.location || '');
+    setEditNotes(evt.notes?.th || evt.notes?.en || (typeof evt.notes === 'string' ? evt.notes : ''));
+    setEditCrewAssigned(evt.crew_assigned || []);
+    setIsEditModalOpen(true);
+    setSelectedEvent(null); // Close details modal
+  };
+
+  const handleEditEventSubmit = (e) => {
+    e.preventDefault();
+    if (!editTitleTh && !editTitleEn) return;
+
+    const updated = (events || []).map(evt => {
+      if (evt.id === editingEventId) {
+        return {
+          ...evt,
+          title: {
+            th: editTitleTh || editTitleEn,
+            en: editTitleEn || editTitleTh
+          },
+          date: editDate,
+          time: editTime,
+          type: editType,
+          location: { th: editLocation, en: editLocation },
+          notes: {
+            ...(typeof evt.notes === 'object' ? evt.notes : {}),
+            th: editNotes,
+            en: editNotes,
+            type: editType
+          },
+          crew_assigned: editCrewAssigned
+        };
+      }
+      return evt;
+    });
+
+    if (setEvents) setEvents(updated);
+    setIsEditModalOpen(false);
+    setEditingEventId(null);
+  };
+
+  const handleDeleteEvent = (eventId) => {
+    if (window.confirm(language === 'th' ? 'คุณแน่ใจหรือไม่ว่าต้องการลบกิจกรรมนี้?' : 'Are you sure you want to delete this event?')) {
+      const updated = (events || []).filter(evt => evt.id !== eventId);
+      if (setEvents) setEvents(updated);
+      setSelectedEvent(null);
+    }
+  };
+
   const handleCreateEventSubmit = (e) => {
     e.preventDefault();
     if (!newTitleTh && !newTitleEn) return;
@@ -60,7 +142,12 @@ export default function MasterCalendar({ events = [], crew = [], setCurrentTab, 
       time: newTime,
       type: newType,
       location: { th: newLocation, en: newLocation },
-      notes: { th: newNotes, en: newNotes },
+      notes: { 
+        th: newNotes, 
+        en: newNotes,
+        created_by: user?.id,
+        creator_name: user?.name || user?.email
+      },
       crew_assigned: []
     };
 
@@ -1009,6 +1096,28 @@ END:VCALENDAR`;
                       <span>{t('crew.callSheetLink')} (Scene {selectedEvent.scene_number})</span>
                     </button>
                   )}
+
+                  {/* Edit and Delete Buttons for Creator & Admin */}
+                  {canModifyEvent(selectedEvent) && (
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-200 dark:border-obsidian-850">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(selectedEvent)}
+                        className="flex-1 py-2 px-3 rounded-lg bg-gold-600 hover:bg-gold-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                      >
+                        <Edit3 size={14} />
+                        <span>{language === 'th' ? 'แก้ไขรายละเอียด' : 'Edit Details'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEvent(selectedEvent.id)}
+                        className="py-2 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white border border-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                      >
+                        <Trash2 size={14} />
+                        <span>{language === 'th' ? 'ลบกิจกรรม' : 'Delete Event'}</span>
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -1134,6 +1243,130 @@ END:VCALENDAR`;
                   className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
                 >
                   {language === 'th' ? 'สร้างอีเว้นต์' : 'Create Event'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT EVENT MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-fadeIn no-print">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border p-6 space-y-4 ${
+            theme === 'dark' ? 'bg-obsidian-900 border-obsidian-800 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <div className="flex items-center justify-between border-b border-inherit pb-3">
+              <h3 className="text-base font-black font-sans flex items-center gap-2">
+                <Edit3 size={18} className="text-gold-500" />
+                <span>{language === 'th' ? 'แก้ไขรายละเอียดนัดหมาย' : 'Edit Calendar Event'}</span>
+              </h3>
+              <button 
+                onClick={() => { setIsEditModalOpen(false); setEditingEventId(null); }}
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditEventSubmit} className="space-y-3 font-sans text-xs">
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ชื่องาน / นัดหมาย (ภาษาไทย):' : 'Event Title (TH):'}</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitleTh}
+                  onChange={(e) => setEditTitleTh(e.target.value)}
+                  placeholder="e.g. ประชุมสรุปบทภาพยนตร์คิว 2"
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ชื่องาน / นัดหมาย (English):' : 'Event Title (EN):'}</label>
+                <input
+                  type="text"
+                  value={editTitleEn}
+                  onChange={(e) => setEditTitleEn(e.target.value)}
+                  placeholder="e.g. Script Review Meeting Day 2"
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'วันที่:' : 'Date:'}</label>
+                  <input
+                    type="date"
+                    required
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'เวลา:' : 'Time:'}</label>
+                  <input
+                    type="text"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    placeholder="e.g. 08:30 AM"
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'ประเภทงาน:' : 'Event Type:'}</label>
+                  <select
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value)}
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200 font-bold"
+                  >
+                    <option value="shoot">{language === 'th' ? '🎬 ถ่ายทำ (Shoot Day)' : 'Shoot Day'}</option>
+                    <option value="prep">{language === 'th' ? '🛠️ เตรียมงาน (Prep Day)' : 'Prep Day'}</option>
+                    <option value="meeting">{language === 'th' ? '💬 ประชุมทีม (Meeting)' : 'Meeting'}</option>
+                    <option value="casting">{language === 'th' ? '🎭 แคสติ้งนักแสดง (Casting)' : 'Casting'}</option>
+                    <option value="post">{language === 'th' ? '🖥️ โพสต์โปรดักชั่น (Post-Prod)' : 'Post Production'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'สถานที่:' : 'Location:'}</label>
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="e.g. Studio A, Bangkok"
+                    className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-bold mb-1">{language === 'th' ? 'บันทึกเพิ่มเติม:' : 'Notes:'}</label>
+                <textarea
+                  rows={2}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder={language === 'th' ? 'รายละเอียดงาน นัดหมาย หรือสิ่งที่ต้องเตรียม...' : 'Meeting notes, agenda, or prep details...'}
+                  className="w-full p-2.5 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-obsidian-800">
+                <button
+                  type="button"
+                  onClick={() => { setIsEditModalOpen(false); setEditingEventId(null); }}
+                  className="px-4 py-2 rounded-lg border border-slate-200 dark:border-obsidian-800 text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-obsidian-900 cursor-pointer"
+                >
+                  {language === 'th' ? 'ยกเลิก' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-gold-500 text-obsidian-950 font-black hover:bg-gold-400 cursor-pointer"
+                >
+                  {language === 'th' ? 'บันทึก' : 'Save Changes'}
                 </button>
               </div>
             </form>
