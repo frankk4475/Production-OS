@@ -598,6 +598,38 @@ export const api = {
 
   // ================= SHOT LIST API =================
   async getShotList(projectId) {
+    // Standalone helper to sanitize and map shot list item fields consistently
+    const mapShotListItem = (s) => {
+      const shotNum = s.shot_number || s.shotNum || '';
+      const shotNumPrefix = shotNum.includes('.') ? shotNum.split('.')[0] : null;
+      
+      const rawSceneId = s.scene_id || '';
+      let rawSceneNum = s.description?.scene_number || s.scene_number || s.sceneNum || '';
+      
+      // Clear rawSceneNum if it looks like a scene ID (UUID or custom scene-xxx)
+      if (rawSceneNum && (String(rawSceneNum).startsWith('scene-') || String(rawSceneNum).length >= 30)) {
+        rawSceneNum = '';
+      }
+      
+      const finalSceneNum = shotNumPrefix || rawSceneNum || rawSceneId || '1';
+      
+      return {
+        ...s,
+        scene_id: rawSceneId || finalSceneNum,
+        scene_number: finalSceneNum,
+        shotNum: shotNum,
+        shot_number: shotNum,
+        type: s.size || s.type || 'MCU',
+        size: s.size || s.type || 'MCU',
+        lens: s.lens || s.description?.lens || '',
+        description: {
+          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+          image_url: s.description?.image_url || '',
+          scene_number: finalSceneNum
+        }
+      };
+    };
+
     if (isSupabaseConfigured) {
       const { data, error } = await supabase
         .from('shot_list')
@@ -605,24 +637,12 @@ export const api = {
         .eq('project_id', projectId);
       if (error) {
         console.error('Supabase error fetching shotlist, falling back:', error);
-        return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
+        return getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId).map(mapShotListItem);
       }
       if (!data || data.length === 0) {
         const localShots = getDbData(STORAGE_KEYS.SHOT_LIST).filter(s => s.project_id === projectId);
         if (localShots.length > 0) {
-          return localShots.map(s => ({
-            ...s,
-            scene_id: s.scene_id || s.scene_number || '',
-            scene_number: s.scene_number || s.scene_id || '',
-            shotNum: s.shot_number || s.shotNum || '',
-            shot_number: s.shot_number || s.shotNum || '',
-            type: s.size || s.type || 'MCU',
-            size: s.size || s.type || 'MCU',
-            description: {
-              ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
-              image_url: s.description?.image_url || ''
-            }
-          }));
+          return localShots.map(mapShotListItem);
         }
         return [
           {
@@ -645,22 +665,9 @@ export const api = {
               lens: '50mm'
             }
           }
-        ];
+        ].map(mapShotListItem);
       }
-      return (data || []).map(s => ({
-        ...s,
-        scene_id: s.scene_id || s.description?.scene_number || s.scene_number || '',
-        scene_number: s.description?.scene_number || s.scene_number || s.scene_id || '',
-        shotNum: s.shot_number || s.shotNum || '',
-        shot_number: s.shot_number || s.shotNum || '',
-        type: s.size || s.type || 'MCU',
-        size: s.size || s.type || 'MCU',
-        lens: s.lens || s.description?.lens || '',
-        description: {
-          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
-          image_url: s.description?.image_url || ''
-        }
-      }));
+      return (data || []).map(mapShotListItem);
     } else {
       await delay();
       const shots = getDbData(STORAGE_KEYS.SHOT_LIST);
@@ -688,42 +695,50 @@ export const api = {
             }
           }
         ];
-        return defaultShots;
+        return defaultShots.map(mapShotListItem);
       }
-      return filtered.map(s => ({
-        ...s,
-        scene_id: s.scene_id || s.scene_number || '',
-        scene_number: s.scene_number || s.scene_id || '',
-        shotNum: s.shot_number || s.shotNum || '',
-        shot_number: s.shot_number || s.shotNum || '',
-        type: s.size || s.type || 'MCU',
-        size: s.size || s.type || 'MCU',
-        description: {
-          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
-          image_url: s.description?.image_url || ''
-        }
-      }));
+      return filtered.map(mapShotListItem);
     }
   },
 
   async saveShotList(projectId, projectShots) {
+    const mapShotListItem = (s) => {
+      const shotNum = s.shot_number || s.shotNum || '';
+      const shotNumPrefix = shotNum.includes('.') ? shotNum.split('.')[0] : null;
+      
+      const rawSceneId = s.scene_id || '';
+      let rawSceneNum = s.description?.scene_number || s.scene_number || s.sceneNum || '';
+      
+      if (rawSceneNum && (String(rawSceneNum).startsWith('scene-') || String(rawSceneNum).length >= 30)) {
+        rawSceneNum = '';
+      }
+      
+      const finalSceneNum = shotNumPrefix || rawSceneNum || rawSceneId || '1';
+      
+      return {
+        ...s,
+        scene_id: rawSceneId || finalSceneNum,
+        scene_number: finalSceneNum,
+        shotNum: shotNum,
+        shot_number: shotNum,
+        type: s.size || s.type || 'MCU',
+        size: s.size || s.type || 'MCU',
+        lens: s.lens || s.description?.lens || '',
+        description: {
+          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
+          image_url: s.description?.image_url || '',
+          scene_number: finalSceneNum
+        }
+      };
+    };
+
     // 1. Cache to local storage immediately for 100% resilient fallback
     try {
       const globalShots = getDbData(STORAGE_KEYS.SHOT_LIST);
       const remaining = globalShots.filter(s => s.project_id !== projectId);
-      const updatedNew = projectShots.map(s => ({
+      const updatedNew = projectShots.map(mapShotListItem).map(s => ({
         ...s,
-        project_id: projectId,
-        scene_id: String(s.scene_id || s.scene_number || s.sceneNum || ''),
-        scene_number: String(s.scene_number || s.scene_id || s.sceneNum || ''),
-        shotNum: s.shot_number || s.shotNum || '',
-        shot_number: s.shot_number || s.shotNum || '',
-        type: s.size || s.type || 'MCU',
-        size: s.size || s.type || 'MCU',
-        description: {
-          ...(typeof s.description === 'object' ? s.description : { th: s.description || '', en: '' }),
-          image_url: s.description?.image_url || ''
-        }
+        project_id: projectId
       }));
       setDbData(STORAGE_KEYS.SHOT_LIST, [...remaining, ...updatedNew]);
     } catch (e) {
@@ -741,22 +756,18 @@ export const api = {
         if (fetchError) console.warn('Supabase fetch existing shot_list warning:', fetchError);
 
         // 3. Map new/updated shots and generate IDs if missing
-        const updatedNew = projectShots.map(s => ({
+        const updatedNew = projectShots.map(mapShotListItem).map(s => ({
           id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           project_id: projectId,
-          scene_id: s.scene_id || s.scene_number || null,
-          shot_number: String(s.shot_number || s.shotNum || ''),
-          size: s.size || s.type || 'MCU',
+          scene_id: s.scene_id,
+          shot_number: String(s.shot_number || ''),
+          size: s.size || 'MCU',
           angle: s.angle || '',
           movement: s.movement || '',
           equipment: s.equipment || '',
           description: {
-            ...(typeof s.description === 'object' ? s.description : {}),
-            th: s.description?.th || (typeof s.description === 'string' ? s.description : ''),
-            en: s.description?.en || (typeof s.description === 'string' ? s.description : ''),
-            image_url: s.description?.image_url || '',
-            lens: s.lens || s.description?.lens || '',
-            scene_number: String(s.scene_number || s.sceneNum || s.scene_id || '1')
+            ...s.description,
+            lens: s.lens || ''
           },
           cast_assigned: s.cast_assigned || []
         }));
