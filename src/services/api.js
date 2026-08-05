@@ -732,18 +732,19 @@ export const api = {
 
     if (isSupabaseConfigured) {
       try {
-        const { error: delError } = await supabase
+        // 2. Fetch existing shot IDs from Supabase for this project
+        const { data: existingShots, error: fetchError } = await supabase
           .from('shot_list')
-          .delete()
+          .select('id')
           .eq('project_id', projectId);
-        if (delError) console.warn('Supabase shot_list delete warning:', delError);
+        
+        if (fetchError) console.warn('Supabase fetch existing shot_list warning:', fetchError);
 
-        const isValidUuid = (val) => typeof val === 'string' && val.length >= 30 && val.includes('-');
-
+        // 3. Map new/updated shots and generate IDs if missing
         const updatedNew = projectShots.map(s => ({
           id: s.id || `shot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           project_id: projectId,
-          scene_id: isValidUuid(s.scene_id) ? s.scene_id : null,
+          scene_id: s.scene_id || s.scene_number || null,
           shot_number: String(s.shot_number || s.shotNum || ''),
           size: s.size || s.type || 'MCU',
           angle: s.angle || '',
@@ -760,13 +761,28 @@ export const api = {
           cast_assigned: s.cast_assigned || []
         }));
 
-        if (updatedNew.length > 0) {
-          const { error: insError } = await supabase
+        // 4. Identify orphaned shot IDs to delete
+        const newIds = updatedNew.map(s => s.id).filter(Boolean);
+        const orphanedIds = (existingShots || [])
+          .map(s => s.id)
+          .filter(id => id && !newIds.includes(id));
+
+        if (orphanedIds.length > 0) {
+          const { error: delError } = await supabase
             .from('shot_list')
-            .insert(updatedNew);
-          if (insError) {
-            console.error('Supabase shot_list insert error:', insError);
-            throw insError;
+            .delete()
+            .in('id', orphanedIds);
+          if (delError) console.warn('Supabase shot_list delete warning:', delError);
+        }
+
+        // 5. Upsert the shots to database
+        if (updatedNew.length > 0) {
+          const { error: upsertError } = await supabase
+            .from('shot_list')
+            .upsert(updatedNew);
+          if (upsertError) {
+            console.error('Supabase shot_list upsert error:', upsertError);
+            throw upsertError;
           }
         }
 

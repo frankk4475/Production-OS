@@ -3,18 +3,18 @@ import { useLanguage } from '../context/LanguageContext';
 
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
-import { 
-  BookOpen, 
-  Save, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  Compass, 
-  Users, 
-  Layers, 
-  ArrowUp, 
-  ArrowDown, 
-  Check, 
+import {
+  BookOpen,
+  Save,
+  Plus,
+  Trash2,
+  Edit3,
+  Compass,
+  Users,
+  Layers,
+  ArrowUp,
+  ArrowDown,
+  Check,
   RefreshCw,
   Workflow,
   GitCommit,
@@ -22,14 +22,15 @@ import {
   Film,
   User,
   X,
-  ChevronRight
+  ChevronRight,
+  Printer
 } from 'lucide-react';
 
 export default function StoryPlanner() {
   const { language } = useLanguage();
 
   const { hasWriteAccess } = useAuth();
-  
+
   const {
     currentProject: project,
     storyOutline,
@@ -42,6 +43,11 @@ export default function StoryPlanner() {
   const [isSavedSuccessfully, setIsSavedSuccessfully] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Global Print Configuration States (matching DocumentsHub.jsx)
+  const [printPaperSize, setPrintPaperSize] = useState('A4');
+  const [printMargin, setPrintMargin] = useState('standard'); // 'standard' (15mm) | 'compact' (8mm) | 'wide' (20mm)
+  const [printOrientation, setPrintOrientation] = useState('portrait');
+
   // Helper to read localized values safely (supporting string fallbacks for legacy/flat data)
   const getString = (val) => {
     if (!val) return '';
@@ -49,6 +55,283 @@ export default function StoryPlanner() {
       return val[language] || val['th'] || val['en'] || '';
     }
     return val;
+  };
+
+  // Dedicated Popup Print Engine (matching DocumentsHub.jsx)
+  const handlePrintDocument = () => {
+    const printWin = window.open('', '_blank', 'width=1100,height=850');
+    if (!printWin) {
+      window.print();
+      return;
+    }
+
+    const isTh = language === 'th';
+    const docTitle = getString(project?.title) || 'PRODUCTION STORY OUTLINE';
+    const dateStr = new Date().toLocaleDateString(isTh ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    let docHtmlBody = '';
+    let docSubTitle = '';
+
+    if (activeTab === 'outlineText') {
+      docSubTitle = isTh ? 'เอกสารขยายบทละครย่อ (Outline Treatment Plan)' : 'Screenplay Outline & Treatment Summary';
+      
+      let actsHtml = '';
+      ['Act I', 'Act II', 'Act III'].forEach(actName => {
+        const actBeats = (localOutline.beats || []).filter(b => b.act === actName);
+        const displayActName = actName === 'Act I'
+          ? (isTh ? 'องก์ I (ACT I)' : 'ACT I: SETUP')
+          : actName === 'Act II'
+            ? (isTh ? 'องก์ II (ACT II)' : 'ACT II: CONFRONTATION')
+            : (isTh ? 'องก์ III (ACT III)' : 'ACT III: RESOLUTION');
+
+        let beatsRows = '';
+        actBeats.forEach((beat, idx) => {
+          const plot = (localOutline.plotlines || []).find(p => p.id === beat.plotlineId) || { name: '', color: '#cbd5e1' };
+          beatsRows += `
+            <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; border-left: 5px solid ${plot.color || '#cbd5e1'}; text-align: left;">
+              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                <span style="font-weight: bold; font-size: 12px; color: #0f172a;">${idx + 1}. ${getString(beat.title)}</span>
+                <span style="font-size: 9px; font-weight: bold; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px;">${isTh ? 'กลุ่มฉาก' : 'Scenes'} ${beat.sceneTarget || '?'}</span>
+              </div>
+              <p style="font-size: 11px; color: #334155; line-height: 1.4; margin: 0 0 6px 0; white-space: pre-line;">${getString(beat.description)}</p>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="width: 6px; height: 6px; border-radius: 50%; display: inline-block; background-color: ${plot.color};"></span>
+                <span style="font-size: 9px; font-weight: bold; color: #64748b;">${getString(plot.name)}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        actsHtml += `
+          <div style="margin-top: 20px;">
+            <h3 style="font-size: 12px; margin: 10px 0; text-transform: uppercase; color: #0f172a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; text-align: left;">${displayActName}</h3>
+            ${beatsRows || `<div style="font-size: 11px; color: #94a3b8; font-style: italic; padding: 6px 0; text-align: left;">${isTh ? 'ไม่มีการ์ดเหตุการณ์ในองก์นี้' : 'No beats mapped for this act.'}</div>`}
+          </div>
+        `;
+      });
+
+      docHtmlBody = `
+        <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px; background: #f8fafc; margin-bottom: 20px; line-height: 1.5; font-size: 11px; text-align: left;">
+          <div style="text-align: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            <span style="font-size: 10px; font-weight: bold; background: #0f172a; color: #fbbf24; padding: 2px 8px; border-radius: 12px; display: inline-block;">${getString(localOutline.genre) || (isTh ? 'แนวภาพยนตร์' : 'GENRE')}</span>
+            <h2 style="font-size: 18px; font-weight: 800; margin: 8px 0 2px 0; color: #0f172a;">${getString(project?.title) || ''}</h2>
+            <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; font-weight: bold;">${isTh ? 'เอกสารขยายบทละครย่อทางการผลิต' : 'Official Film Treatment Outline'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px;">
+            <div><strong>${isTh ? 'ผู้เขียนบท:' : 'Written By:'}</strong> ${getString(localOutline.writer) || '-'}</div>
+            <div><strong>${isTh ? 'ข้อมูลติดต่อ:' : 'Contact Info:'}</strong> ${getString(localOutline.contact) || '-'}</div>
+            <div><strong>${isTh ? 'ผู้กำกับ:' : 'Director:'}</strong> ${getString(project?.director?.[language]) || '-'}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div><strong>${isTh ? 'ผู้อำนวยการสร้าง:' : 'Producer:'}</strong> ${getString(project?.producer?.[language]) || '-'}</div>
+            <div><strong>${isTh ? 'ลูกค้า/หน่วยงาน:' : 'Client:'}</strong> ${project?.client || '-'}</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 15px; border-left: 3px solid #fbbf24; padding-left: 12px; background: #fffbeb; border-radius: 0 8px 8px 0; padding: 12px; page-break-inside: avoid; break-inside: avoid; text-align: left;">
+          <h4 style="font-size: 10px; margin: 0 0 4px 0; color: #d97706; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">${isTh ? 'โครงเรื่องย่อ (LOGLINE)' : 'LOGLINE'}</h4>
+          <p style="font-size: 11px; font-style: italic; color: #0f172a; margin: 0; line-height: 1.45;">“${getString(localOutline.logline) || (isTh ? 'ยังไม่ได้ระบุ' : 'No logline added.')}”</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; page-break-inside: avoid; break-inside: avoid; text-align: left;">
+          <div style="border-left: 2px solid #cbd5e1; padding-left: 10px;">
+            <h4 style="font-size: 10px; margin: 0 0 4px 0; color: #475569; text-transform: uppercase; font-weight: bold;">${isTh ? 'โทนและบรรยากาศ (TONE & ATMOSPHERE)' : 'TONE & ATMOSPHERE'}</h4>
+            <p style="font-size: 11px; color: #334155; margin: 0; line-height: 1.4;">${getString(localOutline.tone) || '-'}</p>
+          </div>
+          <div style="border-left: 2px solid #cbd5e1; padding-left: 10px;">
+            <h4 style="font-size: 10px; margin: 0 0 4px 0; color: #475569; text-transform: uppercase; font-weight: bold;">${isTh ? 'แก่นเรื่องหลัก (THEME / MESSAGE)' : 'THEME / MESSAGE'}</h4>
+            <p style="font-size: 11px; color: #334155; margin: 0; line-height: 1.4;">${getString(localOutline.theme) || '-'}</p>
+          </div>
+        </div>
+
+        ${actsHtml}
+      `;
+    }
+    else if (activeTab === 'characters') {
+      docSubTitle = isTh ? 'ข้อมูลพัฒนาการและปมตัวละคร (Character Profiles)' : 'Character Development Profiles';
+      
+      let charCards = '';
+      (localOutline.characters || []).forEach(char => {
+        charCards += `
+          <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc; page-break-inside: avoid; break-inside: avoid; border-left: 4px solid #fbbf24; text-align: left;">
+            <h3 style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0; color: #0f172a;">${getString(char.name)}</h3>
+            <span style="font-size: 9px; font-weight: bold; text-transform: uppercase; color: #64748b; font-family: monospace;">${getString(char.role) || (isTh ? 'ไม่ระบุบทบาท' : 'Role Unspecified')}</span>
+            
+            <div style="margin-top: 10px; font-size: 11px; line-height: 1.4;">
+              <p style="margin: 0 0 4px 0;"><strong>🎯 ${isTh ? 'เป้าหมาย' : 'Goal'}:</strong> ${getString(char.goal) || '-'}</p>
+              <p style="margin: 0 0 4px 0;"><strong>⚠️ ${isTh ? 'อุปสรรค/ปม' : 'Conflict'}:</strong> ${getString(char.conflict) || '-'}</p>
+              <p style="margin: 0;"><strong>📈 ${isTh ? 'พัฒนาการตัวละคร' : 'Character Arc'}:</strong> ${getString(char.arc) || '-'}</p>
+            </div>
+          </div>
+        `;
+      });
+
+      docHtmlBody = `
+        <div style="display: grid; grid-template-columns: repeat(${printOrientation === 'landscape' ? '3' : '2'}, 1fr); gap: 16px;">
+          ${charCards || `<div style="grid-column: span 2; text-align: center; color: #64748b; font-style: italic; padding: 20px;">${isTh ? 'ไม่มีข้อมูลตัวละครในแผนงาน' : 'No characters mapped yet.'}</div>`}
+        </div>
+      `;
+    }
+    else if (activeTab === 'beats') {
+      docSubTitle = isTh ? 'บอร์ดวางโครงเรื่องย่อย (Beat Board Summary)' : 'Story Beat Board Summary';
+      
+      let beatCards = '';
+      (localOutline.beats || []).forEach((beat, idx) => {
+        const plot = (localOutline.plotlines || []).find(p => p.id === beat.plotlineId) || { name: '', color: '#cbd5e1' };
+        const actThEn = beat.act === 'Act I' ? (isTh ? 'องก์ I' : 'Act I') : beat.act === 'Act II' ? (isTh ? 'องก์ II' : 'Act II') : (isTh ? 'องก์ III' : 'Act III');
+        beatCards += `
+          <div style="border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #ffffff; page-break-inside: avoid; break-inside: avoid; display: flex; flex-direction: column; justify-content: space-between; border-left: 5px solid ${plot.color || '#cbd5e1'}; text-align: left;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 4px;">
+                <span style="font-weight: 800; font-family: monospace; font-size: 10px; color: #0f172a;">BEAT #${idx + 1} (${actThEn})</span>
+                <span style="font-size: 9px; font-weight: bold; background: #f1f5f9; color: #475569; padding: 1px 5px; border-radius: 3px;">${isTh ? 'ฉาก' : 'Scenes'} ${beat.sceneTarget || '?'}</span>
+              </div>
+              <h4 style="font-size: 12px; font-weight: bold; color: #0f172a; margin: 0 0 6px 0;">${getString(beat.title)}</h4>
+              <p style="font-size: 11px; color: #475569; line-height: 1.4; margin: 0; white-space: pre-line;">${getString(beat.description)}</p>
+            </div>
+            <div style="margin-top: 10px; display: flex; align-items: center; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 4px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background-color: ${plot.color}; display: inline-block;"></span>
+              <span style="font-size: 9px; font-weight: bold; color: #94a3b8;">${getString(plot.name)}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      docHtmlBody = `
+        <div style="display: grid; grid-template-columns: repeat(${printOrientation === 'landscape' ? '3' : '2'}, 1fr); gap: 14px;">
+          ${beatCards || `<div style="grid-column: span 2; text-align: center; color: #64748b; font-style: italic; padding: 20px;">${isTh ? 'ไม่มีการ์ดโครงเรื่องในระบบ' : 'No beats mapped yet.'}</div>`}
+        </div>
+      `;
+    }
+    else {
+      docSubTitle = isTh ? 'เส้นเรื่องและพล็อตย่อย (Story Plotlines)' : 'Story Plotlines';
+      
+      let plotRows = '';
+      (localOutline.plotlines || []).forEach(plot => {
+        plotRows += `
+          <tr style="page-break-inside: avoid; break-inside: avoid;">
+            <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; display: flex; align-items: center; gap: 6px; text-align: left;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; display: inline-block; background-color: ${plot.color};"></span>
+              <span>${getString(plot.name)}</span>
+            </td>
+            <td style="border: 1px solid #cbd5e1; padding: 8px; line-height: 1.4; text-align: left;">${getString(plot.description) || '-'}</td>
+          </tr>
+        `;
+      });
+
+      docHtmlBody = `
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30%; text-align: left;">${isTh ? 'ชื่อเส้นเรื่อง / พล็อต' : 'PLOTLINE NAME'}</th>
+              <th style="width: 70%; text-align: left;">${isTh ? 'รายละเอียดบทบาทของเส้นเรื่อง' : 'PLOTLINE DESCRIPTION'}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${plotRows || `<tr><td colspan="2" style="text-align: center; padding: 12px; color: #64748b;">${isTh ? 'ไม่มีข้อมูลเส้นเรื่องในระบบ' : 'No plotlines added yet.'}</td></tr>`}
+          </tbody>
+        </table>
+      `;
+    }
+
+    const marginValue = printMargin === 'compact' ? '8mm 10mm 8mm 10mm' : printMargin === 'wide' ? '20mm 22mm 20mm 22mm' : '15mm 15mm 15mm 15mm';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${docTitle} - ${docSubTitle}</title>
+        <meta charset="utf-8">
+        <style>
+          @page {
+            size: ${printPaperSize} ${printOrientation};
+            margin: ${marginValue};
+          }
+          body {
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #000000;
+            margin: 0;
+            padding: 25px 20px;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .doc-header {
+            border-bottom: 3px solid #0f172a;
+            padding-bottom: 14px;
+            margin-bottom: 24px;
+          }
+          .doc-badge {
+            font-size: 10px;
+            font-weight: 900;
+            background: #0f172a;
+            color: #fbbf24;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+          }
+          .doc-title {
+            font-size: 18px;
+            font-weight: 900;
+            margin: 10px 0 4px 0;
+            color: #0f172a;
+            text-align: left;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 11px;
+            table-layout: fixed;
+          }
+          th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 800;
+            font-size: 11px;
+            text-transform: uppercase;
+            border: 1px solid #334155;
+            padding: 9px 8px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          td {
+            border: 1px solid #cbd5e1;
+            padding: 8px;
+            vertical-align: top;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="doc-header">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="doc-badge">${docTitle}</span>
+              <span style="font-size:10px; font-weight:bold; color:#64748b; margin-left:10px;">• STORY PLOTTING SUITE (A4)</span>
+            </div>
+            <div style="font-size:11px; font-weight:bold; color:#64748b;">${dateStr}</div>
+          </div>
+          <h1 class="doc-title">${docSubTitle}</h1>
+        </div>
+
+        ${docHtmlBody}
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+    printWin.focus();
+
+    setTimeout(() => {
+      printWin.document.title = `${docTitle} - ${docSubTitle}`;
+      printWin.print();
+      printWin.close();
+    }, 450);
   };
 
   // Modals visibility states
@@ -62,20 +345,20 @@ export default function StoryPlanner() {
   const [draggedBeatId, setDraggedBeatId] = useState(null);
 
   // --- ADD FORM STATES ---
-  const [newBeat, setNewBeat] = useState({ 
-    titleTh: '', titleEn: '', act: 'Act I', plotlineId: '', 
-    descriptionTh: '', descriptionEn: '', sceneTarget: '' 
+  const [newBeat, setNewBeat] = useState({
+    titleTh: '', titleEn: '', act: 'Act I', plotlineId: '',
+    descriptionTh: '', descriptionEn: '', sceneTarget: ''
   });
-  
-  const [newPlotline, setNewPlotline] = useState({ 
-    nameTh: '', nameEn: '', color: '#ef4444', 
-    descriptionTh: '', descriptionEn: '' 
+
+  const [newPlotline, setNewPlotline] = useState({
+    nameTh: '', nameEn: '', color: '#ef4444',
+    descriptionTh: '', descriptionEn: ''
   });
-  
-  const [newChar, setNewChar] = useState({ 
-    nameTh: '', nameEn: '', roleTh: '', roleEn: '', 
-    goalTh: '', goalEn: '', arcTh: '', arcEn: '', 
-    conflictTh: '', conflictEn: '' 
+
+  const [newChar, setNewChar] = useState({
+    nameTh: '', nameEn: '', roleTh: '', roleEn: '',
+    goalTh: '', goalEn: '', arcTh: '', arcEn: '',
+    conflictTh: '', conflictEn: ''
   });
 
   // --- EDIT FORM STATES ---
@@ -192,14 +475,14 @@ export default function StoryPlanner() {
 
     const plotlineEntry = {
       id: `p-${Date.now()}`,
-      name: { 
-        th: newPlotline.nameTh || newPlotline.nameEn, 
-        en: newPlotline.nameEn || newPlotline.nameTh 
+      name: {
+        th: newPlotline.nameTh || newPlotline.nameEn,
+        en: newPlotline.nameEn || newPlotline.nameTh
       },
       color: newPlotline.color,
-      description: { 
-        th: newPlotline.descriptionTh, 
-        en: newPlotline.descriptionEn 
+      description: {
+        th: newPlotline.descriptionTh,
+        en: newPlotline.descriptionEn
       }
     };
 
@@ -207,7 +490,7 @@ export default function StoryPlanner() {
       ...localOutline,
       plotlines: [...(localOutline.plotlines || []), plotlineEntry]
     };
-    
+
     setLocalOutline(updated);
     setNewPlotline({ nameTh: '', nameEn: '', color: '#ef4444', descriptionTh: '', descriptionEn: '' });
     setIsAddPlotlineOpen(false);
@@ -245,10 +528,10 @@ export default function StoryPlanner() {
   };
 
   const handleDeletePlotline = (id) => {
-    const confirmMsg = language === 'th' 
-      ? 'คุณต้องการลบเส้นเรื่องนี้ใช่หรือไม่? การ์ดโครงเรื่องที่เชื่อมโยงจะถูกยกเลิกการเชื่อมโยงการแสดงผลพล็อตย่อย' 
+    const confirmMsg = language === 'th'
+      ? 'คุณต้องการลบเส้นเรื่องนี้ใช่หรือไม่? การ์ดโครงเรื่องที่เชื่อมโยงจะถูกยกเลิกการเชื่อมโยงการแสดงผลพล็อตย่อย'
       : 'Are you sure you want to delete this plotline? Connected beat cards will be unlinked.';
-    
+
     if (window.confirm(confirmMsg)) {
       const updatedPlotlines = localOutline.plotlines.filter(p => p.id !== id);
       const updatedBeats = localOutline.beats.map(b => b.plotlineId === id ? { ...b, plotlineId: '' } : b);
@@ -321,10 +604,10 @@ export default function StoryPlanner() {
   };
 
   const handleDeleteCharacter = (id) => {
-    const confirmMsg = language === 'th' 
-      ? 'คุณต้องการลบตัวละครนี้ออกจากบอร์ดวางแผนใช่หรือไม่?' 
+    const confirmMsg = language === 'th'
+      ? 'คุณต้องการลบตัวละครนี้ออกจากบอร์ดวางแผนใช่หรือไม่?'
       : 'Are you sure you want to delete this character?';
-      
+
     if (window.confirm(confirmMsg)) {
       const updatedCharacters = localOutline.characters.filter(c => c.id !== id);
       const updated = { ...localOutline, characters: updatedCharacters };
@@ -420,9 +703,9 @@ export default function StoryPlanner() {
 
   // Helper to get plotline details
   const getPlotline = (id) => {
-    return localOutline.plotlines?.find(p => p.id === id) || { 
-      name: { th: 'ไม่มีเส้นเรื่อง', en: 'No Plotline' }, 
-      color: '#94a3b8' 
+    return localOutline.plotlines?.find(p => p.id === id) || {
+      name: { th: 'ไม่มีเส้นเรื่อง', en: 'No Plotline' },
+      color: '#94a3b8'
     };
   };
 
@@ -458,7 +741,7 @@ export default function StoryPlanner() {
   const handleDropOnColumn = (e, actName) => {
     e.preventDefault();
     e.currentTarget.classList.remove('bg-gold-500/10', 'border-gold-500/40', 'dark:border-gold-500/30');
-    
+
     if (!hasWriteAccess()) return;
     const beatId = e.dataTransfer.getData('text/plain') || draggedBeatId;
     if (!beatId) return;
@@ -467,14 +750,14 @@ export default function StoryPlanner() {
     if (beatIndex === -1) return;
 
     const draggedBeat = localOutline.beats[beatIndex];
-    
+
     if (draggedBeat.act !== actName) {
       const updatedBeats = [...localOutline.beats];
       updatedBeats[beatIndex] = { ...draggedBeat, act: actName };
-      
+
       const beatToMove = updatedBeats[beatIndex];
       updatedBeats.splice(beatIndex, 1);
-      
+
       let insertIndex = updatedBeats.length;
       for (let i = updatedBeats.length - 1; i >= 0; i--) {
         if (updatedBeats[i].act === actName) {
@@ -526,8 +809,8 @@ export default function StoryPlanner() {
           {language === 'th' ? 'กรุณาเลือกหรือสร้างโครงการก่อนเพื่อวางแผนโครงเรื่อง' : 'No Project Selected'}
         </h3>
         <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-          {language === 'th' 
-            ? 'การทำเส้นเรื่องและโครงขยายจำเป็นต้องอิงเข้ากับข้อมูลการผลิตในแต่ละโครงการหลัก' 
+          {language === 'th'
+            ? 'การทำเส้นเรื่องและโครงขยายจำเป็นต้องอิงเข้ากับข้อมูลการผลิตในแต่ละโครงการหลัก'
             : 'Please select an existing project or create a new one to access the story & outline planner.'}
         </p>
       </div>
@@ -536,23 +819,91 @@ export default function StoryPlanner() {
 
   return (
     <div className="space-y-6 animate-fadeIn pb-20">
-      
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-obsidian-800 pb-5 no-print">
+
+      {/* Title Header & PDF Toolbar (matching DocumentsHub.jsx style layout) */}
+      <div className="glass-panel p-5 rounded-2xl border border-slate-200 dark:border-obsidian-800/80 no-print flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-sm">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold font-serif tracking-tight flex items-center gap-2">
             <Compass className="text-gold-500 animate-spin-slow" size={26} />
             <span>{language === 'th' ? 'โครงเรื่องและเส้นเรื่อง' : 'Story Outline & Plots'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            {language === 'th' 
+            {language === 'th'
               ? 'วางโครงสร้าง พัฒนาเส้นเรื่องย่อย และกำหนดเป้าหมายตัวละคร ก่อนการเขียนบทภาพยนตร์'
               : 'Structure narrative beats, map subplots, and define character arcs pre-screenplay.'}
           </p>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        {/* Global Print & Save Toolbar Controls */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Paper Size Selector */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintPaperSize('A4')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printPaperSize === 'A4' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              A4
+            </button>
+            <button
+              onClick={() => setPrintPaperSize('Letter')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printPaperSize === 'Letter' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              Letter
+            </button>
+          </div>
+
+          {/* Margins Selector */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintMargin('standard')}
+              title={language === 'th' ? 'ระยะขอบมาตรฐาน 15mm' : 'Standard 15mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'standard' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {language === 'th' ? 'ขอบมาตรฐาน (15mm)' : 'Std Margin'}
+            </button>
+            <button
+              onClick={() => setPrintMargin('wide')}
+              title={language === 'th' ? 'ระยะขอบกว้าง 20mm' : 'Wide 20mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'wide' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {language === 'th' ? 'ขอบกว้าง (20mm)' : 'Wide'}
+            </button>
+            <button
+              onClick={() => setPrintMargin('compact')}
+              title={language === 'th' ? 'ระยะขอบแคบ 8mm' : 'Compact 8mm Margin'}
+              className={`px-2.5 py-1 rounded-lg transition-all ${printMargin === 'compact' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {language === 'th' ? 'ขอบแคบ (8mm)' : 'Compact'}
+            </button>
+          </div>
+
+          {/* Orientation Toggle */}
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-obsidian-950 border border-slate-200 dark:border-obsidian-800 text-xs font-bold font-sans">
+            <button
+              onClick={() => setPrintOrientation('portrait')}
+              className={`px-3 py-1 rounded-lg transition-all ${printOrientation === 'portrait' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {language === 'th' ? 'แนวตั้ง' : 'Portrait'}
+            </button>
+            <button
+              onClick={() => setPrintOrientation('landscape')}
+              className={`px-3 py-1 rounded-lg transition-all ${printOrientation === 'landscape' ? 'bg-gold-500 text-obsidian-950 shadow-xs' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              {language === 'th' ? 'แนวนอน' : 'Landscape'}
+            </button>
+          </div>
+
+          {/* Print button */}
+          <button
+            onClick={handlePrintDocument}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-sm hover:shadow-md transition-all shrink-0 active:scale-[0.98]"
+            title={language === 'th' ? 'พิมพ์เอกสาร' : 'Print Document'}
+          >
+            <Printer size={14} />
+            <span>{language === 'th' ? 'พิมพ์เอกสาร' : 'Print Document'}</span>
+          </button>
+
+          {/* Save button */}
           {hasWriteAccess() && (
             <button
               onClick={() => handleSave()}
@@ -594,7 +945,7 @@ export default function StoryPlanner() {
             : 'Never jump straight to the screenplay script! Complete these first 3 steps in order to map out a clear direction for your short film story:'}
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
-          <button 
+          <button
             onClick={() => setActiveTab('outlineText')}
             className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'outlineText' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
@@ -608,7 +959,7 @@ export default function StoryPlanner() {
                 : 'Tab "Outline & Treatment Text": Input Logline to lock the film goal, and set Genre to "Romantic / Drama / Healing".'}
             </p>
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('characters')}
             className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'characters' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
@@ -622,7 +973,7 @@ export default function StoryPlanner() {
                 : 'Tab "Character Arcs": Click "+ Add Character" to define Wants (Goals) & Needs (Arcs) for Ploy (Lead) and Tots (Ex-lover).'}
             </p>
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('beats')}
             className={`p-3 rounded-lg border text-left transition-all hover:scale-[1.01] ${activeTab === 'beats' ? 'border-gold-500 bg-gold-500/5 dark:bg-gold-500/10 shadow-md shadow-gold-500/5 ring-1 ring-gold-500/20' : 'border-slate-200/60 dark:border-obsidian-850/80 bg-slate-100/30 dark:bg-obsidian-900/20 hover:border-slate-350 dark:hover:border-obsidian-750 hover:bg-slate-100/50 dark:hover:bg-obsidian-900/40'}`}
           >
@@ -650,7 +1001,7 @@ export default function StoryPlanner() {
             const plot = getPlotline(beat.plotlineId);
             return (
               <div key={beat.id} className="flex items-center shrink-0">
-                <div 
+                <div
                   onClick={() => setViewingBeat(beat)}
                   className="group relative px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-obsidian-800 bg-white/40 dark:bg-obsidian-900/40 backdrop-blur-xs flex flex-col items-center gap-1.5 cursor-pointer transition-all hover:scale-105 active:scale-95 hover:border-gold-500/30 hover:shadow-lg"
                   style={{ borderLeftColor: plot.color, borderLeftWidth: '4px' }}
@@ -658,7 +1009,7 @@ export default function StoryPlanner() {
                   <span className="text-[10px] font-mono text-slate-400">#{idx + 1}</span>
                   <span className="text-[11px] font-bold max-w-[80px] truncate">{getString(beat.title)}</span>
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: plot.color }} title={getString(plot.name)} />
-                  
+
                   {/* Hover tooltip */}
                   <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 border border-slate-800 rounded-lg p-2.5 shadow-xl w-48 z-40 text-left">
                     <p className="text-[10px] font-bold text-gold-500 font-mono">
@@ -687,44 +1038,40 @@ export default function StoryPlanner() {
       <div className="segmented-nav-container gap-1 overflow-x-auto no-print max-w-max">
         <button
           onClick={() => setActiveTab('outlineText')}
-          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'outlineText'
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'outlineText'
               ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
               : 'text-slate-450 hover:text-slate-200'
-          }`}
+            }`}
         >
           <BookOpen size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 1: โครงขยายบทละครแบบข้อความ' : 'Step 1: Outline & Treatment'}</span>
         </button>
         <button
           onClick={() => setActiveTab('characters')}
-          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'characters'
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'characters'
               ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
               : 'text-slate-450 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Users size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 2: พัฒนาการและปมตัวละคร' : 'Step 2: Character Arcs'}</span>
         </button>
         <button
           onClick={() => setActiveTab('beats')}
-          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'beats'
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'beats'
               ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
               : 'text-slate-450 hover:text-slate-200'
-          }`}
+            }`}
         >
           <Layers size={14} />
           <span>{language === 'th' ? 'ขั้นตอนที่ 3: บอร์ดวางโครงเรื่องย่อย' : 'Step 3: Beat Board'}</span>
         </button>
         <button
           onClick={() => setActiveTab('plotlines')}
-          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'plotlines'
+          className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold transition-all flex items-center gap-1.5 shrink-0 ${activeTab === 'plotlines'
               ? 'bg-white dark:bg-obsidian-900 text-gold-500 shadow-sm border border-slate-200/50 dark:border-obsidian-800/40 glow-text-subtle'
               : 'text-slate-450 hover:text-slate-200'
-          }`}
+            }`}
         >
           <GitCommit size={14} />
           <span>{language === 'th' ? 'เส้นเรื่องและพล็อตย่อย' : 'Plotlines & Story Arcs'}</span>
@@ -750,15 +1097,15 @@ export default function StoryPlanner() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             {/* Acts */}
             {['Act I', 'Act II', 'Act III'].map((actName) => {
               const actBeats = getBeatsByAct(actName);
-              const displayActName = actName === 'Act I' 
+              const displayActName = actName === 'Act I'
                 ? (language === 'th' ? 'องก์ I (ปูเรื่อง / Setup)' : 'Act I (Setup)')
                 : actName === 'Act II'
-                ? (language === 'th' ? 'องก์ II (เผชิญหน้า / Confrontation)' : 'Act II (Confrontation)')
-                : (language === 'th' ? 'องก์ III (คลี่คลาย / Resolution)' : 'Act III (Resolution)');
+                  ? (language === 'th' ? 'องก์ II (เผชิญหน้า / Confrontation)' : 'Act II (Confrontation)')
+                  : (language === 'th' ? 'องก์ III (คลี่คลาย / Resolution)' : 'Act III (Resolution)');
 
               return (
                 <div key={actName} className="glass-panel p-5 rounded-2xl border border-slate-200/60 dark:border-obsidian-850/80 bg-slate-500/[0.02] dark:bg-obsidian-900/10 space-y-4 shadow-sm">
@@ -769,7 +1116,7 @@ export default function StoryPlanner() {
                     </span>
                   </div>
 
-                  <div 
+                  <div
                     onDragOver={(e) => hasWriteAccess() && e.preventDefault()}
                     onDragEnter={handleDragEnter}
                     onDragLeave={handleDragLeave}
@@ -780,8 +1127,8 @@ export default function StoryPlanner() {
                       const plot = getPlotline(beat.plotlineId);
                       const absoluteIndex = localOutline.beats.findIndex(b => b.id === beat.id);
                       return (
-                        <div 
-                          key={beat.id} 
+                        <div
+                          key={beat.id}
                           onClick={() => setViewingBeat(beat)}
                           draggable={hasWriteAccess()}
                           onDragStart={(e) => handleDragStart(e, beat.id)}
@@ -808,13 +1155,13 @@ export default function StoryPlanner() {
                             <span className="text-slate-400 dark:text-slate-500 tracking-wider uppercase font-semibold shrink-0">
                               {language === 'th' ? 'กลุ่มฉาก:' : 'SCENE:'} {beat.sceneTarget || '-'}
                             </span>
-                            
-                            <span 
+
+                            <span
                               className="font-bold px-2 py-0.5 rounded border transition-all truncate max-w-[150px]"
-                              style={{ 
-                                backgroundColor: plot.color + "15", 
-                                color: plot.color, 
-                                borderColor: plot.color + "30" 
+                              style={{
+                                backgroundColor: plot.color + "15",
+                                color: plot.color,
+                                borderColor: plot.color + "30"
                               }}
                               title={getString(plot.name)}
                             >
@@ -903,8 +1250,8 @@ export default function StoryPlanner() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {(localOutline.plotlines || []).map((plot) => (
-              <div 
-                key={plot.id} 
+              <div
+                key={plot.id}
                 className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-850/80 flex flex-col justify-between space-y-4"
               >
                 <div>
@@ -936,8 +1283,8 @@ export default function StoryPlanner() {
                 </div>
                 <div className="pt-3 border-t border-slate-200 dark:border-slate-800/40 flex justify-between items-center text-[10px] text-slate-500 font-mono">
                   <span>ID: {plot.id}</span>
-                  <span 
-                    className="px-2 py-0.5 rounded text-white font-sans text-[9px] font-bold" 
+                  <span
+                    className="px-2 py-0.5 rounded text-white font-sans text-[9px] font-bold"
                     style={{ backgroundColor: plot.color + '20', color: plot.color }}
                   >
                     {language === 'th' ? 'สีแท็กเส้นเรื่อง' : 'Color Tag'}
@@ -977,8 +1324,8 @@ export default function StoryPlanner() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {(localOutline.characters || []).map((char) => (
-              <div 
-                key={char.id} 
+              <div
+                key={char.id}
                 className="glass-panel p-5 rounded-xl border border-slate-200 dark:border-obsidian-850/80 space-y-4"
               >
                 <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800/40 pb-3">
@@ -1047,8 +1394,8 @@ export default function StoryPlanner() {
                 {language === 'th' ? 'เอกสารขยายบทละครย่อ (Outline Treatment Plan)' : 'Screenplay Outline & Treatment Summary'}
               </h2>
               <p className="text-[10px] text-slate-400 mt-1">
-                {language === 'th' 
-                  ? 'เอกสารสรุปโครงเรื่องย่อ บรรยากาศ แก่นเรื่องหลัก ตัวละคร และองก์เรื่อง' 
+                {language === 'th'
+                  ? 'เอกสารสรุปโครงเรื่องย่อ บรรยากาศ แก่นเรื่องหลัก ตัวละคร และองก์เรื่อง'
                   : 'Cinematic layout of treatment overview, characters, and story timeline beats.'}
               </p>
             </div>
@@ -1076,7 +1423,7 @@ export default function StoryPlanner() {
               <p className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold font-mono">
                 {language === 'th' ? 'เอกสารขยายบทละครย่อทางการผลิต' : 'Official Screenplay Film Treatment'}
               </p>
-              
+
               {/* Cover Details Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6 text-xs text-left pt-6 max-w-2xl mx-auto border-t border-slate-200 dark:border-obsidian-900/60 mt-6">
                 <div className="space-y-1">
@@ -1145,11 +1492,11 @@ export default function StoryPlanner() {
             {/* 3. Acts & Beats section */}
             {['Act I', 'Act II', 'Act III'].map((actName) => {
               const actBeats = getBeatsByAct(actName);
-              const displayActName = actName === 'Act I' 
+              const displayActName = actName === 'Act I'
                 ? (language === 'th' ? 'องก์ I (ACT I)' : 'ACT I: SETUP')
                 : actName === 'Act II'
-                ? (language === 'th' ? 'องก์ II (ACT II)' : 'ACT II: CONFRONTATION')
-                : (language === 'th' ? 'องก์ III (ACT III)' : 'ACT III: RESOLUTION');
+                  ? (language === 'th' ? 'องก์ II (ACT II)' : 'ACT II: CONFRONTATION')
+                  : (language === 'th' ? 'องก์ III (ACT III)' : 'ACT III: RESOLUTION');
 
               return (
                 <div key={actName} className="space-y-4 pt-4">
@@ -1164,7 +1511,7 @@ export default function StoryPlanner() {
                         <div key={beat.id} className="relative group">
                           {/* Timeline node */}
                           <span className="absolute -left-[30px] top-1.5 w-2 h-2 rounded-full border border-white dark:border-slate-900 bg-gold-500 ring-4 ring-gold-500/10 transition-all group-hover:scale-125" />
-                          
+
                           <div className="space-y-1.5 bg-slate-50 dark:bg-obsidian-900/40 p-4 rounded-xl border border-slate-200/60 dark:border-obsidian-850 hover:border-gold-500/30 transition-all">
                             <div className="flex justify-between items-start gap-4">
                               <span className="font-bold text-xs text-slate-800 dark:text-slate-200 leading-snug">
@@ -1243,7 +1590,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มโครงเรื่อง / บีตใหม่' : 'Create New Beat Card'}
             </h3>
-            
+
             <form onSubmit={handleAddBeat} className="space-y-3.5 text-xs text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ชื่อตอน/ชื่อบีตภาษาไทย' : 'Beat Title (TH)'}</label>
@@ -1357,7 +1704,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขการ์ดโครงเรื่อง' : 'Edit Beat Card'}
             </h3>
-            
+
             <form onSubmit={handleUpdateBeatSubmit} className="space-y-3.5 text-xs text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ชื่อตอน/ชื่อบีตภาษาไทย' : 'Beat Title (TH)'}</label>
@@ -1466,7 +1813,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มเส้นเรื่องย่อยใหม่' : 'Create Story Plotline'}
             </h3>
-            
+
             <form onSubmit={handleAddPlotline} className="space-y-3.5 text-xs text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ชื่อเส้นเรื่องภาษาไทย (เช่น รักโรแมนติก / การแก้แค้น)' : 'Plotline Name (TH)'}</label>
@@ -1554,7 +1901,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขรายละเอียดเส้นเรื่อง' : 'Edit Story Plotline'}
             </h3>
-            
+
             <form onSubmit={handleUpdatePlotlineSubmit} className="space-y-3.5 text-xs text-left">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">{language === 'th' ? 'ชื่อเส้นเรื่องภาษาไทย' : 'Plotline Name (TH)'}</label>
@@ -1638,7 +1985,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'เพิ่มข้อมูลวิเคราะห์ตัวละคร' : 'Add Character Arc Profiler'}
             </h3>
-            
+
             <form onSubmit={handleAddCharacter} className="space-y-3.5 text-xs text-left">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1782,7 +2129,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขข้อมูลวิเคราะห์ตัวละคร' : 'Edit Character Arc'}
             </h3>
-            
+
             <form onSubmit={handleUpdateCharacterSubmit} className="space-y-3.5 text-xs text-left">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1916,7 +2263,7 @@ export default function StoryPlanner() {
             <h3 className="text-sm font-bold font-serif border-b border-slate-200 dark:border-slate-800/50 pb-2">
               {language === 'th' ? 'แก้ไขข้อมูลส่วนหน้าเอกสาร (Document Cover Settings)' : 'Edit Screenplay Outline Cover Info'}
             </h3>
-            
+
             <form onSubmit={handleSaveCover} className="space-y-3.5 text-xs text-left">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -2057,16 +2404,16 @@ export default function StoryPlanner() {
 
       {/* --- VIEW BEAT DETAIL MODAL --- */}
       {viewingBeat && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-200"
           onClick={() => setViewingBeat(null)}
         >
-          <div 
+          <div
             className="glass-panel p-6 rounded-2xl border border-slate-200 dark:border-obsidian-800 max-w-lg w-full space-y-5 animate-scaleIn text-slate-900 dark:text-slate-100 shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Top Close Button */}
-            <button 
+            <button
               onClick={() => setViewingBeat(null)}
               className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-obsidian-800 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white transition-all cursor-pointer"
             >
@@ -2076,11 +2423,11 @@ export default function StoryPlanner() {
             {/* Act / Scene info header */}
             <div className="flex flex-wrap items-center gap-2 pr-6">
               <span className="text-[10px] font-black uppercase tracking-wider text-gold-500 font-sans border-l-2 border-gold-500 pl-2">
-                {viewingBeat.act === 'Act I' 
+                {viewingBeat.act === 'Act I'
                   ? (language === 'th' ? 'องก์ I (ปูเรื่อง / SETUP)' : 'ACT I: SETUP')
                   : viewingBeat.act === 'Act II'
-                  ? (language === 'th' ? 'องก์ II (เผชิญหน้า / CONFRONTATION)' : 'ACT II: CONFRONTATION')
-                  : (language === 'th' ? 'องก์ III (คลี่คลาย / RESOLUTION)' : 'ACT III: RESOLUTION')}
+                    ? (language === 'th' ? 'องก์ II (เผชิญหน้า / CONFRONTATION)' : 'ACT II: CONFRONTATION')
+                    : (language === 'th' ? 'องก์ III (คลี่คลาย / RESOLUTION)' : 'ACT III: RESOLUTION')}
               </span>
               <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200/40 dark:border-slate-850">
                 {language === 'th' ? 'กลุ่มฉากเป้าหมาย:' : 'SCENE RANGE:'} {viewingBeat.sceneTarget || '-'}
@@ -2092,12 +2439,12 @@ export default function StoryPlanner() {
               const plot = getPlotline(viewingBeat.plotlineId);
               return plot ? (
                 <div className="pt-1">
-                  <span 
+                  <span
                     className="text-[10px] font-bold px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 font-mono"
-                    style={{ 
-                      backgroundColor: plot.color + "15", 
-                      color: plot.color, 
-                      borderColor: plot.color + "30" 
+                    style={{
+                      backgroundColor: plot.color + "15",
+                      color: plot.color,
+                      borderColor: plot.color + "30"
                     }}
                   >
                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: plot.color }} />
@@ -2161,7 +2508,7 @@ export default function StoryPlanner() {
               >
                 {language === 'th' ? 'ปิด' : 'Close'}
               </button>
-              
+
               {hasWriteAccess() && (
                 <>
                   <button

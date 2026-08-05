@@ -46,6 +46,8 @@ export const ProjectProvider = ({ children }) => {
     undoStackRef.current = undoStack;
   }, [undoStack]);
 
+  const lastShotFetchTime = useRef(0);
+
   const pushUndoAction = useCallback((label, restoreFn) => {
     const actionId = `undo-${Date.now()}-${Math.random()}`;
     const undoItem = { id: actionId, label, restoreFn };
@@ -169,6 +171,9 @@ export const ProjectProvider = ({ children }) => {
         setIsLoading(true);
         localStorage.setItem(getProjectKey('prod_current_project_id'), currentProjectId);
 
+        const fetchTime = Date.now();
+        lastShotFetchTime.current = fetchTime;
+
         const [scenesData, eventsData, shotListData, tasksData, scriptData, outlineData, reportsData] = await Promise.all([
           api.getScenes(currentProjectId),
           api.getEvents(currentProjectId),
@@ -181,7 +186,9 @@ export const ProjectProvider = ({ children }) => {
 
         setScenes(scenesData);
         setEvents(eventsData);
-        setShotList(shotListData);
+        if (fetchTime >= lastShotFetchTime.current) {
+          setShotList(shotListData);
+        }
         setCompletedTasks(tasksData);
         setScriptBlocks(scriptData || []);
         setStoryOutline(outlineData || {
@@ -254,8 +261,12 @@ export const ProjectProvider = ({ children }) => {
         { event: '*', schema: 'public', table: 'shot_list', filter: `project_id=eq.${currentProjectId}` },
         async (payload) => {
           console.log('Realtime Shot List Update:', payload);
+          const fetchTime = Date.now();
+          lastShotFetchTime.current = fetchTime;
           const data = await api.getShotList(currentProjectId);
-          setShotList(data);
+          if (fetchTime >= lastShotFetchTime.current) {
+            setShotList(data);
+          }
         }
       )
       .on(
