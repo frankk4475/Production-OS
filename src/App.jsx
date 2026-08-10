@@ -14,6 +14,7 @@ import ScriptEditor from './components/ScriptEditor';
 import StoryPlanner from './components/StoryPlanner';
 import ShootingSchedule from './components/ShootingSchedule';
 import ProductionHub from './components/ProductionHub';
+import PipelineBanner from './components/PipelineBanner';
 
 // Top-Level Error Boundary Component to prevent white screen crashes anywhere in the app
 class GlobalErrorBoundary extends React.Component {
@@ -111,7 +112,7 @@ function MainApp() {
     const hash = window.location.hash.replace('#/', '');
     const allowed = isCrewOrTalent() 
       ? ['personal', 'callsheets', 'calendar'] 
-      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
+      : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production', 'callsheets'];
     return allowed.includes(hash) ? hash : (isCrewOrTalent() ? 'personal' : 'dashboard');
   });
   const [tabParams, setTabParams] = useState(null);
@@ -124,7 +125,7 @@ function MainApp() {
       const hash = window.location.hash.replace('#/', '');
       const allowed = crewOrTalent 
         ? ['personal', 'callsheets', 'calendar'] 
-        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production'];
+        : ['dashboard', 'storyOutline', 'script', 'breakdown', 'shotlist', 'storyboard', 'shootingSchedule', 'calendar', 'crew', 'docs', 'production', 'callsheets'];
       
       const savedUser = localStorage.getItem('prod_user');
       if (!savedUser) {
@@ -313,6 +314,7 @@ function MainApp() {
       currentProjectId={currentProjectId}
       setCurrentProjectId={setCurrentProjectId}
     >
+      <PipelineBanner currentTab={currentTab} onNavigate={handleSetTab} />
       {renderContent()}
     </Layout>
   );

@@ -818,17 +818,28 @@ export default function CrewPortal({ lockedCrewId }) {
               onClick={() => handlePortalModeChange('producer')}
               className={`px-4 py-2 text-xs font-bold uppercase transition-all ${
                 portalMode === 'producer'
-                  ? 'bg-gold-500/15 text-gold-500 font-extrabold'
+                  ? 'bg-gold-500/15 text-gold-500 font-extrabold border-b-2 border-gold-500'
                   : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {language === 'th' ? 'รายชื่อและมอบหมายงาน' : 'Crew Roster'}
+              {language === 'th' ? 'ทีมงานและงาน' : 'Crew Roster'}
+            </button>
+            <button
+              onClick={() => handlePortalModeChange('cast')}
+              className={`px-4 py-2 text-xs font-bold uppercase transition-all flex items-center gap-1.5 ${
+                portalMode === 'cast'
+                  ? 'bg-gold-500/15 text-gold-500 font-extrabold border-b-2 border-gold-500'
+                  : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              <span>🎭</span>
+              <span>{language === 'th' ? 'รายชื่อนักแสดง' : 'Cast & Talent'}</span>
             </button>
             <button
               onClick={() => handlePortalModeChange('crew')}
               className={`px-4 py-2 text-xs font-bold uppercase transition-all ${
                 portalMode === 'crew'
-                  ? 'bg-gold-500/15 text-gold-500 font-extrabold'
+                  ? 'bg-gold-500/15 text-gold-500 font-extrabold border-b-2 border-gold-500'
                   : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
@@ -838,12 +849,12 @@ export default function CrewPortal({ lockedCrewId }) {
               onClick={() => handlePortalModeChange('access')}
               className={`px-4 py-2 text-xs font-bold uppercase transition-all flex items-center gap-1.5 ${
                 portalMode === 'access'
-                  ? 'bg-gold-500/15 text-gold-500 font-extrabold'
+                  ? 'bg-purple-500/15 text-purple-400 font-extrabold border-b-2 border-purple-500'
                   : theme === 'dark' ? 'bg-obsidian-900 text-slate-400 hover:bg-obsidian-800' : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              <Shield size={13} />
-              <span>{language === 'th' ? 'บัญชีและสิทธิ์ (Role)' : 'Access Control'}</span>
+              <Shield size={13} className="text-purple-400" />
+              <span>{language === 'th' ? 'บัญชีและสิทธิ์' : 'Roles & Access'}</span>
             </button>
           </div>
         )}

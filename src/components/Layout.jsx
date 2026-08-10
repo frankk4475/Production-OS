@@ -127,27 +127,51 @@ function Layout({
     }
   };
 
-  const baseMenuItems = isCrewOrTalent()
+  const menuGroups = isCrewOrTalent()
     ? [
-        { id: 'personal', label: language === 'th' ? 'พื้นที่งานส่วนตัว' : 'Personal Workspace', icon: Users },
-        { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงานของฉัน' : 'My Call Sheets', icon: FileText },
-        { id: 'calendar', label: language === 'th' ? 'ปฏิทินงานหลัก' : 'Calendar', icon: Calendar }
+        {
+          title: language === 'th' ? '👤 พื้นที่ส่วนตัว & คิวงาน' : '👤 PERSONAL WORKSPACE',
+          items: [
+            { id: 'personal', label: language === 'th' ? 'พื้นที่งานส่วนตัว' : 'Personal Workspace', icon: Users },
+            { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงานของฉัน' : 'My Call Sheets', icon: FileText },
+            { id: 'calendar', label: language === 'th' ? 'ปฏิทินงานหลัก' : 'Calendar', icon: Calendar }
+          ]
+        }
       ]
     : [
-        { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-        { id: 'storyOutline', label: t('nav.storyOutline'), icon: BookOpen },
-        { id: 'script', label: t('nav.scriptEditor'), icon: PenTool },
-        { id: 'breakdown', label: t('nav.scriptBreakdown'), icon: Layers },
-        { id: 'shotlist', label: language === 'th' ? 'รายการช็อตถ่ายทำ (Shot List)' : 'Shot List', icon: Video },
-        { id: 'storyboard', label: language === 'th' ? 'สตอรี่บอร์ด & สเก็ตช์ (Storyboards)' : 'Storyboards', icon: ImageIcon },
-        { id: 'shootingSchedule', label: language === 'th' ? 'ตารางถ่ายทำ (Stripboard)' : 'Shooting Schedule', icon: Film },
-        { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
-        { id: 'crew', label: t('nav.crewPortal'), icon: Users },
-        { id: 'docs', label: t('nav.documentsHub'), icon: FolderKanban },
-        { id: 'production', label: t('nav.production'), icon: Clapperboard }
+        {
+          title: language === 'th' ? '📊 ศูนย์ควบคุมภาพรวม' : '📊 DASHBOARD & CONTROL',
+          items: [
+            { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard }
+          ]
+        },
+        {
+          title: language === 'th' ? '📖 พัฒนาบท & เตรียมงาน' : '📖 PRE-PRODUCTION & SCRIPT',
+          items: [
+            { id: 'storyOutline', label: t('nav.storyOutline'), icon: BookOpen },
+            { id: 'script', label: t('nav.scriptEditor'), icon: PenTool },
+            { id: 'breakdown', label: t('nav.scriptBreakdown'), icon: Layers },
+            { id: 'shotlist', label: language === 'th' ? 'รายการช็อตถ่ายทำ (Shot List)' : 'Shot List', icon: Video },
+            { id: 'storyboard', label: language === 'th' ? 'สตอรี่บอร์ด & สเก็ตช์ภาพ' : 'Storyboards', icon: ImageIcon }
+          ]
+        },
+        {
+          title: language === 'th' ? '🗓️ จัดตารางคิว & ทีมงาน' : '🗓️ SCHEDULING & CREW',
+          items: [
+            { id: 'shootingSchedule', label: language === 'th' ? 'ตารางถ่ายทำ (Stripboard)' : 'Shooting Schedule', icon: Film },
+            { id: 'calendar', label: t('nav.calendar'), icon: Calendar },
+            { id: 'crew', label: t('nav.crewPortal'), icon: Users }
+          ]
+        },
+        {
+          title: language === 'th' ? '🎥 ถ่ายทำจริง & เอกสาร' : '🎥 ON-SET & PRODUCTION VAULT',
+          items: [
+            { id: 'callsheets', label: language === 'th' ? 'ใบสั่งงาน (Call Sheets)' : 'Call Sheets', icon: FileText },
+            { id: 'production', label: t('nav.production'), icon: Clapperboard },
+            { id: 'docs', label: t('nav.documentsHub'), icon: FolderKanban }
+          ]
+        }
       ];
-
-  const menuItems = [...baseMenuItems];
   return (
     <div className={`min-h-screen flex transition-colors duration-200 ${theme === 'dark' ? 'dark bg-obsidian-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
       
@@ -184,29 +208,38 @@ function Layout({
         </div>
 
         {/* Sidebar Menu */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setCurrentTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-gold-500/15 text-gold-500 border-l-2 border-gold-500 pl-2.5 shadow-sm'
-                      : 'bg-gold-50 text-gold-700 border-l-2 border-gold-600 pl-2.5 shadow-sm'
-                    : theme === 'dark'
-                      ? 'text-slate-400 hover:bg-obsidian-800/50 hover:text-slate-100'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icon size={18} className={`shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-inherit' : 'text-slate-500'}`} />
-                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-              </button>
-            );
-          })}
+        <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+          {menuGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              {!sidebarCollapsed && (
+                <div className="px-3 text-[10px] font-black uppercase tracking-wider text-slate-500/80 mb-1 font-mono">
+                  {group.title}
+                </div>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setCurrentTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all group ${
+                      isActive
+                        ? theme === 'dark'
+                          ? 'bg-gold-500/15 text-gold-400 border-l-2 border-gold-500 pl-2.5 shadow-sm'
+                          : 'bg-gold-50 text-gold-700 border-l-2 border-gold-600 pl-2.5 shadow-sm'
+                        : theme === 'dark'
+                          ? 'text-slate-400 hover:bg-obsidian-800/50 hover:text-slate-100'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon size={16} className={`shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-inherit' : 'text-slate-500'}`} />
+                    {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Sidebar Footer */}
@@ -255,32 +288,39 @@ function Layout({
             <ChevronLeft size={18} />
           </button>
         </div>
-        <nav className="p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setCurrentTab(item.id);
-                  setMobileOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? theme === 'dark'
-                      ? 'bg-gold-500/15 text-gold-500 border-l-2 border-gold-500 pl-2.5'
-                      : 'bg-gold-50 text-gold-700 border-l-2 border-gold-600 pl-2.5'
-                    : theme === 'dark'
-                      ? 'text-slate-400 hover:bg-obsidian-800 hover:text-slate-100'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
-              >
-                <Icon size={18} className="shrink-0" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+        <nav className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-4rem)]">
+          {menuGroups.map((group, groupIdx) => (
+            <div key={groupIdx} className="space-y-1">
+              <div className="px-3 text-[10px] font-black uppercase tracking-wider text-slate-500/80 mb-1 font-mono">
+                {group.title}
+              </div>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentTab(item.id);
+                      setMobileOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+                      isActive
+                        ? theme === 'dark'
+                          ? 'bg-gold-500/15 text-gold-400 border-l-2 border-gold-500 pl-2.5'
+                          : 'bg-gold-50 text-gold-700 border-l-2 border-gold-600 pl-2.5'
+                        : theme === 'dark'
+                          ? 'text-slate-400 hover:bg-obsidian-800 hover:text-slate-100'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
 

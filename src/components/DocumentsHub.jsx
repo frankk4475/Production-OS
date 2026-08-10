@@ -331,19 +331,43 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
   // Call Sheet Editor Modal State
   const [isCallSheetModalOpen, setIsCallSheetModalOpen] = useState(false);
 
-  // Active Shoot Day / Event resolver
-  const shootDaysList = (() => {
-    const shootEvents = safeEvents.filter(e => e && e.type === 'shoot');
-    if (shootEvents.length > 0) {
-      return shootEvents.map((evt, idx) => ({
-        dayNumber: String(idx + 1),
-        eventId: evt.id,
-        date: formatTextValue(evt.date, language, ''),
-        sceneNumber: evt.scene_number || '1'
-      }));
+  // Helper to load user assigned shoot day dates from LocalStorage
+  const getShootDayDatesMap = () => {
+    if (!project?.id) return {};
+    try {
+      return JSON.parse(localStorage.getItem(`prod_shoot_day_dates_${project.id}`) || '{}');
+    } catch {
+      return {};
     }
-    return [
-      { dayNumber: '1', eventId: 'evt-day-1', date: formatTextValue(project?.start_date, language, new Date().toISOString().split('T')[0]), sceneNumber: '1' }
+  };
+
+  // Active Shoot Days resolver - Calculate EXACT shoot days count from Stripboard (No bogus extra days!)
+  const shootDaysList = (() => {
+    const datesMap = getShootDayDatesMap();
+    const activeScheduledScenes = safeScenes.filter(s => s && !s.tech_notes?.scheduling?.inBoneyard);
+    
+    // Find maximum shoot day index assigned in scenes
+    let maxDayNum = 1;
+    activeScheduledScenes.forEach(sc => {
+      const dayNum = parseInt(sc.tech_notes?.scheduling?.shootDayNum || sc.tech_notes?.scheduling?.shootDay || 1, 10);
+      if (!isNaN(dayNum) && dayNum > maxDayNum) {
+        maxDayNum = dayNum;
+      }
+    });
+
+    const days = [];
+    for (let d = 1; d <= maxDayNum; d++) {
+      const dayStr = String(d);
+      const userDate = datesMap[dayStr] || datesMap[d] || (d === 1 ? (project?.start_date || '') : '');
+      days.push({
+        dayNumber: dayStr,
+        eventId: `evt-day-${d}`,
+        date: userDate,
+        sceneNumber: String(d)
+      });
+    }
+    return days.length > 0 ? days : [
+      { dayNumber: '1', eventId: 'evt-day-1', date: project?.start_date || '', sceneNumber: '1' }
     ];
   })();
 
@@ -352,7 +376,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
   const activeEvent = safeEvents.find(e => e && (e.id === activeShootDayItem?.eventId || String(e.scene_number) === String(selectedSceneNum)));
   const activeEventId = activeEvent?.id || '';
 
-  // Call Sheet Edit Form States (Always stored as formatted Strings to prevent React child object crashes!)
+  // Call Sheet Edit Form States
   const [callSheetDate, setCallSheetDate] = useState('');
   const [crewCallTime, setCrewCallTime] = useState('07:00 AM');
   const [shootCallTime, setShootCallTime] = useState('08:30 AM');
@@ -449,8 +473,18 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
 
   // Sync Call Sheet form states securely with formatTextValue on every single property!
   useEffect(() => {
+    const datesMap = getShootDayDatesMap();
+    const explicitDate = datesMap[selectedShootDay];
+
+    if (explicitDate) {
+      setCallSheetDate(explicitDate);
+    } else if (activeEvent?.date) {
+      setCallSheetDate(formatTextValue(activeEvent.date, language, ''));
+    } else {
+      setCallSheetDate(project?.start_date || '');
+    }
+
     if (activeEvent) {
-      setCallSheetDate(formatTextValue(activeEvent.date || project?.start_date, language, new Date().toISOString().split('T')[0]));
       setCrewCallTime(formatTextValue(activeEvent.notes?.crew_call, language, '07:00 AM'));
       setShootCallTime(formatTextValue(activeEvent.notes?.shooting_call || activeEvent.time, language, '08:30 AM'));
       setLunchTime(formatTextValue(activeEvent.notes?.lunch_time, language, '12:30 PM'));
@@ -472,7 +506,6 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
         { charName: 'ชายปริศนา', actorName: 'สมชาย (นักแสดงสมทบ)', pickupTime: '07:00 AM', hmwTime: '07:30 AM', onSetTime: '08:45 AM' }
       ]);
     } else {
-      setCallSheetDate(formatTextValue(project?.start_date, language, new Date().toISOString().split('T')[0]));
       setCrewCallTime('07:00 AM');
       setShootCallTime('08:30 AM');
       setLunchTime('12:30 PM');
@@ -982,46 +1015,227 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
       `;
     } 
     else if (currentTab === 'callsheet') {
-      docSubTitle = isTh ? `ใบสั่งงานกองถ่าย (Daily Call Sheet) - วันถ่ายที่ ${selectedShootDay}` : `Daily Call Sheet - Shoot Day ${selectedShootDay}`;
+      docSubTitle = isTh ? `ใบสั่งงานกองถ่าย (Daily Call Sheet) - วันถ่ายทำที่ DAY ${selectedShootDay}` : `Daily Call Sheet - Shoot Day DAY ${selectedShootDay}`;
       
+      const scenesToRender = dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3);
+      
+      // Calculate cumulative start and end time for each scene based on shootCallTime
+      let accumulatedMins = 8 * 60 + 30; // default 08:30 AM
+      const matchTime = String(shootCallTime || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (matchTime) {
+        let hrs = parseInt(matchTime[1], 10);
+        const mins = parseInt(matchTime[2], 10);
+        const ampm = matchTime[3] ? matchTime[3].toUpperCase() : null;
+        if (ampm === 'PM' && hrs < 12) hrs += 12;
+        if (ampm === 'AM' && hrs === 12) hrs = 0;
+        accumulatedMins = hrs * 60 + mins;
+      }
+
+      // Parse lunch time target (default 12:30 PM)
+      let lunchMins = 12 * 60 + 30;
+      const matchLunch = String(lunchTime || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (matchLunch) {
+        let hrs = parseInt(matchLunch[1], 10);
+        const mins = parseInt(matchLunch[2], 10);
+        const ampm = matchLunch[3] ? matchLunch[3].toUpperCase() : null;
+        if (ampm === 'PM' && hrs < 12) hrs += 12;
+        if (ampm === 'AM' && hrs === 12) hrs = 0;
+        lunchMins = hrs * 60 + mins;
+      }
+
+      const fmtTimeStr = (totalMins) => {
+        const hrs24 = Math.floor(totalMins / 60) % 24;
+        const mins = totalMins % 60;
+        const ampm = hrs24 >= 12 ? 'PM' : 'AM';
+        const hrs12 = hrs24 % 12 === 0 ? 12 : hrs24 % 12;
+        const padMins = String(mins).padStart(2, '0');
+        return `${String(hrs12).padStart(2, '0')}:${padMins} ${ampm}`;
+      };
+
+      // Load custom stripboard break items for current project
+      let customBreaks = [];
+      if (project?.id) {
+        try {
+          const key = `prod_stripboard_breaks_${project.id}`;
+          customBreaks = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (e) {
+          console.error("Failed to parse custom stripboard breaks:", e);
+        }
+      }
+
       let scheduledScenesRows = '';
-      dayScheduledScenes.forEach(sc => {
+      let lunchInserted = false;
+
+      scenesToRender.forEach((sc, idx) => {
+        const matchingCustomBreak = customBreaks.find(b => b && b.dayIndex == selectedShootDay && b.insertAfterIndex === idx);
+        if (matchingCustomBreak) {
+          lunchInserted = true;
+          const breakStart = accumulatedMins;
+          const breakDur = matchingCustomBreak.duration || 60;
+          const breakEnd = breakStart + breakDur;
+          accumulatedMins = breakEnd;
+          scheduledScenesRows += `
+            <tr style="background:#fef3c7; border-top:2px solid #f59e0b; border-bottom:2px solid #f59e0b;">
+              <td colspan="2" style="padding:8px; font-weight:900; color:#b45309; font-family:sans-serif;">${matchingCustomBreak.title || (isTh ? '🍱 เวลาพักทานอาหาร (LUNCH BREAK)' : 'LUNCH BREAK')}</td>
+              <td colspan="6" style="padding:8px; font-weight:bold; color:#d97706; font-family:monospace;">${fmtTimeStr(breakStart)} - ${fmtTimeStr(breakEnd)} (${isTh ? `พักกอง ${breakDur} นาที` : `${breakDur} Mins Break`})</td>
+            </tr>
+          `;
+        } else if (!lunchInserted && accumulatedMins >= lunchMins) {
+          lunchInserted = true;
+          const lunchStart = accumulatedMins;
+          const lunchEnd = lunchStart + 60;
+          accumulatedMins = lunchEnd;
+          scheduledScenesRows += `
+            <tr style="background:#fef3c7; border-top:2px solid #f59e0b; border-bottom:2px solid #f59e0b;">
+              <td colspan="2" style="padding:8px; font-weight:900; color:#b45309; font-family:sans-serif;">🍱 ${isTh ? 'เวลาพักทานอาหาร (LUNCH BREAK)' : 'LUNCH BREAK'}</td>
+              <td colspan="6" style="padding:8px; font-weight:bold; color:#d97706; font-family:monospace;">${fmtTimeStr(lunchStart)} - ${fmtTimeStr(lunchEnd)} (${isTh ? 'พักกอง 1 ชั่วโมง' : '1 Hour Meal Break'})</td>
+            </tr>
+          `;
+        }
+
+        let durationMins = parseInt(sc?.tech_notes?.scheduling?.estTime, 10);
+        if (isNaN(durationMins) || durationMins <= 0) {
+          const pgsText = String(sc?.pages || '1/8');
+          if (pgsText.includes('1/8')) durationMins = 15;
+          else if (pgsText.includes('2/8') || pgsText.includes('1/4')) durationMins = 30;
+          else if (pgsText.includes('3/8')) durationMins = 45;
+          else if (pgsText.includes('4/8') || pgsText.includes('1/2')) durationMins = 60;
+          else durationMins = 60;
+        }
+
+        const startMins = accumulatedMins;
+        const endMins = startMins + durationMins;
+        accumulatedMins = endMins;
+
+        const timeRangeText = `${fmtTimeStr(startMins)} - ${fmtTimeStr(endMins)}`;
+        const synopsisText = formatTextValue(sc?.description, language, '-');
+        const castStr = formatTextValue(sc?.cast, language, '-');
+
         scheduledScenesRows += `
           <tr>
-            <td style="border:1px solid #334155; padding:6px; font-weight:bold; text-align:center;">SCENE ${sc.scene_number}</td>
-            <td style="border:1px solid #334155; padding:6px; font-weight:bold;">${sc.setting || ''}</td>
-            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.int_ext || 'INT'} / ${sc.day_night || 'DAY'}</td>
-            <td style="border:1px solid #334155; padding:6px; text-align:center;">${sc.pages || '1/8'} pgs</td>
-            <td style="border:1px solid #334155; padding:6px; line-height:1.3;">${sc.description?.th || sc.description || '-'}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; font-family:monospace; color:#0f172a; text-align:center;">SCENE ${sc.scene_number || (idx + 1)}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; font-family:monospace; color:#b45309; text-align:center; background:#fffbeb; white-space:nowrap;">⏱️ ${timeRangeText}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; text-align:center; font-family:monospace;">${sc.int_ext || 'INT'}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold;">${sc.setting || '-'}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; text-align:center; font-family:monospace;">${sc.day_night || 'DAY'}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-family:monospace;">${sc.pages || '1/8'} pgs</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; line-height:1.3; font-size:11px;">${synopsisText}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; font-family:monospace; color:#7e22ce; text-align:center;">${castStr}</td>
+          </tr>
+        `;
+      });
+
+      if (!lunchInserted && scenesToRender.length > 0) {
+        const lunchStart = accumulatedMins;
+        const lunchEnd = lunchStart + 60;
+        scheduledScenesRows += `
+          <tr style="background:#fef3c7; border-top:2px solid #f59e0b; border-bottom:2px solid #f59e0b;">
+            <td colspan="2" style="padding:8px; font-weight:900; color:#b45309; font-family:sans-serif;">🍱 ${isTh ? 'เวลาพักทานอาหาร (LUNCH BREAK)' : 'LUNCH BREAK'}</td>
+            <td colspan="6" style="padding:8px; font-weight:bold; color:#d97706; font-family:monospace;">${fmtTimeStr(lunchStart)} - ${fmtTimeStr(lunchEnd)} (${isTh ? 'พักกอง 1 ชั่วโมง' : '1 Hour Meal Break'})</td>
+          </tr>
+        `;
+      }
+
+      // Render Cast Call Times Rows
+      let castCallRows = '';
+      safeCastCallSchedules.forEach(c => {
+        castCallRows += `
+          <tr>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; color:#b45309;">${formatTextValue(c?.charName, language, '-')}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold;">${formatTextValue(c?.actorName, language, '-')}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-family:monospace;">${formatTextValue(c?.pickupTime, language, '-')}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-family:monospace; font-weight:bold; color:#d97706;">${formatTextValue(c?.hmwTime, language, '-')}</td>
+            <td style="border:1px solid #cbd5e1; padding:6px; text-align:center; font-family:monospace; font-weight:bold; color:#059669;">${formatTextValue(c?.onSetTime, language, '-')}</td>
           </tr>
         `;
       });
 
       docHtmlBody = `
-        <div style="border:1px solid #334155; padding:12px; margin-bottom:16px; background:#f8fafc; border-radius:6px; display:flex; justify-content:space-between;">
+        <div style="border:1px solid #cbd5e1; padding:14px; margin-bottom:16px; background:#f8fafc; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <strong>🗓️ ${isTh ? 'วันที่ถ่ายทำ:' : 'Shoot Date:'}</strong> ${new Date().toLocaleDateString(isTh ? 'th-TH' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br/>
-            <strong>📍 ${isTh ? 'สถานที่นัดหมาย:' : 'Location:'}</strong> ${dayScheduledScenes[0]?.location?.th || dayScheduledScenes[0]?.setting || 'TBD'}
+            <h2 style="margin:0; font-size:18px; font-weight:900; color:#0f172a;">${formatTextValue(project?.title, language, 'Daily Call Sheet')}</h2>
+            <div style="font-size:12px; color:#475569; margin-top:4px; font-weight:bold;">
+              ${isTh ? `คิววันถ่ายทำที่: DAY ${selectedShootDay}` : `SHOOT DAY ${selectedShootDay}`} | 
+              ${isTh ? 'ผู้กำกับ:' : 'Director:'} ${formatTextValue(project?.director, language, '-')} | 
+              ${isTh ? 'ผู้ดำเนินงานสร้าง:' : 'Producer:'} ${formatTextValue(project?.producer, language, '-')}
+            </div>
           </div>
-          <div style="text-align:right;">
-            <strong>⏰ ${isTh ? 'เวลานัดรวม (General Call):' : 'General Call:'}</strong> 06:00 AM<br/>
-            <strong>🏥 ${isTh ? 'โรงพยาบาลใกล้เคียง:' : 'Nearest Hospital:'}</strong> โรงพยาบาลมหาราช
+          <div style="text-align:right; font-family:monospace; font-size:12px;">
+            <div style="background:#fff; border:1px solid #cbd5e1; padding:4px 10px; border-radius:4px; font-weight:bold;">
+              🗓️ ${isTh ? 'วันที่ถ่ายทำ:' : 'DATE:'} <span style="color:#d97706;">${formatTextValue(callSheetDate, language, 'TBD')}</span>
+            </div>
+            <div style="font-size:11px; color:#64748b; margin-top:4px;">
+              ${isTh ? 'สภาพอากาศ:' : 'Weather:'} ${formatTextValue(weatherAlertText, language, isTh ? 'ปกติ' : 'Normal')}
+            </div>
           </div>
         </div>
 
-        <h3 style="font-size:13px; margin:14px 0 6px 0; text-transform:uppercase; color:#0f172a;">${isTh ? 'ตารางถ่ายทำประจำวัน (Scheduled Scenes)' : 'Scheduled Scenes'}</h3>
-        <table>
+        <!-- 4 Call Time Cards -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:16px;">
+          <div style="border:1px solid #e2e8f0; border-left:4px solid #d97706; padding:8px 12px; background:#f8fafc; border-radius:6px;">
+            <div style="font-size:9px; font-weight:bold; color:#64748b; text-transform:uppercase;">${isTh ? 'เวลาเปิดกอง (CREW CALL)' : 'CREW CALL'}</div>
+            <div style="font-size:16px; font-weight:900; font-family:monospace; color:#0f172a;">${formatTextValue(crewCallTime, language, '-')}</div>
+          </div>
+          <div style="border:1px solid #e2e8f0; border-left:4px solid #059669; padding:8px 12px; background:#f8fafc; border-radius:6px;">
+            <div style="font-size:9px; font-weight:bold; color:#64748b; text-transform:uppercase;">${isTh ? 'เริ่มถ่ายช็อตแรก (SHOOT CALL)' : 'SHOOT CALL'}</div>
+            <div style="font-size:16px; font-weight:900; font-family:monospace; color:#059669;">${formatTextValue(shootCallTime, language, '-')}</div>
+          </div>
+          <div style="border:1px solid #e2e8f0; border-left:4px solid #d97706; padding:8px 12px; background:#f8fafc; border-radius:6px;">
+            <div style="font-size:9px; font-weight:bold; color:#64748b; text-transform:uppercase;">${isTh ? 'เวลากลางวัน (LUNCH BREAK)' : 'LUNCH BREAK'}</div>
+            <div style="font-size:16px; font-weight:900; font-family:monospace; color:#d97706;">${formatTextValue(lunchTime, language, '-')}</div>
+          </div>
+          <div style="border:1px solid #e2e8f0; border-left:4px solid #7c3aed; padding:8px 12px; background:#f8fafc; border-radius:6px;">
+            <div style="font-size:9px; font-weight:bold; color:#64748b; text-transform:uppercase;">${isTh ? 'เวลาเลิกกอง (EST. WRAP)' : 'EST. WRAP'}</div>
+            <div style="font-size:16px; font-weight:900; font-family:monospace; color:#7c3aed;">${formatTextValue(wrapTime, language, '-')}</div>
+          </div>
+        </div>
+
+        <!-- Location & Hospital -->
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
+          <div style="border:1px solid #cbd5e1; padding:10px; background:#f8fafc; border-radius:6px;">
+            <div style="font-size:10px; font-weight:bold; color:#64748b; text-transform:uppercase;">📍 ${isTh ? 'สถานที่ถ่ายทำหลัก (SHOOT LOCATION)' : 'SHOOT LOCATION'}</div>
+            <div style="font-size:12px; font-weight:bold; color:#0f172a; margin-top:2px;">${formatTextValue(shootLocation, language, '-')}</div>
+          </div>
+          <div style="border:1px solid #fca5a5; padding:10px; background:#fff5f5; border-radius:6px;">
+            <div style="font-size:10px; font-weight:bold; color:#dc2626; text-transform:uppercase;">🏥 ${isTh ? 'โรงพยาบาลใกล้ที่สุดกรณีฉุกเฉิน (NEAREST HOSPITAL)' : 'NEAREST HOSPITAL'}</div>
+            <div style="font-size:12px; font-weight:bold; color:#991b1b; margin-top:2px;">${formatTextValue(hospitalInfo, language, '-')}</div>
+          </div>
+        </div>
+
+        <!-- Scheduled Scenes Table -->
+        <h3 style="font-size:13px; font-weight:900; margin:16px 0 8px 0; text-transform:uppercase; color:#0f172a;">🎬 ${isTh ? 'รายการฉากที่ถ่ายทำในวันนี้ (SCHEDULED SCENES)' : 'SCHEDULED SCENES'}</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
           <thead>
-            <tr>
-              <th style="width:12%;">SCENE #</th>
-              <th style="width:25%;">${isTh ? 'สถานที่' : 'SETTING'}</th>
-              <th style="width:15%;">${isTh ? 'ประเภท/เวลา' : 'INT/EXT'}</th>
-              <th style="width:12%;">${isTh ? 'จำนวนหน้า' : 'PAGES'}</th>
-              <th style="width:36%;">${isTh ? 'รายละเอียดบทฉาก' : 'SYNOPSIS'}</th>
+            <tr style="background:#f1f5f9; text-align:left; font-size:10px; font-family:monospace;">
+              <th style="border:1px solid #cbd5e1; padding:6px; width:7%;">ฉาก</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:15%; color:#b45309;">เวลาถ่าย (TIME)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:6%;">ประเภท</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:13%;">สถานที่ตามบท</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:8%;">ช่วงเวลา</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:7%;">ความยาว</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:35%;">เนื้อเรื่องย่อ (SYNOPSIS)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:9%;">นักแสดง</th>
             </tr>
           </thead>
           <tbody>
-            ${scheduledScenesRows || `<tr><td colspan="5" style="text-align:center; padding:12px;">ไม่มีฉากนัดถ่ายในวันนี้</td></tr>`}
+            ${scheduledScenesRows || `<tr><td colspan="8" style="text-align:center; padding:12px; color:#64748b;">ไม่มีฉากนัดถ่ายในวันนี้</td></tr>`}
+          </tbody>
+        </table>
+
+        <!-- Cast Call Schedule -->
+        <h3 style="font-size:13px; font-weight:900; margin:16px 0 8px 0; text-transform:uppercase; color:#0f172a;">👤 ${isTh ? 'กำหนดเวลานักแสดง (CAST CALL TIMES)' : 'CAST CALL TIMES'}</h3>
+        <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+          <thead>
+            <tr style="background:#f1f5f9; text-align:left; font-size:10px; font-family:monospace;">
+              <th style="border:1px solid #cbd5e1; padding:6px;">ตัวละคร (CHARACTER)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px;">นักแสดง (ACTOR NAME)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">เวลารถรับ (PICKUP)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">แต่งหน้า (HMW)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; text-align:center;">พร้อมหน้ากล้อง (ON SET)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${castCallRows || `<tr><td colspan="5" style="text-align:center; padding:12px; color:#64748b;">ไม่มีรายชื่อนักแสดงในวันนี้</td></tr>`}
           </tbody>
         </table>
       `;
@@ -1317,14 +1531,16 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="p-2 rounded-xl bg-gold-500/10 text-gold-500 border border-gold-500/20">
-              {lockedTab === 'shotlist' ? <Video size={20} /> : lockedTab === 'storyboard' ? <ImageIcon size={20} /> : <Briefcase size={20} />}
+              {lockedTab === 'shotlist' ? <Video size={20} /> : lockedTab === 'storyboard' ? <ImageIcon size={20} /> : lockedTab === 'callsheet' ? <FileText size={20} /> : <Briefcase size={20} />}
             </span>
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-slate-100 font-sans">
               {lockedTab === 'shotlist' 
                 ? (isTh ? 'รายการช็อตถ่ายทำ (Shot List Management)' : 'Shot List Management')
                 : lockedTab === 'storyboard'
                   ? (isTh ? 'สตอรี่บอร์ด & สเก็ตช์ (Storyboards & Previs)' : 'Storyboards & Previs')
-                  : (isTh ? 'คลังเอกสารโปรดักชั่น & ระบบออกเอกสารกองถ่าย' : 'Production Documents & Call Sheet Suite')}
+                  : lockedTab === 'callsheet'
+                    ? (isTh ? 'ใบสั่งงานกองถ่ายประจำวัน (Daily Call Sheets)' : 'Daily Call Sheets Suite')
+                    : (isTh ? 'คลังเอกสารโปรดักชั่น & ระบบออกเอกสารกองถ่าย' : 'Production Documents & Call Sheet Suite')}
             </h1>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-sans pl-1">
@@ -1332,7 +1548,9 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
               ? (isTh ? 'จัดการรายการช็อตถ่ายทำ กำหนดขนาดภาพ การเคลื่อนกล้อง เลนส์ และอุปกรณ์กองถ่ายรายฉาก' : 'Manage camera shot lists, framing sizes, lens choices, and movement notes per scene.')
               : lockedTab === 'storyboard'
                 ? (isTh ? 'จัดการภาพร่างสเก็ตช์ภาพสตอรี่บอร์ดและการวางแผนงานภาพรายฉาก' : 'Manage storyboard sketch frames, shot visuals, and previs layout per scene.')
-                : (isTh ? 'ศูนย์รวมการสร้าง จัดการ และออกเอกสารกองถ่ายมาตรฐานสากล (Call Sheets, Breakdown Sheets & Vault Files)' : 'Generate, manage, and export professional broadcast documents and project files.')}
+                : lockedTab === 'callsheet'
+                  ? (isTh ? 'สร้าง ออกเอกสาร และส่งใบสั่งงานกองถ่ายประจำวัน (Daily Call Sheet) ให้ทีมงานและนักแสดง' : 'Create, edit, and dispatch daily call sheets to cast and crew members.')
+                  : (isTh ? 'ศูนย์รวมการสร้าง จัดการ และออกเอกสารกองถ่ายมาตรฐานสากล (Call Sheets, Breakdown Sheets & Vault Files)' : 'Generate, manage, and export professional broadcast documents and project files.')}
           </p>
         </div>
 
@@ -1592,6 +1810,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                   <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-mono uppercase text-[10px]">
                     <tr>
                       <th className="p-2.5 font-black">{isTh ? 'ฉาก' : 'SCENE'}</th>
+                      <th className="p-2.5 font-black text-amber-500 font-bold">{isTh ? 'เวลาถ่าย' : 'SHOOT TIME'}</th>
                       <th className="p-2.5 font-black">{isTh ? 'ประเภท' : 'I/E'}</th>
                       <th className="p-2.5 font-black">{isTh ? 'สถานที่ตามบท' : 'SETTING'}</th>
                       <th className="p-2.5 font-black">{isTh ? 'ช่วงเวลา' : 'DAY/NIGHT'}</th>
@@ -1601,21 +1820,147 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/80">
-                    {(dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3)).map((sc, idx) => (
-                      <tr key={sc?.id || idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
-                        <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc?.scene_number || (idx + 1)}</td>
-                        <td className="p-2.5 font-bold font-mono">{sc?.int_ext || 'INT'}</td>
-                        <td className="p-2.5 font-bold">{sc?.setting || '-'}</td>
-                        <td className="p-2.5 font-bold font-mono">{sc?.day_night || 'DAY'}</td>
-                        <td className="p-2.5 font-mono">{sc?.pages || '1/8'} pgs</td>
-                        <td className="p-2.5 max-w-xs truncate text-slate-600 dark:text-slate-300">
-                          {formatTextValue(sc?.description, language, '-')}
-                        </td>
-                        <td className="p-2.5 font-mono font-bold text-purple-400">
-                          {formatTextValue(sc?.cast, language, '-')}
-                        </td>
-                      </tr>
-                    ))}
+                    {(() => {
+                      const scenesToRender = dayScheduledScenes.length > 0 ? dayScheduledScenes : safeScenes.slice(0, 3);
+                      
+                      // Calculate cumulative start and end time for each scene based on shootCallTime
+                      let accumulatedMins = 8 * 60 + 30; // default 08:30 AM
+                      const matchTime = String(shootCallTime || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                      if (matchTime) {
+                        let hrs = parseInt(matchTime[1], 10);
+                        const mins = parseInt(matchTime[2], 10);
+                        const ampm = matchTime[3] ? matchTime[3].toUpperCase() : null;
+                        if (ampm === 'PM' && hrs < 12) hrs += 12;
+                        if (ampm === 'AM' && hrs === 12) hrs = 0;
+                        accumulatedMins = hrs * 60 + mins;
+                      }
+
+                      // Parse lunch time target (default 12:30 PM)
+                      let lunchMins = 12 * 60 + 30;
+                      const matchLunch = String(lunchTime || '').match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                      if (matchLunch) {
+                        let hrs = parseInt(matchLunch[1], 10);
+                        const mins = parseInt(matchLunch[2], 10);
+                        const ampm = matchLunch[3] ? matchLunch[3].toUpperCase() : null;
+                        if (ampm === 'PM' && hrs < 12) hrs += 12;
+                        if (ampm === 'AM' && hrs === 12) hrs = 0;
+                        lunchMins = hrs * 60 + mins;
+                      }
+
+                      const fmtTime = (totalMins) => {
+                        const hrs24 = Math.floor(totalMins / 60) % 24;
+                        const mins = totalMins % 60;
+                        const ampm = hrs24 >= 12 ? 'PM' : 'AM';
+                        const hrs12 = hrs24 % 12 === 0 ? 12 : hrs24 % 12;
+                        const padMins = String(mins).padStart(2, '0');
+                        return `${String(hrs12).padStart(2, '0')}:${padMins} ${ampm}`;
+                      };
+
+                      // Load custom stripboard break items for current project
+                      let customBreaks = [];
+                      if (project?.id) {
+                        try {
+                          const key = `prod_stripboard_breaks_${project.id}`;
+                          customBreaks = JSON.parse(localStorage.getItem(key) || '[]');
+                        } catch (e) {
+                          console.error("Failed to parse custom stripboard breaks:", e);
+                        }
+                      }
+
+                      const rows = [];
+                      let lunchInserted = false;
+
+                      scenesToRender.forEach((sc, idx) => {
+                        // Check if custom break exists before this scene index
+                        const matchingCustomBreak = customBreaks.find(b => b && b.dayIndex == selectedShootDay && b.insertAfterIndex === idx);
+                        if (matchingCustomBreak) {
+                          lunchInserted = true;
+                          const breakStart = accumulatedMins;
+                          const breakDur = matchingCustomBreak.duration || 60;
+                          const breakEnd = breakStart + breakDur;
+                          accumulatedMins = breakEnd;
+                          rows.push(
+                            <tr key={`custom-break-${idx}`} className="bg-amber-500/10 dark:bg-amber-500/15 border-y-2 border-amber-500/40">
+                              <td colSpan={2} className="p-3 font-black font-mono text-amber-500 text-xs">
+                                {matchingCustomBreak.title || (isTh ? '🍱 เวลาพักทานอาหาร (LUNCH BREAK)' : '🍱 LUNCH BREAK')}
+                              </td>
+                              <td colSpan={6} className="p-3 font-bold font-mono text-amber-400 text-xs text-left">
+                                {fmtTime(breakStart)} - {fmtTime(breakEnd)} ({isTh ? `พักกอง ${breakDur} นาที` : `${breakDur} Mins Break`})
+                              </td>
+                            </tr>
+                          );
+                        } else if (!lunchInserted && accumulatedMins >= lunchMins) {
+                          lunchInserted = true;
+                          const lunchStart = accumulatedMins;
+                          const lunchEnd = lunchStart + 60; // 1 hr break
+                          accumulatedMins = lunchEnd;
+
+                          rows.push(
+                            <tr key={`lunch-break-${idx}`} className="bg-amber-500/10 dark:bg-amber-500/15 border-y-2 border-amber-500/40">
+                              <td colSpan={2} className="p-3 font-black font-mono text-amber-500 text-xs">
+                                🍱 {isTh ? 'เวลาพักทานอาหาร (LUNCH BREAK)' : 'LUNCH BREAK'}
+                              </td>
+                              <td colSpan={6} className="p-3 font-bold font-mono text-amber-400 text-xs text-left">
+                                {fmtTime(lunchStart)} - {fmtTime(lunchEnd)} ({isTh ? 'พักกอง 1 ชั่วโมง' : '1 Hour Meal Break'})
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        let durationMins = parseInt(sc?.tech_notes?.scheduling?.estTime, 10);
+                        if (isNaN(durationMins) || durationMins <= 0) {
+                          const pgsText = String(sc?.pages || '1/8');
+                          if (pgsText.includes('1/8')) durationMins = 15;
+                          else if (pgsText.includes('2/8') || pgsText.includes('1/4')) durationMins = 30;
+                          else if (pgsText.includes('3/8')) durationMins = 45;
+                          else if (pgsText.includes('4/8') || pgsText.includes('1/2')) durationMins = 60;
+                          else durationMins = 60;
+                        }
+
+                        const startMins = accumulatedMins;
+                        const endMins = startMins + durationMins;
+                        accumulatedMins = endMins;
+
+                        const timeRangeText = `${fmtTime(startMins)} - ${fmtTime(endMins)}`;
+
+                        rows.push(
+                          <tr key={sc?.id || idx} className="hover:bg-slate-50 dark:hover:bg-obsidian-900/30">
+                            <td className="p-2.5 font-black font-mono text-gold-500">SCENE {sc?.scene_number || (idx + 1)}</td>
+                            <td className="p-2.5 font-bold font-mono text-amber-400 whitespace-nowrap bg-amber-500/5 rounded">
+                              ⏱️ {timeRangeText}
+                            </td>
+                            <td className="p-2.5 font-bold font-mono">{sc?.int_ext || 'INT'}</td>
+                            <td className="p-2.5 font-bold">{sc?.setting || '-'}</td>
+                            <td className="p-2.5 font-bold font-mono">{sc?.day_night || 'DAY'}</td>
+                            <td className="p-2.5 font-mono">{sc?.pages || '1/8'} pgs</td>
+                            <td className="p-2.5 max-w-md text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
+                              {formatTextValue(sc?.description, language, '-')}
+                            </td>
+                            <td className="p-2.5 font-mono font-bold text-purple-400">
+                              {formatTextValue(sc?.cast, language, '-')}
+                            </td>
+                          </tr>
+                        );
+                      });
+
+                      // If lunch wasn't inserted during loop (e.g. all scenes were earlier), but day continues, append if applicable
+                      if (!lunchInserted && scenesToRender.length > 0) {
+                        const lunchStart = accumulatedMins;
+                        const lunchEnd = lunchStart + 60;
+                        rows.push(
+                          <tr key="lunch-break-end" className="bg-amber-500/10 dark:bg-amber-500/15 border-y-2 border-amber-500/40">
+                            <td colSpan={2} className="p-3 font-black font-mono text-amber-500 text-xs">
+                              🍱 {isTh ? 'เวลาพักทานอาหาร (LUNCH BREAK)' : 'LUNCH BREAK'}
+                            </td>
+                            <td colSpan={6} className="p-3 font-bold font-mono text-amber-400 text-xs text-left">
+                              {fmtTime(lunchStart)} - {fmtTime(lunchEnd)} ({isTh ? 'พักกอง 1 ชั่วโมง' : '1 Hour Meal Break'})
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return rows;
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -2321,6 +2666,116 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
                       className="w-full p-2 rounded-lg border bg-white dark:bg-obsidian-950 border-slate-200 dark:border-obsidian-800 text-slate-800 dark:text-slate-200"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Cast Call Times Editor Table */}
+              <div className="space-y-2 pt-3 border-t border-slate-200 dark:border-obsidian-800">
+                <span className="font-bold text-purple-400 block flex items-center justify-between">
+                  <span>{isTh ? '🎭 กำหนดเวลานัดนักแสดงประจำวัน (CAST CALL TIMES):' : 'Cast Call Schedule:'}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newCast = [...safeCastCallSchedules, { charName: 'ตัวละครใหม่', actorName: 'ชื่อนักแสดง', pickupTime: '06:00 AM', hmwTime: '06:30 AM', onSetTime: '08:15 AM' }];
+                      setCastCallSchedules(newCast);
+                    }}
+                    className="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 cursor-pointer font-sans"
+                  >
+                    + {isTh ? 'เพิ่มนักแสดง' : 'Add Cast Row'}
+                  </button>
+                </span>
+
+                <div className="overflow-x-auto border border-slate-200 dark:border-obsidian-800 rounded-lg">
+                  <table className="w-full text-left text-[11px] font-mono">
+                    <thead className="bg-slate-100 dark:bg-obsidian-900 text-slate-500 dark:text-slate-400 font-bold uppercase">
+                      <tr>
+                        <th className="p-2">{isTh ? 'ตัวละคร' : 'CHARACTER'}</th>
+                        <th className="p-2">{isTh ? 'นักแสดง' : 'ACTOR'}</th>
+                        <th className="p-2">{isTh ? 'เวลารถรับ' : 'PICKUP'}</th>
+                        <th className="p-2">{isTh ? 'แต่งหน้า' : 'HMW'}</th>
+                        <th className="p-2">{isTh ? 'พร้อมกล้อง' : 'ON SET'}</th>
+                        <th className="p-2 text-right">ลบ</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/50 dark:divide-obsidian-800/40">
+                      {safeCastCallSchedules.map((c, idx) => (
+                        <tr key={idx}>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={c.charName || ''}
+                              onChange={(e) => {
+                                const copy = [...safeCastCallSchedules];
+                                copy[idx] = { ...copy[idx], charName: e.target.value };
+                                setCastCallSchedules(copy);
+                              }}
+                              className="w-full p-1 rounded border bg-transparent border-slate-700 text-gold-400 font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={c.actorName || ''}
+                              onChange={(e) => {
+                                const copy = [...safeCastCallSchedules];
+                                copy[idx] = { ...copy[idx], actorName: e.target.value };
+                                setCastCallSchedules(copy);
+                              }}
+                              className="w-full p-1 rounded border bg-transparent border-slate-700 font-sans"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={c.pickupTime || ''}
+                              onChange={(e) => {
+                                const copy = [...safeCastCallSchedules];
+                                copy[idx] = { ...copy[idx], pickupTime: e.target.value };
+                                setCastCallSchedules(copy);
+                              }}
+                              className="w-full p-1 rounded border bg-transparent border-slate-700 text-center text-slate-400"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={c.hmwTime || ''}
+                              onChange={(e) => {
+                                const copy = [...safeCastCallSchedules];
+                                copy[idx] = { ...copy[idx], hmwTime: e.target.value };
+                                setCastCallSchedules(copy);
+                              }}
+                              className="w-full p-1 rounded border bg-transparent border-slate-700 text-center text-amber-400 font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5">
+                            <input
+                              type="text"
+                              value={c.onSetTime || ''}
+                              onChange={(e) => {
+                                const copy = [...safeCastCallSchedules];
+                                copy[idx] = { ...copy[idx], onSetTime: e.target.value };
+                                setCastCallSchedules(copy);
+                              }}
+                              className="w-full p-1 rounded border bg-transparent border-slate-700 text-center text-emerald-400 font-bold"
+                            />
+                          </td>
+                          <td className="p-1.5 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const copy = safeCastCallSchedules.filter((_, i) => i !== idx);
+                                setCastCallSchedules(copy);
+                              }}
+                              className="text-red-400 hover:text-red-300 p-1"
+                            >
+                              ✕
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 

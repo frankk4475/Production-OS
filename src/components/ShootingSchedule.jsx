@@ -76,6 +76,25 @@ function ShootingSchedule() {
   const [shootDayModalScene, setShootDayModalScene] = useState(null);
   const [editingSceneTime, setEditingSceneTime] = useState({}); // sceneId -> tempValue
 
+  // User explicit shoot day dates mapping (dayIndex -> 'YYYY-MM-DD' or '')
+  const [shootDayDates, setShootDayDates] = useState(() => {
+    const localKey = project?.id ? `prod_shoot_day_dates_${project.id}` : null;
+    if (!localKey) return {};
+    try {
+      return JSON.parse(localStorage.getItem(localKey) || '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  const handleSetShootDayDate = (dayIndex, dateVal) => {
+    const updated = { ...shootDayDates, [dayIndex]: dateVal };
+    setShootDayDates(updated);
+    if (project?.id) {
+      localStorage.setItem(`prod_shoot_day_dates_${project.id}`, JSON.stringify(updated));
+    }
+  };
+
   const handleAssignShootDay = async (scene, dayNum) => {
     if (!dayNum) {
       setShootDayModalScene(null);
@@ -176,7 +195,7 @@ function ShootingSchedule() {
           return orderA - orderB;
         });
 
-        // 3. Insert day break placeholders
+        // 3. Insert day break placeholders & custom break items
         const items = [];
         sortedScheduled.forEach((scene) => {
           if (!scene) return;
@@ -186,13 +205,28 @@ function ShootingSchedule() {
           }
         });
 
+        // Load custom break items from localStorage if saved
+        const breakKey = project?.id ? `prod_stripboard_breaks_${project.id}` : null;
+        if (breakKey) {
+          try {
+            const savedBreaks = JSON.parse(localStorage.getItem(breakKey) || '[]');
+            savedBreaks.forEach(b => {
+              if (b && b.insertAfterIndex !== undefined && b.insertAfterIndex <= items.length) {
+                items.splice(b.insertAfterIndex, 0, b);
+              }
+            });
+          } catch (e) {
+            console.error("Failed to load saved break items:", e);
+          }
+        }
+
         setBoardItems(items);
       } else {
         setBoardItems([]);
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [scenes]);
+  }, [scenes, project?.id]);
 
   // Extract all unique characters to auto-generate Cast IDs (1, 2, 3...)
   const getCastIdsMap = () => {
@@ -243,32 +277,6 @@ function ShootingSchedule() {
       if (castIdsMap[c]) ids.push(castIdsMap[c]);
     });
     return ids.sort((a, b) => a - b);
-  };
-
-  // Drag & Drop logic
-  const handleDragStart = (index, e) => {
-    setDraggedIndex(index);
-    // Allow dragging inside HTML5
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (index, e) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = async (dropIndex, e) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === dropIndex) return;
-
-    const updated = [...boardItems];
-    const [draggedItem] = updated.splice(draggedIndex, 1);
-    updated.splice(dropIndex, 0, draggedItem);
-    
-    setBoardItems(updated);
-    setDraggedIndex(null);
-
-    // Auto-save layout on drop
-    await handleSaveSchedule(updated);
   };
 
   // Add a Day Break after a scene item index
@@ -362,24 +370,80 @@ function ShootingSchedule() {
     setBoardItems(newItems);
   };
 
+  const moveItemUp = async (index) => {
+    if (index <= 0) return;
+    const updated = [...boardItems];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    setBoardItems(updated);
+    await handleSaveSchedule(updated);
+  };
+
+  const moveItemDown = async (index) => {
+    if (index >= boardItems.length - 1) return;
+    const updated = [...boardItems];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    setBoardItems(updated);
+    await handleSaveSchedule(updated);
+  };
+
+  const handleDragStart = (index, e) => {
+    setDraggedIndex(index);
+    if (e && e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(index));
+    }
+  };
+
+  const handleDragOver = (index, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) {
+        e.dataTransfer.dropEffect = 'move';
+      }
+    }
+  };
+
+  const handleDrop = async (dropIndex, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const updated = [...boardItems];
+    const [movedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(dropIndex, 0, movedItem);
+    
+    setBoardItems(updated);
+    setDraggedIndex(null);
+
+    await handleSaveSchedule(updated);
+  };
+
   // Save current order and day breaks to database
   const handleSaveSchedule = async (customItems) => {
     if (!project) return;
     const items = customItems || boardItems;
     try {
-      // 1. Calculate new scheduling properties for scenes
+      // 1. Calculate new scheduling properties for scenes based on exact flat index
       const updatedScenes = [...scenes].map(s => {
         const itemIdx = items.findIndex(bi => bi.type === 'scene' && bi.id === s.id);
         
         if (itemIdx !== -1) {
-          // Count preceding day breaks to compute shoot day dynamically
           let precedingDbCount = 0;
           for (let i = 0; i < itemIdx; i++) {
             if (items[i].type === 'day_break') {
               precedingDbCount++;
             }
           }
-          const sceneDayNum = precedingDbCount + 1;
           const followedByDb = items[itemIdx + 1]?.type === 'day_break';
           
           return {
@@ -389,115 +453,40 @@ function ShootingSchedule() {
               scheduling: {
                 ...(s.tech_notes?.scheduling || {}),
                 inBoneyard: false,
-                order: itemIdx + 1,
+                order: itemIdx + 1, // Store exact flat position order!
                 dayBreakAfter: followedByDb,
-                shootDay: String(sceneDayNum) // Dynamically sync correct shoot day index
+                shootDayNum: precedingDbCount + 1
               }
             }
           };
         } else {
-          const isBoneyard = s.tech_notes?.scheduling?.inBoneyard;
-          return {
-            ...s,
-            tech_notes: {
-              ...(s.tech_notes || {}),
-              scheduling: {
-                ...(s.tech_notes?.scheduling || {}),
-                inBoneyard: isBoneyard ?? false,
-                order: isBoneyard ? 99999 : parseFloat(s.scene_number) || 0
-              }
-            }
-          };
+          return s;
         }
       });
+
+      // 2. Save break items location mapping to localStorage
+      if (project?.id) {
+        const breaksOnly = items.map((it, idx) => {
+          if (it.type !== 'break') return null;
+          let precedingDbCount = 0;
+          for (let i = 0; i < idx; i++) {
+            if (items[i].type === 'day_break') precedingDbCount++;
+          }
+          return {
+            ...it,
+            dayIndex: precedingDbCount + 1,
+            insertAfterIndex: idx
+          };
+        }).filter(Boolean);
+
+        localStorage.setItem(`prod_stripboard_breaks_${project.id}`, JSON.stringify(breaksOnly));
+      }
 
       await updateScenes(updatedScenes);
-
-      // 2. Automatically sync shoot dates to Calendar Events
-      const sceneDates = {};
-      let dayIndex = 1;
-      const projectStart = project.start_date ? new Date(project.start_date) : new Date();
-
-      items.forEach((item) => {
-        if (item.type === 'scene') {
-          const dayDate = new Date(projectStart.getTime() + (dayIndex - 1) * 24 * 60 * 60 * 1000);
-          sceneDates[item.scene.id] = dayDate.toISOString().split('T')[0];
-        } else if (item.type === 'day_break') {
-          dayIndex += 1;
-        }
-      });
-
-      const projectSceneNumbers = scenes.map(s => s.scene_number);
-      const otherEvents = (activeEvents || []).filter(e => 
-        e.project_id !== project.id || 
-        e.type !== 'shoot' || 
-        !projectSceneNumbers.includes(e.scene_number)
-      );
-
-      const shootEvents = (activeEvents || []).filter(e => 
-        e.project_id === project.id && 
-        e.type === 'shoot' && 
-        projectSceneNumbers.includes(e.scene_number)
-      );
-
-      const newShootEvents = [];
-      boardItems.forEach((item) => {
-        if (item.type === 'scene') {
-          const scene = item.scene;
-          const dateStr = sceneDates[scene.id];
-          const existing = shootEvents.find(e => e.scene_number === scene.scene_number);
-
-          if (existing) {
-            newShootEvents.push({
-              ...existing,
-              date: dateStr,
-              title: {
-                th: `ถ่ายทำฉากที่ ${scene.scene_number}: ${scene.setting || ''}`,
-                en: `Shooting Scene ${scene.scene_number}: ${scene.setting || ''}`
-              }
-            });
-          } else {
-            newShootEvents.push({
-              id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              project_id: project.id,
-              title: {
-                th: `ถ่ายทำฉากที่ ${scene.scene_number}: ${scene.setting || ''}`,
-                en: `Shooting Scene ${scene.scene_number}: ${scene.setting || ''}`
-              },
-              date: dateStr,
-              time: '08:30 AM',
-              type: 'shoot',
-              location: { 
-                th: scene.location?.th || scene.location?.en || '', 
-                en: scene.location?.en || scene.location?.th || '' 
-              },
-              scene_number: scene.scene_number,
-              crew_assigned: [],
-              notes: {
-                th: '',
-                en: '',
-                crew_call: '07:00 AM',
-                shooting_call: '08:30 AM',
-                lunch_time: '12:30 PM',
-                wrap_time: '06:00 PM',
-                camera_notes: '',
-                art_notes: '',
-                lighting_notes: '',
-                sound_notes: '',
-                wardrobe_notes: '',
-                production_notes: ''
-              }
-            });
-          }
-        }
-      });
-
-      await setEvents([...otherEvents, ...newShootEvents]);
-
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 2500);
+      setTimeout(() => setIsSaved(false), 2000);
     } catch (err) {
-      alert("Failed to save schedule: " + err.message);
+      console.error("Save schedule error:", err);
     }
   };
 
@@ -506,10 +495,14 @@ function ShootingSchedule() {
   const boneyardScenes = safeScenesList.filter(s => s && s.tech_notes?.scheduling?.inBoneyard)
     .sort((a, b) => (parseFloat(a?.scene_number) || 0) - (parseFloat(b?.scene_number) || 0));
 
-  // Helper to fetch dynamic shoot date for a day index
+  // Helper to fetch explicit shoot date for a day index (returns null if unassigned)
   const getShootDayDate = (dayNum) => {
-    const projectStart = project?.start_date ? new Date(project.start_date) : new Date();
-    const dayDate = new Date(projectStart.getTime() + (dayNum - 1) * 24 * 60 * 60 * 1000);
+    const assignedDate = shootDayDates[dayNum];
+    if (!assignedDate) return null;
+
+    const dayDate = new Date(assignedDate);
+    if (isNaN(dayDate.getTime())) return null;
+
     return dayDate.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
       weekday: 'short',
       month: 'short',
@@ -666,7 +659,23 @@ function ShootingSchedule() {
             <span className="bg-gold-500 text-slate-950 text-xs px-2.5 py-1 rounded-md font-black tracking-widest uppercase shadow-sm">
               {language === 'th' ? `วันถ่ายทำที่ ${day.dayIndex}` : `DAY ${day.dayIndex}`}
             </span>
-            <span className="text-gold-400 font-extrabold text-[12px]">{dateStr}</span>
+            
+            {/* Explicit Shoot Date Display or Date Picker */}
+            <div className="flex items-center gap-2">
+              <span className={`text-[12px] font-extrabold ${dateStr ? 'text-gold-400' : 'text-slate-500 italic'}`}>
+                {dateStr || (language === 'th' ? '(ยังไม่ได้กำหนดวันที่ถ่ายทำ)' : '(Date Unassigned)')}
+              </span>
+
+              {hasWriteAccess() && (
+                <input
+                  type="date"
+                  value={shootDayDates[day.dayIndex] || ''}
+                  onChange={(e) => handleSetShootDayDate(day.dayIndex, e.target.value)}
+                  className="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-500 cursor-pointer"
+                  title={language === 'th' ? `กำหนดวันที่ถ่ายจริงของ วันถ่ายทำที่ ${day.dayIndex}` : `Set Shoot Date for Day ${day.dayIndex}`}
+                />
+              )}
+            </div>
           </div>
 
           <div className="font-mono text-slate-300 text-[11px] flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -686,16 +695,58 @@ function ShootingSchedule() {
             </span>
           </div>
 
-          {hasWriteAccess() && day.dayBreakIndex !== -1 && (
-            <button 
-              onClick={() => removeDayBreak(day.dayBreakIndex)} 
-              className="text-red-400 hover:text-red-300 hover:scale-105 active:scale-95 transition-all text-[10px] uppercase font-black pl-4 flex items-center gap-1 cursor-pointer"
-              title={language === 'th' ? 'ลบตัวคั่นวันเพื่อรวมวัน' : 'Remove Day Break'}
+          <div className="flex items-center gap-2">
+            {hasWriteAccess() && (
+              <button
+                onClick={() => {
+                  const newBreak = {
+                    type: 'break',
+                    id: `break-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+                    breakType: 'meal',
+                    title: language === 'th' ? '🍱 เวลาพักทานอาหาร (LUNCH BREAK)' : '🍱 LUNCH BREAK',
+                    duration: 60,
+                    dayIndex: day.dayIndex
+                  };
+                  const updated = [...boardItems];
+                  let insertIdx = day.endIndex >= 0 ? day.endIndex + 1 : updated.length;
+                  updated.splice(insertIdx, 0, newBreak);
+                  setBoardItems(updated);
+
+                  if (project?.id) {
+                    const breaksOnly = updated.map((item, idx) => ({ ...item, insertAfterIndex: idx })).filter(item => item.type === 'break');
+                    localStorage.setItem(`prod_stripboard_breaks_${project.id}`, JSON.stringify(breaksOnly));
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
+                title={language === 'th' ? 'แทรกเวลาพักกอง/พักกินข้าวในคิววันนี้' : 'Add Meal/Break Banner'}
+              >
+                <span>🍱</span>
+                <span>{language === 'th' ? '+ พักทานอาหาร' : '+ Add Meal Break'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                window.location.hash = '#/callsheets';
+              }}
+              className="px-2.5 py-1 rounded-lg bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 border border-gold-500/30 text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+              title={language === 'th' ? `สร้างใบสั่งงาน Call Sheet สำหรับวันถ่ายที่ ${day.dayIndex}` : `Generate Call Sheet for Day ${day.dayIndex}`}
             >
-              <Trash2 size={11} />
-              <span>{language === 'th' ? 'ลบตัวคั่น' : 'Remove Break'}</span>
+              <span>📄</span>
+              <span>{language === 'th' ? 'สร้าง Call Sheet' : 'Call Sheet'}</span>
             </button>
-          )}
+
+            {hasWriteAccess() && day.dayBreakIndex !== -1 && (
+              <button 
+                onClick={() => removeDayBreak(day.dayBreakIndex)} 
+                className="text-red-400 hover:text-red-300 hover:scale-105 active:scale-95 transition-all text-[10px] uppercase font-black pl-2 flex items-center gap-1 cursor-pointer"
+                title={language === 'th' ? 'ลบตัวคั่นวันเพื่อรวมวัน' : 'Remove Day Break'}
+              >
+                <Trash2 size={11} />
+                <span className="hidden sm:inline">{language === 'th' ? 'ลบตัวคั่น' : 'Remove Break'}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -731,9 +782,33 @@ function ShootingSchedule() {
           draggedIndex === indexInBoard ? 'opacity-30 border-dashed border-gold-500' : ''
         }`}
       >
-        {/* Left Side: Grip, Seq, Scene Number, Badges, Setting */}
+        {/* Left Side: Grip, Up/Down Buttons, Seq, Scene Number, Badges, Setting */}
         <div className="flex items-start md:items-center gap-3 w-full lg:w-auto min-w-0">
-          {hasWriteAccess() && <GripVertical className="text-slate-500 shrink-0 mt-1 md:mt-0 no-print" size={15} />}
+          {hasWriteAccess() && (
+            <div className="flex items-center gap-1 shrink-0 no-print">
+              <GripVertical className="text-slate-500 shrink-0 cursor-grab active:cursor-grabbing" size={15} />
+              <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); moveItemUp(indexInBoard); }}
+                  disabled={indexInBoard === 0}
+                  className="p-0.5 px-1 text-[9px] text-slate-400 hover:text-gold-400 disabled:opacity-20 cursor-pointer font-bold leading-none bg-slate-900/30 dark:bg-slate-100/10 rounded hover:bg-gold-500/20"
+                  title={language === 'th' ? 'เลื่อนคิวขึ้น' : 'Move Up'}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); moveItemDown(indexInBoard); }}
+                  disabled={indexInBoard === boardItems.length - 1}
+                  className="p-0.5 px-1 text-[9px] text-slate-400 hover:text-gold-400 disabled:opacity-20 cursor-pointer font-bold leading-none bg-slate-900/30 dark:bg-slate-100/10 rounded hover:bg-gold-500/20"
+                  title={language === 'th' ? 'เลื่อนคิวลง' : 'Move Down'}
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+          )}
           
           <div className="flex flex-col md:flex-row md:items-center gap-3 w-full min-w-0">
             <div className="flex items-center gap-2 shrink-0">
@@ -885,6 +960,95 @@ function ShootingSchedule() {
     );
   };
 
+  // Render an individual custom break strip (Meal/Break)
+  const renderBreakStrip = (item, indexInBoard) => {
+    return (
+      <div
+        key={item.id}
+        draggable={hasWriteAccess()}
+        onDragStart={(e) => handleDragStart(indexInBoard, e)}
+        onDragOver={(e) => handleDragOver(indexInBoard, e)}
+        onDrop={(e) => handleDrop(indexInBoard, e)}
+        className={`border-2 border-amber-500/50 bg-amber-500/10 dark:bg-amber-500/15 rounded-xl p-3 my-1.5 flex items-center justify-between gap-3 text-xs font-bold text-amber-500 shadow-md ${
+          draggedIndex === indexInBoard ? 'opacity-30 border-dashed' : ''
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          {hasWriteAccess() && (
+            <div className="flex items-center gap-1 shrink-0 no-print">
+              <GripVertical className="text-amber-500/60 shrink-0 cursor-grab active:cursor-grabbing" size={15} />
+              <div className="flex flex-col gap-0.5">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); moveItemUp(indexInBoard); }}
+                  disabled={indexInBoard === 0}
+                  className="p-0.5 px-1 text-[9px] text-amber-400 hover:text-amber-200 disabled:opacity-20 cursor-pointer font-bold leading-none bg-amber-950/40 rounded hover:bg-amber-500/30"
+                  title={language === 'th' ? 'เลื่อนขึ้น' : 'Move Up'}
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); moveItemDown(indexInBoard); }}
+                  disabled={indexInBoard === boardItems.length - 1}
+                  className="p-0.5 px-1 text-[9px] text-amber-400 hover:text-amber-200 disabled:opacity-20 cursor-pointer font-bold leading-none bg-amber-950/40 rounded hover:bg-amber-500/30"
+                  title={language === 'th' ? 'เลื่อนลง' : 'Move Down'}
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+          )}
+          <span className="text-sm font-black tracking-wide font-sans flex items-center gap-1.5">
+            {item.title || (language === 'th' ? '🍱 เวลาพักทานอาหาร (LUNCH BREAK)' : '🍱 LUNCH BREAK')}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/30">
+            <span className="text-[10px] uppercase font-mono text-amber-400">{language === 'th' ? 'เวลาพัก:' : 'Duration:'}</span>
+            <input
+              type="number"
+              min="5"
+              max="180"
+              step="5"
+              value={item.duration || 60}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                const updated = [...boardItems];
+                updated[indexInBoard] = { ...updated[indexInBoard], duration: isNaN(val) ? 60 : val };
+                setBoardItems(updated);
+                if (project?.id) {
+                  const breaksOnly = updated.map((it, idx) => ({ ...it, insertAfterIndex: idx })).filter(it => it.type === 'break');
+                  localStorage.setItem(`prod_stripboard_breaks_${project.id}`, JSON.stringify(breaksOnly));
+                }
+              }}
+              className="w-12 px-1 py-0.5 rounded bg-slate-950 border border-amber-500/50 text-amber-300 font-mono font-black text-center text-xs"
+            />
+            <span className="text-[10px] font-mono text-amber-400">{language === 'th' ? 'นาที' : 'mins'}</span>
+          </div>
+
+          {hasWriteAccess() && (
+            <button
+              onClick={() => {
+                const updated = boardItems.filter((_, idx) => idx !== indexInBoard);
+                setBoardItems(updated);
+                if (project?.id) {
+                  const breaksOnly = updated.map((it, idx) => ({ ...it, insertAfterIndex: idx })).filter(it => it.type === 'break');
+                  localStorage.setItem(`prod_stripboard_breaks_${project.id}`, JSON.stringify(breaksOnly));
+                }
+              }}
+              className="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded cursor-pointer transition-all"
+              title={language === 'th' ? 'ลบเวลาพักนี้ออก' : 'Remove break banner'}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Compute total pages per shoot day & display strips
   const renderStripsWithDaybreaks = () => {
     const list = [];
@@ -894,11 +1058,16 @@ function ShootingSchedule() {
       // 1. Render Day Header
       list.push(renderDayHeader(day));
 
-      // 2. Render Scenes of the Day
-      day.scenes.forEach((item) => {
+      // 2. Render Scenes and Break items of the Day
+      const itemsInDay = boardItems.slice(day.startIndex, day.endIndex >= 0 ? day.endIndex + 1 : boardItems.length);
+      itemsInDay.forEach((item) => {
         const indexInBoard = boardItems.findIndex(bi => bi.id === item.id);
         if (indexInBoard !== -1) {
-          list.push(renderSceneStrip(item, indexInBoard));
+          if (item.type === 'scene') {
+            list.push(renderSceneStrip(item, indexInBoard));
+          } else if (item.type === 'break') {
+            list.push(renderBreakStrip(item, indexInBoard));
+          }
         }
       });
 
