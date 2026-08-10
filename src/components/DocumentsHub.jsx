@@ -1114,7 +1114,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
         scheduledScenesRows += `
           <tr>
             <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; font-family:monospace; color:#0f172a; text-align:center;">SCENE ${sc.scene_number || (idx + 1)}</td>
-            <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; font-family:monospace; color:#b45309; text-align:center; background:#fffbeb; white-space:nowrap;">⏱️ ${timeRangeText}</td>
+            <td style="border:1px solid #cbd5e1; padding:5px 4px; font-weight:bold; font-family:monospace; color:#b45309; text-align:center; background:#fffbeb; white-space:nowrap; font-size:8.5pt; word-break:keep-all;">⏱️ ${timeRangeText}</td>
             <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; text-align:center; font-family:monospace;">${sc.int_ext || 'INT'}</td>
             <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold;">${sc.setting || '-'}</td>
             <td style="border:1px solid #cbd5e1; padding:6px; font-weight:bold; text-align:center; font-family:monospace;">${sc.day_night || 'DAY'}</td>
@@ -1207,14 +1207,14 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
         <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
           <thead>
             <tr style="background:#f1f5f9; text-align:left; font-size:10px; font-family:monospace;">
-              <th style="border:1px solid #cbd5e1; padding:6px; width:7%;">ฉาก</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:15%; color:#b45309;">เวลาถ่าย (TIME)</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:6%;">ประเภท</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:6%;">ฉาก</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:21%; color:#b45309; text-align:center;">เวลาถ่าย (TIME)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:7%; text-align:center;">ประเภท</th>
               <th style="border:1px solid #cbd5e1; padding:6px; width:13%;">สถานที่ตามบท</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:8%;">ช่วงเวลา</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:7%;">ความยาว</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:35%;">เนื้อเรื่องย่อ (SYNOPSIS)</th>
-              <th style="border:1px solid #cbd5e1; padding:6px; width:9%;">นักแสดง</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:8%; text-align:center;">ช่วงเวลา</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:6%; text-align:center;">ความยาว</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:30%;">เนื้อเรื่องย่อ (SYNOPSIS)</th>
+              <th style="border:1px solid #cbd5e1; padding:6px; width:9%; text-align:center;">นักแสดง</th>
             </tr>
           </thead>
           <tbody>
