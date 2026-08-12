@@ -1225,8 +1225,8 @@ export const api = {
 
       const finalProjectScenes = parsedScenes.map((parsed) => {
         const match = existingProjectScenes.find(s => 
-          s.tech_notes?.script_block_id === parsed.script_block_id ||
-          (!s.tech_notes?.script_block_id && s.scene_number === parsed.scene_number)
+          (s.tech_notes?.script_block_id && s.tech_notes?.script_block_id === parsed.script_block_id) ||
+          s.scene_number === parsed.scene_number
         );
         const descText = parsed.description_blocks.join(' ');
         const castText = Array.from(parsed.character_blocks).join(', ');
@@ -1234,22 +1234,23 @@ export const api = {
         if (match) {
           return {
             ...match,
-            setting: parsed.setting,
-            int_ext: parsed.int_ext,
-            day_night: parsed.day_night,
+            scene_number: parsed.scene_number, // Statically update scene number based on script order!
+            setting: parsed.setting || match.setting || 'UNNAMED SCENE',
+            int_ext: parsed.int_ext || match.int_ext || 'INT',
+            day_night: parsed.day_night || match.day_night || 'DAY',
             description: {
-              th: descText || match.description.th || '',
-              en: descText || match.description.en || ''
+              th: descText || match.description?.th || '',
+              en: descText || match.description?.en || ''
             },
             cast: {
-              th: castText || match.cast.th || '',
-              en: castText || match.cast.en || ''
+              th: castText || match.cast?.th || '',
+              en: castText || match.cast?.en || ''
             },
             tech_notes: {
               ...(match.tech_notes || {}),
               script_block_id: parsed.script_block_id
             },
-            pages: match.pages || getEstimateString(parsed.total_chars)
+            pages: getEstimateString(parsed.total_chars)
           };
         } else {
           return {
