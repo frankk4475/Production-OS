@@ -471,10 +471,23 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
     }
   };
 
+  // Helper to load user assigned shoot day call times from LocalStorage
+  const getShootDayTimesMap = () => {
+    if (!project?.id) return {};
+    try {
+      return JSON.parse(localStorage.getItem(`prod_day_times_${project.id}`) || '{}');
+    } catch {
+      return {};
+    }
+  };
+
   // Sync Call Sheet form states securely with formatTextValue on every single property!
   useEffect(() => {
     const datesMap = getShootDayDatesMap();
     const explicitDate = datesMap[selectedShootDay];
+
+    const timesMap = getShootDayTimesMap();
+    const explicitTimes = timesMap[String(selectedShootDay)];
 
     if (explicitDate) {
       setCallSheetDate(explicitDate);
@@ -484,9 +497,23 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
       setCallSheetDate(project?.start_date || '');
     }
 
-    if (activeEvent) {
-      setCrewCallTime(formatTextValue(activeEvent.notes?.crew_call, language, '07:00 AM'));
+    if (explicitTimes?.crewCall) {
+      setCrewCallTime(explicitTimes.crewCall);
+    } else if (activeEvent?.notes?.crew_call) {
+      setCrewCallTime(formatTextValue(activeEvent.notes.crew_call, language, '07:00 AM'));
+    } else {
+      setCrewCallTime('07:00 AM');
+    }
+
+    if (explicitTimes?.shootCall) {
+      setShootCallTime(explicitTimes.shootCall);
+    } else if (activeEvent?.notes?.shooting_call || activeEvent?.time) {
       setShootCallTime(formatTextValue(activeEvent.notes?.shooting_call || activeEvent.time, language, '08:30 AM'));
+    } else {
+      setShootCallTime('08:30 AM');
+    }
+
+    if (activeEvent) {
       setLunchTime(formatTextValue(activeEvent.notes?.lunch_time, language, '12:30 PM'));
       setWrapTime(formatTextValue(activeEvent.notes?.wrap_time, language, '06:00 PM'));
       setShootLocation(formatTextValue(activeEvent.location, language, isTh ? 'สถานที่หลักตามบท' : 'Main Set Location'));
@@ -506,8 +533,6 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
         { charName: 'ชายปริศนา', actorName: 'สมชาย (นักแสดงสมทบ)', pickupTime: '07:00 AM', hmwTime: '07:30 AM', onSetTime: '08:45 AM' }
       ]);
     } else {
-      setCrewCallTime('07:00 AM');
-      setShootCallTime('08:30 AM');
       setLunchTime('12:30 PM');
       setWrapTime('06:00 PM');
       setShootLocation(isTh ? 'สถานีรถไฟพิษณุโลก / บนขบวนรถไฟ' : 'Phitsanulok Railway Station');
@@ -577,6 +602,19 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
   // Save Call Sheet Form Updates into Calendar Event State
   const handleSaveCallSheet = (e) => {
     e.preventDefault();
+    if (project?.id && (crewCallTime || shootCallTime)) {
+      const timesMap = getShootDayTimesMap();
+      const current = timesMap[String(selectedShootDay)] || {};
+      const updatedTimes = {
+        ...timesMap,
+        [String(selectedShootDay)]: {
+          ...current,
+          crewCall: crewCallTime,
+          shootCall: shootCallTime
+        }
+      };
+      localStorage.setItem(`prod_day_times_${project.id}`, JSON.stringify(updatedTimes));
+    }
     const eventId = activeEvent?.id || `evt-day-${selectedShootDay}-${Date.now()}`;
     const updatedEvent = {
       id: eventId,

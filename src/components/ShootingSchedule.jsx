@@ -87,11 +87,39 @@ function ShootingSchedule() {
     }
   });
 
+  // User explicit shoot day call times mapping (dayIndex -> { crewCall: '07:00 AM', shootCall: '08:30 AM' })
+  const [dayTimesMap, setDayTimesMap] = useState(() => {
+    const localKey = project?.id ? `prod_day_times_${project.id}` : null;
+    if (!localKey) return {};
+    try {
+      return JSON.parse(localStorage.getItem(localKey) || '{}');
+    } catch {
+      return {};
+    }
+  });
+
   const handleSetShootDayDate = (dayIndex, dateVal) => {
-    const updated = { ...shootDayDates, [dayIndex]: dateVal };
+    const dayStr = String(dayIndex);
+    const updated = { ...shootDayDates, [dayStr]: dateVal };
     setShootDayDates(updated);
     if (project?.id) {
       localStorage.setItem(`prod_shoot_day_dates_${project.id}`, JSON.stringify(updated));
+    }
+  };
+
+  const handleSetDayTime = (dayIndex, field, value) => {
+    const dayStr = String(dayIndex);
+    const current = dayTimesMap[dayStr] || { crewCall: '07:00 AM', shootCall: '08:30 AM' };
+    const updated = {
+      ...dayTimesMap,
+      [dayStr]: {
+        ...current,
+        [field]: value
+      }
+    };
+    setDayTimesMap(updated);
+    if (project?.id) {
+      localStorage.setItem(`prod_day_times_${project.id}`, JSON.stringify(updated));
     }
   };
 
@@ -678,6 +706,33 @@ function ShootingSchedule() {
             </div>
           </div>
 
+          {/* Call Times Controls: Crew Call & First Shoot Call */}
+          <div className="flex items-center gap-2 bg-slate-900/60 dark:bg-obsidian-950/80 px-2.5 py-1 rounded-lg border border-slate-700/60 text-[11px] font-mono no-print">
+            <div className="flex items-center gap-1">
+              <span className="text-slate-400 font-sans font-bold">🕘 {language === 'th' ? 'เปิดกอง:' : 'Crew Call:'}</span>
+              <input
+                type="text"
+                value={dayTimesMap[String(day.dayIndex)]?.crewCall ?? '07:00 AM'}
+                onChange={(e) => handleSetDayTime(day.dayIndex, 'crewCall', e.target.value)}
+                className="w-16 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-center font-bold text-slate-200 focus:outline-none focus:border-gold-500"
+                placeholder="07:00 AM"
+                title={language === 'th' ? 'กำหนดเวลาเปิดกอง (Crew Call Time)' : 'Set Crew Call Time'}
+              />
+            </div>
+            <span className="opacity-30">•</span>
+            <div className="flex items-center gap-1">
+              <span className="text-gold-400 font-sans font-bold">🎬 {language === 'th' ? 'เริ่มถ่าย:' : 'Shoot Call:'}</span>
+              <input
+                type="text"
+                value={dayTimesMap[String(day.dayIndex)]?.shootCall ?? '08:30 AM'}
+                onChange={(e) => handleSetDayTime(day.dayIndex, 'shootCall', e.target.value)}
+                className="w-16 bg-slate-950 border border-gold-500/40 rounded px-1 py-0.5 text-center font-black text-gold-400 focus:outline-none focus:border-gold-400"
+                placeholder="08:30 AM"
+                title={language === 'th' ? 'กำหนดเวลาเริ่มถ่ายฉากแรก (Shoot Call Time)' : 'Set First Shoot Call Time'}
+              />
+            </div>
+          </div>
+
           <div className="font-mono text-slate-300 text-[11px] flex flex-wrap items-center gap-x-4 gap-y-1">
             <span className="flex items-center gap-1.5">
               <span className="text-slate-450 uppercase font-bold">{language === 'th' ? 'คิวฉาก:' : 'Scenes:'}</span>
@@ -765,16 +820,38 @@ function ShootingSchedule() {
     return precedingDbCount + 1;
   };
 
+  // Helper to parse time string like "08:30 AM", "08:30", "8:30" to total minutes from midnight
+  const parseTimeToMins = (timeStr, fallbackMins = 510) => {
+    if (!timeStr || typeof timeStr !== 'string') return fallbackMins;
+    const clean = timeStr.trim();
+    const isPM = clean.toUpperCase().includes('PM');
+    const isAM = clean.toUpperCase().includes('AM');
+    const numbersOnly = clean.replace(/[^0-9:]/g, '');
+    const parts = numbersOnly.split(':');
+    if (parts.length < 2) return fallbackMins;
+    let hrs = parseInt(parts[0], 10);
+    const mins = parseInt(parts[1], 10);
+    if (isNaN(hrs) || isNaN(mins)) return fallbackMins;
+    
+    if (isPM && hrs < 12) hrs += 12;
+    if (isAM && hrs === 12) hrs = 0;
+    return hrs * 60 + mins;
+  };
+
   // Calculate dynamic start & end time for a scene strip in boardItems
   const getSceneTimeRange = (indexInBoard) => {
-    let accumulatedMins = 8 * 60 + 30; // default 08:30 AM
+    let currentDayNum = 1;
+    let currentDayShootCallMins = parseTimeToMins(dayTimesMap['1']?.shootCall, 8 * 60 + 30);
+    let accumulatedMins = currentDayShootCallMins;
     
     for (let i = 0; i <= indexInBoard; i++) {
       const it = boardItems[i];
       if (!it) continue;
       
       if (it.type === 'day_break') {
-        accumulatedMins = 8 * 60 + 30; // Reset for new shoot day
+        currentDayNum++;
+        currentDayShootCallMins = parseTimeToMins(dayTimesMap[String(currentDayNum)]?.shootCall, 8 * 60 + 30);
+        accumulatedMins = currentDayShootCallMins;
       } else if (it.type === 'break') {
         accumulatedMins += (parseInt(it.duration, 10) || 60);
       } else if (it.type === 'scene') {
