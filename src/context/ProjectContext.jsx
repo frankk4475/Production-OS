@@ -709,13 +709,15 @@ export const ProjectProvider = ({ children }) => {
       const saved = await api.saveScript(currentProjectId, blocks, skipSyncBreakdown);
       setScriptBlocks(saved);
       
-      // Reload scenes asynchronously in the background to prevent blocking UI
+      // Auto-sync scenes breakdown and update state in real-time
       if (!skipSyncBreakdown) {
-        api.getScenes(currentProjectId).then(scenesData => {
+        try {
+          await api.syncScriptToBreakdown(currentProjectId, blocks);
+          const scenesData = await api.getScenes(currentProjectId);
           setScenes(scenesData);
-        }).catch(err => {
-          console.error("Failed to refresh scenes in background:", err);
-        });
+        } catch (syncErr) {
+          console.error("Failed to sync script breakdown scenes:", syncErr);
+        }
       }
       
       return saved;

@@ -459,6 +459,23 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
     }
   }, [project?.id, isTh]);
 
+  // Auto-sync script breakdown to scenes seamless in background on DocumentsHub mount
+  useEffect(() => {
+    if (!project?.id) return;
+    let isMounted = true;
+    api.getScript(project.id).then(latestBlocks => {
+      if (latestBlocks && Array.isArray(latestBlocks) && latestBlocks.length > 0 && isMounted) {
+        api.syncScriptToBreakdown(project.id, latestBlocks).then(() => {
+          api.getScenes(project.id).then(refreshed => {
+            if (isMounted && updateScenes) updateScenes(refreshed);
+          });
+        });
+      }
+    }).catch(err => console.error("Auto script breakdown sync error in DocumentsHub:", err));
+
+    return () => { isMounted = false; };
+  }, [project?.id, updateScenes]);
+
   // Save Vault Files to LocalStorage
   const saveVaultFiles = (newFilesList) => {
     setVaultFiles(newFilesList);

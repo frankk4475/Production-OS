@@ -1217,28 +1217,22 @@ function ShootingSchedule() {
     return list;
   };
 
-  const [isSyncingScript, setIsSyncingScript] = useState(false);
-
-  const handleSyncFromScript = async () => {
+  // Auto-sync scenes breakdown seamless in background on mount
+  useEffect(() => {
     if (!project?.id) return;
-    setIsSyncingScript(true);
-    try {
-      const latestBlocks = await api.getScript(project.id);
-      if (latestBlocks && Array.isArray(latestBlocks) && latestBlocks.length > 0) {
-        await api.syncScriptToBreakdown(project.id, latestBlocks);
-        const refreshedScenes = await api.getScenes(project.id);
-        await updateScenes(refreshedScenes);
-        alert(language === 'th' ? '⚡ ซิงค์ข้อมูลฉาก ลำดับฉาก และสถานที่จากบทภาพยนตร์ล่าสุดเรียบร้อยแล้ว!' : '⚡ Synced scenes, ordering, and settings from latest screenplay!');
-      } else {
-        alert(language === 'th' ? 'ยังไม่มีเนื้อหาบทภาพยนตร์สำหรับซิงค์' : 'No script blocks found to sync');
+    let isMounted = true;
+    api.getScript(project.id).then(latestBlocks => {
+      if (latestBlocks && Array.isArray(latestBlocks) && latestBlocks.length > 0 && isMounted) {
+        api.syncScriptToBreakdown(project.id, latestBlocks).then(() => {
+          api.getScenes(project.id).then(refreshed => {
+            if (isMounted) updateScenes(refreshed);
+          });
+        });
       }
-    } catch (err) {
-      console.error("Failed to sync scenes from script:", err);
-      alert("Sync failed: " + err.message);
-    } finally {
-      setIsSyncingScript(false);
-    }
-  };
+    }).catch(err => console.error("Auto script breakdown sync error:", err));
+
+    return () => { isMounted = false; };
+  }, [project?.id]);
 
   if (!project) {
     return (
@@ -1291,16 +1285,6 @@ function ShootingSchedule() {
 
           {hasWriteAccess() && (
             <>
-              <button
-                onClick={handleSyncFromScript}
-                disabled={isSyncingScript}
-                className="px-3 py-2 rounded-lg border border-gold-500/40 bg-gold-500/10 text-gold-400 hover:bg-gold-500/20 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
-                title={language === 'th' ? 'ดึงบทภาพยนตร์ล่าสุดมาอัปเดตฉากและสถานที่ในตารางถ่ายทำ' : 'Sync latest scenes and settings from script'}
-              >
-                <RefreshCw size={13} className={isSyncingScript ? 'animate-spin text-gold-400' : 'text-gold-400'} />
-                <span>{isSyncingScript ? (language === 'th' ? 'กำลังซิงค์บท...' : 'Syncing...') : (language === 'th' ? '⚡ ซิงค์ข้อมูลจากบท' : '⚡ Sync from Script')}</span>
-              </button>
-
               <button
                 onClick={handleAutoSchedule}
                 className={`px-3 py-2 rounded-lg border text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 ${
