@@ -765,11 +765,55 @@ function ShootingSchedule() {
     return precedingDbCount + 1;
   };
 
+  // Calculate dynamic start & end time for a scene strip in boardItems
+  const getSceneTimeRange = (indexInBoard) => {
+    let accumulatedMins = 8 * 60 + 30; // default 08:30 AM
+    
+    for (let i = 0; i <= indexInBoard; i++) {
+      const it = boardItems[i];
+      if (!it) continue;
+      
+      if (it.type === 'day_break') {
+        accumulatedMins = 8 * 60 + 30; // Reset for new shoot day
+      } else if (it.type === 'break') {
+        accumulatedMins += (parseInt(it.duration, 10) || 60);
+      } else if (it.type === 'scene') {
+        let durationMins = parseInt(it.scene?.tech_notes?.scheduling?.estTime, 10);
+        if (isNaN(durationMins) || durationMins <= 0) {
+          const pgsText = String(it.scene?.pages || '1/8');
+          if (pgsText.includes('1/8')) durationMins = 15;
+          else if (pgsText.includes('2/8') || pgsText.includes('1/4')) durationMins = 30;
+          else if (pgsText.includes('3/8')) durationMins = 45;
+          else if (pgsText.includes('4/8') || pgsText.includes('1/2')) durationMins = 60;
+          else durationMins = 60;
+        }
+
+        const startMins = accumulatedMins;
+        const endMins = startMins + durationMins;
+
+        if (i === indexInBoard) {
+          const fmt = (m) => {
+            const hrs24 = Math.floor(m / 60) % 24;
+            const mins = m % 60;
+            const ampm = hrs24 >= 12 ? 'PM' : 'AM';
+            const hrs12 = hrs24 % 12 === 0 ? 12 : hrs24 % 12;
+            return `${String(hrs12).padStart(2, '0')}:${String(mins).padStart(2, '0')} ${ampm}`;
+          };
+          return `${fmt(startMins)} - ${fmt(endMins)}`;
+        }
+
+        accumulatedMins = endMins;
+      }
+    }
+    return null;
+  };
+
   // Render an individual scene strip
   const renderSceneStrip = (item, indexInBoard) => {
     const scene = item.scene;
     const { bgClass, borderLeftClass, badgeBgClass } = getSceneStripStyles(scene);
     const castIds = getSceneCastIds(scene);
+    const sceneShootTimeText = getSceneTimeRange(indexInBoard);
 
     return (
       <div
@@ -827,6 +871,11 @@ function ShootingSchedule() {
               <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border border-slate-200/10 ${badgeBgClass}`}>
                 {scene.day_night}
               </span>
+              {sceneShootTimeText && (
+                <span className="text-[10px] font-bold font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 whitespace-nowrap" title={language === 'th' ? 'ช่วงเวลาถ่ายทำคำนวณสะสม' : 'Estimated Shoot Time Window'}>
+                  ⏱️ {sceneShootTimeText}
+                </span>
+              )}
             </div>
 
             <div className="text-left min-w-0 flex-1 md:ml-2">

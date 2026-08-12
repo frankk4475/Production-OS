@@ -915,11 +915,16 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
     return matchCategory && matchQuery;
   });
 
-  // Scheduled Scenes list for active Shoot Day
-  const dayScheduledScenes = safeScenes.filter(s => 
-    s && (s.tech_notes?.scheduling?.shootDay === selectedShootDay ||
-    (selectedShootDay === '1' && !s.tech_notes?.scheduling?.shootDay))
-  );
+  // Scheduled Scenes list for active Shoot Day (Sorted strictly by Stripboard order!)
+  const dayScheduledScenes = safeScenes.filter(s => {
+    if (!s || s.tech_notes?.scheduling?.inBoneyard) return false;
+    const dayVal = String(s.tech_notes?.scheduling?.shootDayNum || s.tech_notes?.scheduling?.shootDay || '1');
+    return dayVal === String(selectedShootDay);
+  }).sort((a, b) => {
+    const orderA = a.tech_notes?.scheduling?.order ?? parseFloat(a.scene_number) ?? 0;
+    const orderB = b.tech_notes?.scheduling?.order ?? parseFloat(b.scene_number) ?? 0;
+    return orderA - orderB;
+  });
 
   // Safe Element Category items resolver
   const getCategoryElements = (categoryKey) => {
