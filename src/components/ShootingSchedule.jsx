@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useProject } from '../context/ProjectContext';
+import { api } from '../services/api';
 import { 
   Film, 
   Trash2, 
