@@ -16,7 +16,8 @@ import {
   Sparkles,
   GripVertical,
   X,
-  Printer
+  Printer,
+  RefreshCw
 } from 'lucide-react';
 
 // Helpers to parse and format page lengths in eighths of a page
