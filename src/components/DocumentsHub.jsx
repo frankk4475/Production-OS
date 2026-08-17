@@ -176,7 +176,7 @@ function DocumentsHubContent({
   const { language } = useLanguage();
   const { theme } = useTheme();
   const auth = useAuth();
-  const { currentProject: project, pushUndoAction } = useProject();
+  const { currentProject: project, pushUndoAction, updateScenes } = useProject();
 
   const isTh = language === 'th';
   const hasWriteAccess = typeof auth?.hasWriteAccess === 'function' ? auth.hasWriteAccess() : true;
@@ -467,7 +467,7 @@ ${scheduledDetails || '- ไม่มีรายการฉาก -'}
       if (latestBlocks && Array.isArray(latestBlocks) && latestBlocks.length > 0 && isMounted) {
         api.syncScriptToBreakdown(project.id, latestBlocks).then(() => {
           api.getScenes(project.id).then(refreshed => {
-            if (isMounted && updateScenes) updateScenes(refreshed);
+            if (isMounted && typeof updateScenes === 'function') updateScenes(refreshed);
           });
         });
       }

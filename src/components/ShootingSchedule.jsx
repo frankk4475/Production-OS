@@ -1225,14 +1225,14 @@ function ShootingSchedule() {
       if (latestBlocks && Array.isArray(latestBlocks) && latestBlocks.length > 0 && isMounted) {
         api.syncScriptToBreakdown(project.id, latestBlocks).then(() => {
           api.getScenes(project.id).then(refreshed => {
-            if (isMounted) updateScenes(refreshed);
+            if (isMounted && typeof updateScenes === 'function') updateScenes(refreshed);
           });
         });
       }
     }).catch(err => console.error("Auto script breakdown sync error:", err));
 
     return () => { isMounted = false; };
-  }, [project?.id]);
+  }, [project?.id, updateScenes]);
 
   if (!project) {
     return (
